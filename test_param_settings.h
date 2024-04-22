@@ -23,7 +23,9 @@ public:
     ~testParamSettingsDialog();
 
 private slots:
-    void on_testModeComboBox_currentIndexChanged(int index);
+    void testModeComboBox_currentIndexChanged(int index);
+
+    void custExpoParamFileSelBtn_clicked();
 
 private:
     typedef struct
@@ -61,12 +63,8 @@ private:
     test_params_struct_t * m_test_params;
     expo_params_from_ui_struct_t m_expo_params_from_ui;
 
-    typedef enum
-    {
-        INT_DATA, FLOAT_DATA,
-    }ui_data_type_enum_t;
 
-    bool get_one_expo_param(QLineEdit * ctrl, ui_data_type_enum_t d_type, int factor,
+    bool get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, int factor,
                              RangeChecker* range, void * val_ptr, QString &ret_str);
 
     void get_expo_param_vals_from_ui();

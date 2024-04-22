@@ -586,6 +586,11 @@ RangeChecker::RangeChecker(double min, double max,
     valid = (EDGE_INFINITE == low_edge || EDGE_INFINITE == up_edge) ? true : (min <= max);
     this->min = min; this->max = max;
     this->low_edge = low_edge; this->up_edge = up_edge;
+
+    if(!valid)
+    {
+        DIY_LOG(LOG_ERROR, QString(gs_range_checker_err_msg_invalid_eval));
+    }
 }
 
 #define RANGE_CHECKER(val, type) \
@@ -630,4 +635,21 @@ double RangeChecker::range_min()
 double RangeChecker::range_max()
 {
     return max;
+}
+QString RangeChecker::range_str(common_data_type_enum_t d_type)
+{
+    QString ret_str;
+
+    if(!valid) return ret_str;
+
+    ret_str = (EDGE_INCLUDED == low_edge ? "[" : "(");
+    ret_str += (EDGE_INFINITE == low_edge) ? "" :
+                ((INT_DATA == d_type) ? QString::number((int)min) :
+                                        QString::number((float)min));
+    ret_str += ", ";
+    ret_str += (EDGE_INFINITE == up_edge) ? "" :
+                ((INT_DATA == d_type) ? QString::number((int)max) :
+                                        QString::number((float)max));
+    ret_str += (EDGE_INCLUDED == up_edge) ? "]" : ")";
+    return ret_str;
 }

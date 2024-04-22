@@ -43,6 +43,10 @@ QString shutdown_system(QString reason_str = "", int wait_time = DEF_SHUTDOWN_WA
 #define ROUNDUP_UINT16_TO_10(x) ((quint16)(((quint16)(((x) + 5) / 10)) * 10))
 #define ARRAY_COUNT(a) (sizeof((a)) / sizeof((a)[0]))
 
+typedef enum
+{
+    INT_DATA, FLOAT_DATA,
+}common_data_type_enum_t;
 class RangeChecker
 {
 public:
@@ -72,6 +76,7 @@ public:
     range_edge_enum_t range_up_edge();
     double range_min();
     double range_max();
+    QString range_str(common_data_type_enum_t d_type);
 };
 
 #endif // COMMON_TOOL_FUNC_H

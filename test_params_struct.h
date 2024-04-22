@@ -27,30 +27,18 @@ typedef struct
     float expo_dura_ms_start, expo_dura_ms_end, expo_dura_ms_step;
 }regular_expo_parms_struct_t;
 
-typedef union expo_base_params_union
+typedef struct
 {
     regular_expo_parms_struct_t regular_parms;
     QVector<expo_param_triple_struct_t> cust_params_arr;
-public:
-    expo_base_params_union()
-    {
-    }
-    ~expo_base_params_union()
-    {
-    }
-}expo_base_params_union_t;
+}expo_base_params_struct_t;
 
 typedef struct expo_params_struct
 {
     bool cust;
-    expo_base_params_union_t expo_params;
+    expo_base_params_struct_t expo_params;
     int expo_cnt;
     float expo_cool_dura_ms;
-public:
-    ~expo_params_struct()
-    {
-        if(cust) expo_params.cust_params_arr.~QVector<expo_param_triple_struct_t>();
-    }
 }expo_params_struct_t;
 
 typedef struct
