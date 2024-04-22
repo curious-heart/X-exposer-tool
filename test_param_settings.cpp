@@ -350,11 +350,19 @@ QString testParamSettingsDialog::collect_test_params()
                 if(0 == m_expo_params_from_ui.vals.cube_volt_kv_step
                         && (m_expo_params_from_ui.vals.cube_volt_kv_end
                              != m_expo_params_from_ui.vals.cube_volt_kv_start))
-                {}
+                {
+                    ret_str = gs_str_start_end_step_err1;
+                    break;
+                }
                 else if(m_expo_params_from_ui.vals.cube_volt_kv_step *
                         (m_expo_params_from_ui.vals.cube_volt_kv_end
                              - m_expo_params_from_ui.vals.cube_volt_kv_start) < 0)
-                {}
+                {
+                    ret_str = QString("%1%2、%3、%4、%5").arg(gs_str_cube_volt,
+                                           gs_str_start_val, gs_str_end_val, gs_str_step,
+                                                    gs_str_start_end_step_err2);
+                    break;
+                }
                 else
                 {
                     m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_start
@@ -364,6 +372,25 @@ QString testParamSettingsDialog::collect_test_params()
                     m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_step
                             = m_expo_params_from_ui.vals.cube_volt_kv_step;
                 }
+
+
+                if(0 == m_expo_params_from_ui.vals.cube_current_ma_step
+                        && (m_expo_params_from_ui.vals.cube_current_ma_end
+                             != m_expo_params_from_ui.vals.cube_current_ma_start))
+                {
+                    ret_str = gs_str_start_end_step_err1;
+                    break;
+                }
+                else if(m_expo_params_from_ui.vals.cube_current_ma_step *
+                        (m_expo_params_from_ui.vals.cube_current_ma_end
+                             - m_expo_params_from_ui.vals.cube_current_ma_start) < 0)
+                {
+                    ret_str = QString("%1%2、%3、%4、%5").arg(gs_str_cube_current,
+                                           gs_str_start_val, gs_str_end_val, gs_str_step,
+                                                    gs_str_start_end_step_err2);
+                    break;
+                }
+                else
                 {
                     m_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_start
                             = m_expo_params_from_ui.vals.cube_current_ma_start;
@@ -371,18 +398,38 @@ QString testParamSettingsDialog::collect_test_params()
                             = m_expo_params_from_ui.vals.cube_current_ma_end;
                     m_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_step
                             = m_expo_params_from_ui.vals.cube_current_ma_step;
+                }
+
+                if(0 == m_expo_params_from_ui.vals.expo_dura_ms_step
+                        && (m_expo_params_from_ui.vals.expo_dura_ms_end
+                             != m_expo_params_from_ui.vals.expo_dura_ms_start))
+                {
+                    ret_str = gs_str_start_end_step_err1;
+                    break;
+                }
+                else if(m_expo_params_from_ui.vals.expo_dura_ms_step *
+                        (m_expo_params_from_ui.vals.expo_dura_ms_end
+                             - m_expo_params_from_ui.vals.expo_dura_ms_start) < 0)
+                {
+                    ret_str = QString("%1%2、%3、%4、%5").arg(gs_str_expo_dura,
+                                           gs_str_start_val, gs_str_end_val, gs_str_step,
+                                                    gs_str_start_end_step_err2);
+                    break;
+                }
+                else
+                {
                     m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_start
                             = m_expo_params_from_ui.vals.expo_dura_ms_start;
                     m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_end
                             = m_expo_params_from_ui.vals.expo_dura_ms_end;
                     m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_step
                             = m_expo_params_from_ui.vals.expo_dura_ms_step;
+                }
                     m_test_params->expo_param_block.expo_cool_dura_ms
                             = m_expo_params_from_ui.expo_cool_dura_ms;
                     m_test_params->expo_param_block.expo_cnt = m_expo_params_from_ui.expo_cnt;
 
                     m_test_params->valid = true;
-                }
             }
             break;
         }

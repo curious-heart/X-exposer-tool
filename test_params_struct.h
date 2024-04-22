@@ -33,19 +33,24 @@ typedef union expo_base_params_union
     QVector<expo_param_triple_struct_t> cust_params_arr;
 public:
     expo_base_params_union()
-    {}
+    {
+    }
     ~expo_base_params_union()
     {
-        cust_params_arr.~QVector<expo_param_triple_struct_t>();
     }
 }expo_base_params_union_t;
 
-typedef struct
+typedef struct expo_params_struct
 {
     bool cust;
     expo_base_params_union_t expo_params;
     int expo_cnt;
     float expo_cool_dura_ms;
+public:
+    ~expo_params_struct()
+    {
+        if(cust) expo_params.cust_params_arr.~QVector<expo_param_triple_struct_t>();
+    }
 }expo_params_struct_t;
 
 typedef struct
