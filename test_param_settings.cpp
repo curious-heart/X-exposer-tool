@@ -1,6 +1,7 @@
 ﻿#include "common_tool_func.h"
 #include "logger/logger.h"
 #include "test_param_settings.h"
+#include "ui_test_param_settings.h"
 
 static const int gs_cool_dura_factor = 30; //cool time shuld not be less than this times of expp dura.
 static const float gs_min_expo_dura_ms = 1;
@@ -26,6 +27,8 @@ static const char* gs_str_step = "步长";
 static const char* gs_str_exceeds_valid_range = "超出允许范围";
 static const char* gs_str_should_be_int = "应为整数";
 static const char* gs_str_should_be_number = "应为数字";
+static const char* gs_str_start_end_step_err1 = "步长为0时，起始值和结束值必须相等!";
+static const char* gs_str_start_end_step_err2 = "组合无效";
 static const char* gs_str_cust_file = "自定义曝光参数文件";
 
 const testParamSettingsDialog::test_mode_espair_struct_t
@@ -344,29 +347,42 @@ QString testParamSettingsDialog::collect_test_params()
             }
             else
             {
-                m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_start
-                        = m_expo_params_from_ui.vals.cube_volt_kv_start;
-                m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_end
-                        = m_expo_params_from_ui.vals.cube_volt_kv_end;
-                m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_step
-                        = m_expo_params_from_ui.vals.cube_volt_kv_step;
-                m_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_start
-                        = m_expo_params_from_ui.vals.cube_current_ma_start;
-                m_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_end
-                        = m_expo_params_from_ui.vals.cube_current_ma_end;
-                m_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_step
-                        = m_expo_params_from_ui.vals.cube_current_ma_step;
-                m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_start
-                        = m_expo_params_from_ui.vals.expo_dura_ms_start;
-                m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_end
-                        = m_expo_params_from_ui.vals.expo_dura_ms_end;
-                m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_step
-                        = m_expo_params_from_ui.vals.expo_dura_ms_step;
-                m_test_params->expo_param_block.expo_cool_dura_ms
-                        = m_expo_params_from_ui.expo_cool_dura_ms;
-                m_test_params->expo_param_block.expo_cnt = m_expo_params_from_ui.expo_cnt;
+                if(0 == m_expo_params_from_ui.vals.cube_volt_kv_step
+                        && (m_expo_params_from_ui.vals.cube_volt_kv_end
+                             != m_expo_params_from_ui.vals.cube_volt_kv_start))
+                {}
+                else if(m_expo_params_from_ui.vals.cube_volt_kv_step *
+                        (m_expo_params_from_ui.vals.cube_volt_kv_end
+                             - m_expo_params_from_ui.vals.cube_volt_kv_start) < 0)
+                {}
+                else
+                {
+                    m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_start
+                            = m_expo_params_from_ui.vals.cube_volt_kv_start;
+                    m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_end
+                            = m_expo_params_from_ui.vals.cube_volt_kv_end;
+                    m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_step
+                            = m_expo_params_from_ui.vals.cube_volt_kv_step;
+                }
+                {
+                    m_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_start
+                            = m_expo_params_from_ui.vals.cube_current_ma_start;
+                    m_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_end
+                            = m_expo_params_from_ui.vals.cube_current_ma_end;
+                    m_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_step
+                            = m_expo_params_from_ui.vals.cube_current_ma_step;
+                    m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_start
+                            = m_expo_params_from_ui.vals.expo_dura_ms_start;
+                    m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_end
+                            = m_expo_params_from_ui.vals.expo_dura_ms_end;
+                    m_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_step
+                            = m_expo_params_from_ui.vals.expo_dura_ms_step;
+                    m_test_params->expo_param_block.expo_cool_dura_ms
+                            = m_expo_params_from_ui.expo_cool_dura_ms;
+                    m_test_params->expo_param_block.expo_cnt = m_expo_params_from_ui.expo_cnt;
 
-                m_test_params->valid = true;
+                    m_test_params->valid = true;
+                }
             }
             break;
         }

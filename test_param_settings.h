@@ -4,10 +4,10 @@
 #include <QDialog>
 #include <QString>
 #include <QButtonGroup>
+#include <QLineEdit>
 
 #include "common_tool_func.h"
 #include "test_params_struct.h"
-#include "ui_test_param_settings.h"
 
 namespace Ui {
 class testParamSettingsDialog;
