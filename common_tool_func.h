@@ -67,16 +67,21 @@ private:
     bool valid;
     double min, max;
     range_edge_enum_t low_edge, up_edge;
+    const char* unit_str;
 public:
-    RangeChecker(double min = -1, double max = 1,
+    RangeChecker(double min = -1, double max = 1, const char* unit_str = "",
                  range_edge_enum_t low_edge = EDGE_INCLUDED, range_edge_enum_t up_edge = EDGE_INCLUDED);
 public:
     bool range_check(double val);
+
+    void set_min_max(double min_v, double max_v);
+    void set_edge(range_edge_enum_t low_e, range_edge_enum_t up_e);
+    void set_unit_str(const char* unit_s);
     range_edge_enum_t range_low_edge();
     range_edge_enum_t range_up_edge();
     double range_min();
     double range_max();
-    QString range_str(common_data_type_enum_t d_type);
+    QString range_str(common_data_type_enum_t d_type, double factor = 1);
 };
 
 #endif // COMMON_TOOL_FUNC_H

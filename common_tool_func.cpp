@@ -567,7 +567,7 @@ static const char* gs_range_checker_err_msg_invalid_eval =
     }\
 }
 
-RangeChecker::RangeChecker(double min, double max,
+RangeChecker::RangeChecker(double min, double max, const char* unit_str,
                            range_edge_enum_t low_edge, range_edge_enum_t up_edge)
 {
     if((low_edge > EDGE_INFINITE) || (up_edge > EDGE_INFINITE)
@@ -586,6 +586,7 @@ RangeChecker::RangeChecker(double min, double max,
     valid = (EDGE_INFINITE == low_edge || EDGE_INFINITE == up_edge) ? true : (min <= max);
     this->min = min; this->max = max;
     this->low_edge = low_edge; this->up_edge = up_edge;
+    this->unit_str = unit_str;
 
     if(!valid)
     {
@@ -636,7 +637,7 @@ double RangeChecker::range_max()
 {
     return max;
 }
-QString RangeChecker::range_str(common_data_type_enum_t d_type)
+QString RangeChecker::range_str(common_data_type_enum_t d_type, double factor)
 {
     QString ret_str;
 
@@ -644,12 +645,31 @@ QString RangeChecker::range_str(common_data_type_enum_t d_type)
 
     ret_str = (EDGE_INCLUDED == low_edge ? "[" : "(");
     ret_str += (EDGE_INFINITE == low_edge) ? "" :
-                ((INT_DATA == d_type) ? QString::number((int)min) :
-                                        QString::number((float)min));
+                ((INT_DATA == d_type) ? QString::number((int)(min * factor)) :
+                                        QString::number((float)(min * factor)));
     ret_str += ", ";
     ret_str += (EDGE_INFINITE == up_edge) ? "" :
-                ((INT_DATA == d_type) ? QString::number((int)max) :
-                                        QString::number((float)max));
+                ((INT_DATA == d_type) ? QString::number((int)(max * factor)) :
+                                        QString::number((float)(max * factor)));
     ret_str += (EDGE_INCLUDED == up_edge) ? "]" : ")";
+    ret_str += QString(unit_str);
     return ret_str;
+}
+
+void RangeChecker::set_min_max(double min_v, double max_v)
+{
+    if(min_v <= max_v)
+    {
+        min = min_v;
+        max = max_v;
+    }
+}
+void RangeChecker::set_edge(range_edge_enum_t low_e, range_edge_enum_t up_e)
+{
+    low_edge = low_e; up_edge = up_e;
+}
+
+void RangeChecker::set_unit_str(const char* unit_s)
+{
+    unit_str = unit_s;
 }

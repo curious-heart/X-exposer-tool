@@ -11,11 +11,13 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     Dialog w;
     QThread th;
+    int ret;
 
     start_log_thread(th);
 
     w.show();
+    ret = a.exec();
 
     end_log_thread(th);
-    return a.exec();
+    return ret;
 }

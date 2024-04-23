@@ -1,4 +1,5 @@
-﻿#include <QFile>
+﻿#include <QMessageBox>
+#include <QFile>
 #include <QTextStream>
 #include <QFileDialog>
 #include "common_tool_func.h"
@@ -6,21 +7,22 @@
 #include "test_param_settings.h"
 #include "ui_test_param_settings.h"
 
-static const int gs_cool_dura_factor = 30; //cool time shuld not be less than this times of expp dura.
-static const float gs_min_expo_dura_ms = 1;
+static const float gs_cool_dura_factor = 30; //cool time shuld not be less than this times of expp dura.
 static RangeChecker gs_valid_cube_volt_kv_range(10, 1000);
 static RangeChecker gs_valid_cube_current_ma_range(0.1, 1000);
+static const float gs_min_expo_dura_ms = 1;
 static RangeChecker gs_valid_expo_dura_ms_range(gs_min_expo_dura_ms, 3600*1000);
-static RangeChecker gs_valid_expo_cnt_range(1, 0,
+static RangeChecker gs_valid_expo_cnt_range(1, 0, "",
                                             RangeChecker::EDGE_INCLUDED,
                                             RangeChecker::EDGE_INFINITE);
 static RangeChecker gs_valid_cool_dura_range(gs_min_expo_dura_ms * gs_cool_dura_factor,
                                              0,
+                                             "s",
                                              RangeChecker::EDGE_INCLUDED,
                                              RangeChecker::EDGE_INFINITE);
 
 static const char* gs_str_cube_volt = "管电压";
-static const char* gs_str_cube_current = "管电压流";
+static const char* gs_str_cube_current = "管电流";
 static const char* gs_str_expo_dura = "曝光时间";
 static const char* gs_str_repeats_num = "重复次数";
 static const char* gs_str_cool_dura = "冷却时间";
@@ -33,6 +35,7 @@ static const char* gs_str_should_be_number = "应为数字";
 static const char* gs_str_start_end_step_err1 = "步长为0时，起始值和结束值必须相等!";
 static const char* gs_str_start_end_step_err2 = "组合无效";
 static const char* gs_str_read_file_fail = "读取文件失败";
+static const char* gs_str_please_select_file = "请选择自定义曝光文件";
 static const char* gs_str_cust_file_sel_caption = "选择自定义曝光参数文件";
 static const char* gs_str_dura_unit_s = "s";
 static const char* gs_str_dura_unit_ms = "ms";
@@ -100,6 +103,12 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent, test_params_st
     ui(new Ui::testParamSettingsDialog),
     m_test_params(test_params_ptr)
 {
+    if(!m_test_params)
+    {
+        DIY_LOG(LOG_ERROR, "test_params_ptr is null.");
+        return;
+    }
+
     ui->setupUi(this);
     m_expoDuraUnitBtnGrp = new QButtonGroup(this);
 
@@ -126,8 +135,23 @@ testParamSettingsDialog::~testParamSettingsDialog()
     delete ui;
 }
 
+void testParamSettingsDialog::clear_local_buffer()
+{
+    m_expo_params_from_ui.err_msg_cube_volt_start.clear();
+    m_expo_params_from_ui.err_msg_cube_volt_end.clear();
+    m_expo_params_from_ui.err_msg_cube_volt_step.clear();
+    m_expo_params_from_ui.err_msg_cube_current_start.clear();
+    m_expo_params_from_ui.err_msg_cube_current_end.clear();
+    m_expo_params_from_ui.err_msg_cube_current_step.clear();
+    m_expo_params_from_ui.err_msg_expo_dura_start.clear();
+    m_expo_params_from_ui.err_msg_expo_dura_end.clear();
+    m_expo_params_from_ui.err_msg_expo_dura_step.clear();
+    m_expo_params_from_ui.err_msg_expo_cnt.clear();
+    m_expo_params_from_ui.err_msg_cool_dura.clear();
+}
+
 bool testParamSettingsDialog::
-get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, int factor,
+get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, float factor,
                    RangeChecker* range, void* val_ptr, QString &ret_str)
 {
     QString ctrl_str, d_type_str;
@@ -150,31 +174,21 @@ get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, int factor,
         return false;
     }
 
-    if(range)
+    tr_val = ui_val * factor;
+    ret = true;
+    if(range && !range->range_check(tr_val))
     {
-        tr_val = ui_val * factor;
-        if(range->range_check(tr_val))
-        {
-            if(val_ptr)
-            {
-                (INT_DATA == d_type) ? *((int*)val_ptr) = (int)tr_val :
-                                       *((float*)val_ptr) = (float)tr_val;
-            }
-            ret = true;
-        }
-        else
-        {
-            ret_str = QString("%1%2 ").arg(ctrl_str, gs_str_exceeds_valid_range);
+        ret_str = QString("%1%2 ").arg(ctrl_str, gs_str_exceeds_valid_range);
 
-            ret_str += range->range_str(d_type);
-            ret_str += "\n";
+        ret_str += range->range_str(d_type, 1/factor);
+        ret_str += "\n";
 
-            ret = false;
-        }
+        ret = false;
     }
-    else
+    else if(val_ptr)
     {
-        ret = true;
+        (INT_DATA == d_type) ? *((int*)val_ptr) = (int)tr_val :
+                               *((float*)val_ptr) = (float)tr_val;
     }
 
     return ret;
@@ -182,7 +196,7 @@ get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, int factor,
 
 void testParamSettingsDialog::get_expo_param_vals_from_ui()
 {
-    int factor;
+    float factor;
     m_expo_params_from_ui.valid_cube_volt_start =
         get_one_expo_param(ui->cubeVoltStartEdit, INT_DATA, 1,
                            &gs_valid_cube_volt_kv_range,
@@ -262,6 +276,13 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
      *
      * Then the subsequent lines are volt, current and duration time, seperated by ",".
     */
+    if(file_fpn.isEmpty())
+    {
+        DIY_LOG(LOG_ERROR, "Cust expo parameters file name is empty!");
+        ret_str = QString(gs_str_please_select_file);
+        return false;
+    }
+
     QFile cust_file(file_fpn);
     if(!cust_file.open(QFile::ReadOnly))
     {
@@ -271,7 +292,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
     }
     QTextStream file_stream(&cust_file);
     QString line;
-    int factor;
+    float factor;
     bool valid_line = false;
     if(file_stream.readLineInto(&line))
     {
@@ -404,11 +425,11 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                                   gs_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   gs_str_expo_dura, item_str, gs_str_exceeds_valid_range,
-                                  gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA));
+                                  gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA, 1/factor));
                         DIY_LOG(LOG_ERROR, QString("%1%2%3%4%5").arg(file_fpn,
                                        ":the ", QString::number(line_no),
                                        "expo duration exceeds valid range:",
-                                       gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA)));
+                                       gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA, 1/factor)));
                         break;
                     }
                 }
@@ -464,6 +485,7 @@ QString testParamSettingsDialog::collect_test_params()
     get_expo_param_vals_from_ui();
     if(TEST_MODE_CUST == test_mode)
     {
+        m_test_params->expo_param_block.expo_params.cust_params_arr.clear();
         if(!m_expo_params_from_ui.valid_expo_cnt || !m_expo_params_from_ui.valid_cool_dura)
         {
             ret_str += m_expo_params_from_ui.err_msg_expo_cnt
@@ -672,17 +694,33 @@ void testParamSettingsDialog::refresh_controls_display()
     }
 }
 
-void testParamSettingsDialog::testModeComboBox_currentIndexChanged(int /*index*/)
+void testParamSettingsDialog::on_testModeComboBox_currentIndexChanged(int /*index*/)
 {
     refresh_controls_display();
 }
 
 
-void testParamSettingsDialog::custExpoParamFileSelBtn_clicked()
+void testParamSettingsDialog::on_custExpoParamFileSelBtn_clicked()
 {
     QString cust_file_fpn;
     cust_file_fpn = QFileDialog::getOpenFileName(this, gs_str_cust_file_sel_caption,
                                                  ".", gs_cust_expo_file_filter);
     ui->custExpoParamFileSelEdit->setText(cust_file_fpn);
+}
+
+void testParamSettingsDialog::on_buttonBox_clicked(QAbstractButton *button)
+{
+    if(button == ui->buttonBox->button(QDialogButtonBox::Ok))
+    {
+        QString ret_str = collect_test_params();
+        if(m_test_params->valid)
+        {
+            accept();
+        }
+        else
+        {
+            QMessageBox::critical(this, "ERROR!", ret_str);
+        }
+    }
 }
 
