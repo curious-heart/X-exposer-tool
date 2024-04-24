@@ -658,7 +658,7 @@ QString RangeChecker::range_str(common_data_type_enum_t d_type, double factor)
 
 void RangeChecker::set_min_max(double min_v, double max_v)
 {
-    if(min_v <= max_v)
+    if(EDGE_INFINITE == low_edge || EDGE_INFINITE == up_edge || min_v <= max_v)
     {
         min = min_v;
         max = max_v;

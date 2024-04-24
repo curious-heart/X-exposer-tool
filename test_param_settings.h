@@ -72,6 +72,7 @@ private:
     void get_expo_param_vals_from_ui();
     bool get_expo_param_vals_from_cust_file(QString file_fpn,
                                             QVector<expo_param_triple_struct_t> &param_vector,
+                                            float * max_expo_dura_ms,
                                             QString &ret_str);
     QString collect_test_params();
     void refresh_controls_display();
