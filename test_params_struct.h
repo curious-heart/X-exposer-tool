@@ -52,6 +52,7 @@ typedef struct
     bool valid;
     expo_params_struct_t expo_param_block;
     other_test_params_struct_t other_param_block;
+    QString info_str;
 }test_params_struct_t;
 
 #endif // TEST_PARAMS_STRUCT_H

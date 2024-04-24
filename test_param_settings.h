@@ -76,6 +76,7 @@ private:
                                             QString &ret_str);
     QString collect_test_params();
     void refresh_controls_display();
+    void format_test_params_info_str();
 };
 
 #endif // TEST_PARAM_SETTINGS_H

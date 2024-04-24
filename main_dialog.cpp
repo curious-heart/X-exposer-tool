@@ -20,7 +20,13 @@ void Dialog::on_testParamSetBtn_clicked()
 {
     m_test_params.valid = false;
     m_test_params.expo_param_block.expo_params.cust_params_arr.clear();
+    m_test_params.info_str.clear();
     m_testParamSettingsDialog->exec();
+
+    if(m_test_params.valid)
+    {
+        ui->testParamDisplayTxt->setText(m_test_params.info_str);
+    }
 }
 
 
