@@ -74,9 +74,11 @@ private:
                                             QVector<expo_param_triple_struct_t> &param_vector,
                                             float * max_expo_dura_ms,
                                             QString &ret_str);
-    QString collect_test_params();
     void refresh_controls_display();
     void format_test_params_info_str();
+
+public:
+    QString collect_test_params();
 };
 
 #endif // TEST_PARAM_SETTINGS_H

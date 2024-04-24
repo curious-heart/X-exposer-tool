@@ -12,6 +12,7 @@ class hvConnSettings;
 
 typedef enum
 {
+    CONN_TYPE_NONE = -1,
     CONN_TYPE_SERIAL = 0,
     CONN_TYPE_TCPIP,
     CONN_TYPE_CNT,
@@ -69,8 +70,10 @@ private:
     modbus_conn_parameters_struct_t * modbus_conn_params;
 
     void select_conn_type_param_block();
-    QString collect_conn_params();
     void format_hv_conn_info_str();
+
+public:
+    QString collect_conn_params();
 };
 
 #endif // HV_CONNSETTINGS_H
