@@ -8,7 +8,7 @@ Dialog::Dialog(QWidget *parent)
     ui->setupUi(this);
 
     m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params);
-    m_hvConnSettingsDialog = new hvConnSettings(this);
+    m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params);
 }
 
 Dialog::~Dialog()
@@ -32,6 +32,14 @@ void Dialog::on_testParamSetBtn_clicked()
 
 void Dialog::on_hvConnSetBtn_clicked()
 {
+    m_hv_conn_params.valid = false;
+    m_hv_conn_params.info_str.clear();
+
     m_hvConnSettingsDialog->exec();
+
+    if(m_hv_conn_params.valid)
+    {
+        ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
+    }
 }
 

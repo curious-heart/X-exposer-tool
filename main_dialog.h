@@ -28,5 +28,6 @@ private:
     hvConnSettings * m_hvConnSettingsDialog = nullptr;
 
     test_params_struct_t m_test_params;
+    modbus_conn_parameters_struct_t m_hv_conn_params;
 };
 #endif // DIALOG_H

@@ -57,7 +57,7 @@ static const int gs_cust_expo_file_item_num_in_line = 3;
 static const char* gs_str_the_line_pron = "第";
 static const char* gs_str_line = "行";
 static const char* gs_str_no_valid_data_item = "无有效数据";
-static const char* gs_str_data_item_invalid = "数据无效";
+const char* gs_str_data_item_invalid = "数据无效";
 
 const testParamSettingsDialog::test_mode_espair_struct_t
       testParamSettingsDialog::test_mode_list[] =
