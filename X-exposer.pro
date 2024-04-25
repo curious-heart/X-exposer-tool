@@ -11,7 +11,9 @@ CONFIG += c++17
 SOURCES += \
     common_tool_func.cpp \
     hv_connsettings.cpp \
+    hv_tester/hvtester.cpp \
     logger/logger.cpp \
+    modbus_regs/modbus_regs.cpp \
     test_param_settings.cpp \
     main.cpp \
     main_dialog.cpp \
@@ -20,7 +22,9 @@ SOURCES += \
 HEADERS += \
     common_tool_func.h \
     hv_connsettings.h \
+    hv_tester/hvtester.h \
     logger/logger.h \
+    modbus_regs/modbus_regs.h \
     test_param_settings.h \
     main_dialog.h \
     test_params_struct.h \

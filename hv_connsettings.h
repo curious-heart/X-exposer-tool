@@ -38,6 +38,7 @@ typedef struct
     serial_conn_params_struct_t serial_params;
     tcpip_conn_params_struct_t tcpip_params;
     int resp_wait_time_ms;
+    int srvr_address;
     QString info_str;
 }modbus_conn_parameters_struct_t;
 

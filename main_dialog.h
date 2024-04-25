@@ -7,6 +7,7 @@
 
 #include "test_param_settings.h"
 #include "hv_connsettings.h"
+#include "hv_tester/hvtester.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
@@ -27,6 +28,7 @@ private slots:
 
 private:
     Ui::Dialog *ui;
+    HVTester m_hv_tester;
     testParamSettingsDialog * m_testParamSettingsDialog = nullptr;
     hvConnSettings * m_hvConnSettingsDialog = nullptr;
 
@@ -50,5 +52,16 @@ private slots:
     void modbus_state_changed_handler(QModbusDevice::State state);
     void on_hvConnBtn_clicked();
     void on_hvDisconnBtn_clicked();
+    void on_startTestBtn_clicked();
+    void on_stopTestBtn_clicked();
+
+    void test_info_message_handler(LOG_LEVEL lvl, QString msg);
+    void rec_mb_regs_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map, int loop_idx, int round_idx);
+    void test_complete_hanler();
+
+signals:
+    void go_test();
+    void stop_test();
+
 };
 #endif // DIALOG_H

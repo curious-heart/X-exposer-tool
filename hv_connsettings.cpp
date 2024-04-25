@@ -139,6 +139,12 @@ QString hvConnSettings::collect_conn_params()
         ret_str += ui->modBusRespTimeoutLbl->text() + gs_str_should_be_p_int;
         return ret_str;
     }
+    modbus_conn_params->srvr_address = ui->modBusSrvrAddrEdit->text().toUInt(&tr_ok);
+    if(!tr_ok)
+    {
+        ret_str += ui->modBusSrvrAddrLbl->text() + gs_str_should_be_p_int;
+        return ret_str;
+    }
 
     modbus_conn_params->type = conn_type;
     if(CONN_TYPE_SERIAL == conn_type)

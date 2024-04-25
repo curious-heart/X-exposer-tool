@@ -14,10 +14,12 @@ static const char* gs_str_modbus_exceptional_error = "异常的modbus错误";
 static const char* gs_str_modbus_unkonwn_state = "未知的modbus连接状态";
 static const char* gs_str_modbus_connect_err = "modbus连接失败";
 static const char* gs_str_modbus_disconnect_err = "modbus断开连接失败";
+static const char* gs_str_init_hvtester_err = "初始化hv_tester失败";
 
 Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
+    , m_hv_tester(this)
 {
     ui->setupUi(this);
 
@@ -43,6 +45,18 @@ Dialog::Dialog(QWidget *parent)
     select_modbus_device();
 
     refresh_butoons();
+
+    connect(this, &Dialog::go_test,
+            &m_hv_tester, &HVTester::go_test_handler, Qt::QueuedConnection);
+    connect(this, &Dialog::stop_test,
+            &m_hv_tester, &HVTester::stop_test_handler, Qt::QueuedConnection);
+
+    connect(&m_hv_tester, &HVTester::test_info_message,
+            this, &Dialog::test_info_message_handler, Qt::QueuedConnection);
+    connect(&m_hv_tester, &HVTester::rec_mb_regs,
+            this, &Dialog::rec_mb_regs_handler, Qt::QueuedConnection);
+    connect(&m_hv_tester, &HVTester::test_complete,
+            this, &Dialog::test_complete_hanler, Qt::QueuedConnection);
 }
 
 Dialog::~Dialog()
@@ -157,9 +171,9 @@ void Dialog::select_modbus_device()
             m_modbus_device->setTimeout(m_hv_conn_params.resp_wait_time_ms);
 
             connect(m_modbus_device, &QModbusClient::errorOccurred,
-                    this, &Dialog::modbus_error_handler);
+                    this, &Dialog::modbus_error_handler, Qt::QueuedConnection);
             connect(m_modbus_device, &QModbusClient::stateChanged,
-                    this, &Dialog::modbus_state_changed_handler);
+                    this, &Dialog::modbus_state_changed_handler, Qt::QueuedConnection);
         }
     }
 }
@@ -214,6 +228,8 @@ void Dialog::modbus_state_changed_handler(QModbusDevice::State state)
         m_modbus_connected = true;
         break;
 
+    case QModbusDevice::UnconnectedState:
+        this->setCursor(Qt::ArrowCursor);
     default:
         m_modbus_connected = false;
         break;
@@ -240,6 +256,8 @@ void Dialog::on_hvConnBtn_clicked()
         QMessageBox::information(this, "", gs_str_modbus_already_connected);
         return;
     }
+    ui->hvConnBtn->setDisabled(true);
+    this->setCursor(Qt::WaitCursor);
     if(!modbus_connect())
     {
         QMessageBox::critical(this, "Error", gs_str_modbus_connect_err);
@@ -254,8 +272,41 @@ void Dialog::on_hvDisconnBtn_clicked()
         QMessageBox::information(this, "", gs_str_modbus_already_disconnected);
         return;
     }
+    ui->hvDisconnBtn->setDisabled(true);
     if(!modbus_disconnect())
     {
         QMessageBox::critical(this, "Error", gs_str_modbus_disconnect_err);
     }
 }
+
+void Dialog::on_startTestBtn_clicked()
+{
+    if(!m_test_params.valid || !m_modbus_connected)
+    {
+        return;
+    }
+    if(!m_hv_tester.init(&m_test_params, m_modbus_device, m_hv_conn_params.srvr_address))
+    {
+        QMessageBox::critical(this, "Error", gs_str_init_hvtester_err);
+        return;
+    }
+    m_testing = true;
+    refresh_butoons();
+
+    emit go_test();
+}
+
+void Dialog::test_info_message_handler(LOG_LEVEL lvl, QString msg)
+{}
+
+void Dialog::on_stopTestBtn_clicked()
+{
+    emit stop_test();
+}
+
+void Dialog::rec_mb_regs_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
+                                 int loop_idx, int round_idx)
+{}
+
+void Dialog::test_complete_hanler()
+{}
