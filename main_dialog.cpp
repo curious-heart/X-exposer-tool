@@ -16,6 +16,24 @@ static const char* gs_str_modbus_connect_err = "modbus连接失败";
 static const char* gs_str_modbus_disconnect_err = "modbus断开连接失败";
 static const char* gs_str_init_hvtester_err = "初始化hv_tester失败";
 
+static const char* gs_str_test_rec_name_sufx = "曝光测试结果";
+static const char* gs_str_test_rec_file_type = ".csv";
+static const char* gs_str_create_folder = "创建文件夹";
+static const char* gs_str_create_file = "创建文件";
+extern const char* g_str_fail;
+
+static const char* gs_str_date = "日期";
+static const char* gs_str_time = "时间";
+static const char* gs_str_no = "序号";
+
+/*设置管电压、设置管电流、曝光时间必须连续放置*/
+const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
+{
+    HSV, VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter,
+    State, ExposureStatus, BatteryLevel, BatteryVoltmeter, OilBoxTemperature,
+    Workstatus, exposureCount,
+};
+
 Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
@@ -279,6 +297,24 @@ void Dialog::on_hvDisconnBtn_clicked()
     }
 }
 
+void Dialog::record_header()
+{
+    /*test info*/
+    m_curr_txt_stream << m_curr_rec_file.fileName();
+    m_curr_txt_stream << m_hv_conn_params.info_str << "\n";
+    m_curr_txt_stream << m_test_params.info_str << "\n\n";
+
+    /*table header*/
+    QString hdr;
+    hdr = QString("%1,%2,%3,").arg(gs_str_date, gs_str_time, gs_str_no);
+    for(int idx = 0; idx < ARRAY_COUNT(m_mbregs_to_record); ++idx)
+    {
+        hdr += get_hv_mb_reg_str(m_mbregs_to_record[idx], CN_REG_NAME);
+        hdr += ",";
+    }
+    m_curr_txt_stream << hdr << "\n";
+}
+
 void Dialog::on_startTestBtn_clicked()
 {
     if(!m_test_params.valid || !m_modbus_connected)
@@ -290,29 +326,93 @@ void Dialog::on_startTestBtn_clicked()
         QMessageBox::critical(this, "Error", gs_str_init_hvtester_err);
         return;
     }
+
+    QString err_str;
+    QString curr_dt_str = common_tool_get_curr_dt_str();
+    m_curr_rec_folder_name = curr_dt_str  + "-" + gs_str_test_rec_name_sufx;
+    m_curr_rec_file_name = m_curr_rec_folder_name + gs_str_test_rec_file_type;
+    QString curr_path = QString("./") + m_curr_rec_folder_name;
+    QString curr_file_path(curr_path + "/" + m_curr_rec_file_name);
+    if(!mkpth_if_not_exists(curr_path))
+    {
+        err_str = QString("%1%2:%3").arg(gs_str_create_folder, g_str_fail, curr_path);
+        DIY_LOG(LOG_ERROR, err_str);
+        QMessageBox::critical(this, "Error", err_str);
+        return;
+    }
+    m_curr_rec_file.setFileName(curr_file_path);
+    if(!m_curr_rec_file.open(QFile::WriteOnly | QFile::Append))
+    {
+        err_str = QString("%1%2:%3").arg(gs_str_create_file, g_str_fail, curr_file_path);
+        DIY_LOG(LOG_ERROR, err_str);
+        QMessageBox::critical(this, "Error", err_str);
+        return;
+    }
+    m_curr_txt_stream.setDevice(&m_curr_rec_file);
+    record_header();
+
     m_testing = true;
     refresh_butoons();
-
     emit go_test_sig();
 }
 
 void Dialog::on_stopTestBtn_clicked()
 {
     emit stop_test_sig();
-
-    m_testing = false;
-    refresh_butoons();
+    test_complete_sig_hanler();
 }
 
 void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg)
-{}
+{
+    if(lvl >= LOG_WARN)
+    {
+        QString line(common_tool_get_curr_date_str() + ","
+                     + common_tool_get_curr_time_str() + ",");
+        line += ","; //number is null
+        line += msg;
+        m_curr_txt_stream << line << "\n";
+    }
+}
 
 void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                                  int loop_idx, int round_idx)
-{}
+{
+    int idx = 0;
+    QString line(common_tool_get_curr_date_str() + ","
+                 + common_tool_get_curr_time_str() + ",");
+    line += QString("%1-%2,").arg(QString::number(loop_idx), QString::number(round_idx));
+    if(TEST_OP_SET_EXPO_TRIPLE == op)
+    {
+        idx = 0;
+        while(idx < ARRAY_COUNT(m_mbregs_to_record) && m_mbregs_to_record[idx] != VoltSet)
+        {
+            line += ",";
+            ++idx;
+        }
+        line += QString::number(reg_val_map.value(VoltSet)) + ",";
+        line += QString::number(reg_val_map.value(FilamentSet)) + ",";
+        line += QString::number(reg_val_map.value(ExposureTime)) + ",";
+        m_curr_txt_stream << line << "\n";
+
+        return;
+    }
+    idx = 0;
+    while(idx < ARRAY_COUNT(m_mbregs_to_record))
+    {
+        line += QString::number(reg_val_map.value(m_mbregs_to_record[idx])) + ",";
+        ++idx;
+    }
+    m_curr_txt_stream << line << "\n";
+}
 
 void Dialog::test_complete_sig_hanler()
 {
     m_testing = false;
     refresh_butoons();
+
+    if(m_curr_rec_file.isOpen())
+    {
+        m_curr_txt_stream.flush();
+        m_curr_rec_file.close();
+    }
 }

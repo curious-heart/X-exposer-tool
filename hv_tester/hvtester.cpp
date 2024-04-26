@@ -9,7 +9,8 @@ static const char* gs_str_mb_read_null_reply = "modbus读取异常，返回空re
 static const char* gs_str_mb_write_triple = "modbus设置曝光参数";
 static const char* gs_str_mb_start_expo = "modbus发起曝光";
 static const char* gs_str_mb_read_regs = "modbus读取寄存器";
-static const char* gs_str_fail = "失败";
+static const char* gs_str_mb_read_data_invalid = "modbus读取数据无效";
+const char* g_str_fail = "失败";
 
 static const int gs_mb_write_triple_error_cool_tims_ms = 1500;
 static const int gs_mb_expo_readparm_sep_ms = 1500;
@@ -212,7 +213,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
     {
     case TEST_OP_SET_EXPO_TRIPLE:
         err_str = (mb_reply ? QString("%1 %2 %3: %4").arg(gs_str_mb_write_triple,
-                                                  hv_curr_triple_mb_unit_str, gs_str_fail,
+                                                  hv_curr_triple_mb_unit_str, g_str_fail,
                                                   mb_reply->errorString())
                             :
                               QString("%1:%2").arg(gs_str_mb_write_null_reply,
@@ -222,7 +223,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         break;
 
     case TEST_OP_START_EXPO:
-        err_str = (mb_reply ? QString("%1 %2: %3").arg(gs_str_mb_start_expo, gs_str_fail,
+        err_str = (mb_reply ? QString("%1 %2: %3").arg(gs_str_mb_start_expo, g_str_fail,
                                                   mb_reply->errorString())
                             :
                               QString("%1").arg(gs_str_mb_start_expo_null_reply));
@@ -232,7 +233,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
 
     case TEST_OP_READ_REGS:
     default:
-        err_str = (mb_reply ? QString("%1 %2: %3").arg(gs_str_mb_read_regs, gs_str_fail,
+        err_str = (mb_reply ? QString("%1 %2: %3").arg(gs_str_mb_read_regs, g_str_fail,
                                                   mb_reply->errorString())
                             :
                               QString("%1").arg(gs_str_mb_read_null_reply));
@@ -251,6 +252,26 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         QModbusDevice::Error err = mb_reply->error();
         if((QModbusDevice::NoError == err) && (sync || !err_notify))
         {
+            if(TEST_OP_READ_REGS == op)
+            {
+                QModbusDataUnit rb_du = mb_reply->result();
+                if(!rb_du.isValid())
+                {
+                    emit test_info_message_sig(LOG_ERROR, QString(gs_str_mb_read_data_invalid));
+                }
+                else
+                {
+                    mb_reg_val_map_t read_result;
+                    int st_addr = rb_du.startAddress(), idx = 0, cnt = rb_du.valueCount();
+                    for(; idx < cnt; ++idx)
+                    {
+                        read_result.insert(hv_mb_reg_e_t(st_addr + idx), rb_du.value(idx));
+                    }
+                    emit rec_mb_regs_sig(TEST_OP_READ_REGS, read_result, hv_test_idx_in_loop,
+                                         hv_test_idx_in_round);
+                }
+            }
+
             if(TESTER_IDLE != hv_tester_proc)
             {
                 if(TEST_OP_SET_EXPO_TRIPLE == op)
@@ -259,7 +280,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                 }
                 else if((TEST_OP_READ_REGS == op) && (TESTER_LAST_ONE == hv_tester_proc))
                 {
-                    //fot the last one, no need to set timer again.
+                    //for the last one, no need to set timer again.
                     emit internal_go_test_sig();
                 }
                 else
@@ -276,7 +297,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
             {
                 if((TEST_OP_READ_REGS == op) && (TESTER_LAST_ONE == hv_tester_proc))
                 {
-                    //fot the last one, no need to set timer again.
+                    //for the last one, no need to set timer again.
                     emit internal_go_test_sig();
                 }
                 else
@@ -358,7 +379,8 @@ void HVTester::start_expo_now_sig_handler()
 {
     QModbusReply * mb_reply;
     QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
-    mb_du.setValue(ExposureStart, START_EXPO_DATA);
+    mb_du.setStartAddress(ExposureStart);
+    mb_du.setValue(0, START_EXPO_DATA);
     mb_reply = hv_modbus_device->sendWriteRequest(mb_du, hv_modbus_srvr_addr);
     hv_curr_op = TEST_OP_START_EXPO;
     if(mb_rw_reply_received(hv_curr_op, mb_reply,

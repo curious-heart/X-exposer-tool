@@ -518,7 +518,14 @@ QString common_tool_get_curr_date_str()
     return datestr;
 }
 
-bool mkpth_if_not_exists(QString &pth_str)
+QString common_tool_get_curr_time_str()
+{
+    QTime curTime = QTime::currentTime();
+    QString time_str = curTime.toString("hh:mm:ss");
+    return time_str;
+}
+
+bool mkpth_if_not_exists(const QString &pth_str)
 {
     QDir data_dir(pth_str);
     bool ret = true;

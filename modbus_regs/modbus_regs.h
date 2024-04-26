@@ -34,6 +34,12 @@ typedef enum MB_REG_ENUM hv_mb_reg_e_t;
 #define START_EXPO_DATA 2
 #define VALID_MB_REG_ADDR(addr) (HSV <= (addr) && (addr) < MB_REG_COUNT)
 
-const char* get_hv_mb_reg_str(hv_mb_reg_e_t reg_addr);
+typedef enum
+{
+    EN_REG_NAME_WITH_NO,
+    CN_REG_NAME,
+}mbreg_name_lang_enmu_t;
+const char* get_hv_mb_reg_str(hv_mb_reg_e_t reg_addr,
+                              mbreg_name_lang_enmu_t lang = EN_REG_NAME_WITH_NO);
 
 #endif // MODBUS_REGS_H

@@ -4,6 +4,7 @@
 #include <QDialog>
 #include <QModbusRtuSerialMaster>
 #include <QModbusTcpClient>
+#include <QFile>
 
 #include "test_param_settings.h"
 #include "hv_connsettings.h"
@@ -37,6 +38,10 @@ private:
     bool m_modbus_connected = false;
     bool m_dso_connected = false;
     bool m_testing = false;
+    QString m_curr_rec_folder_name, m_curr_rec_file_name;
+    QFile m_curr_rec_file;
+    QTextStream m_curr_txt_stream;
+    static const hv_mb_reg_e_t m_mbregs_to_record[];
 
     hv_conn_type_enum_t m_curr_conn_type = CONN_TYPE_NONE;
     QModbusClient * m_modbus_device = nullptr;
@@ -46,6 +51,8 @@ private:
 
     bool modbus_connect();
     bool modbus_disconnect();
+
+    void record_header();
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
