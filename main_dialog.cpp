@@ -313,6 +313,7 @@ void Dialog::record_header()
         hdr += ",";
     }
     m_curr_txt_stream << hdr << "\n";
+    ui->testInfoDisplayTxt->setText(hdr);
 }
 
 void Dialog::on_startTestBtn_clicked()
@@ -371,6 +372,8 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg)
         line += ","; //number is null
         line += msg;
         m_curr_txt_stream << line << "\n";
+
+        ui->testInfoDisplayTxt->setText(line);
     }
 }
 
@@ -393,6 +396,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         line += QString::number(reg_val_map.value(FilamentSet)) + ",";
         line += QString::number(reg_val_map.value(ExposureTime)) + ",";
         m_curr_txt_stream << line << "\n";
+        ui->testInfoDisplayTxt->setText(line);
 
         return;
     }
@@ -403,6 +407,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         ++idx;
     }
     m_curr_txt_stream << line << "\n";
+    ui->testInfoDisplayTxt->setText(line);
 }
 
 void Dialog::test_complete_sig_hanler()
