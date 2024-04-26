@@ -46,17 +46,17 @@ Dialog::Dialog(QWidget *parent)
 
     refresh_butoons();
 
-    connect(this, &Dialog::go_test,
-            &m_hv_tester, &HVTester::go_test_handler, Qt::QueuedConnection);
-    connect(this, &Dialog::stop_test,
-            &m_hv_tester, &HVTester::stop_test_handler, Qt::QueuedConnection);
+    connect(this, &Dialog::go_test_sig,
+            &m_hv_tester, &HVTester::go_test_sig_handler, Qt::QueuedConnection);
+    connect(this, &Dialog::stop_test_sig,
+            &m_hv_tester, &HVTester::stop_test_sig_handler, Qt::QueuedConnection);
 
-    connect(&m_hv_tester, &HVTester::test_info_message,
-            this, &Dialog::test_info_message_handler, Qt::QueuedConnection);
-    connect(&m_hv_tester, &HVTester::rec_mb_regs,
-            this, &Dialog::rec_mb_regs_handler, Qt::QueuedConnection);
-    connect(&m_hv_tester, &HVTester::test_complete,
-            this, &Dialog::test_complete_hanler, Qt::QueuedConnection);
+    connect(&m_hv_tester, &HVTester::test_info_message_sig,
+            this, &Dialog::test_info_message_sig_handler, Qt::QueuedConnection);
+    connect(&m_hv_tester, &HVTester::rec_mb_regs_sig,
+            this, &Dialog::rec_mb_regs_sig_handler, Qt::QueuedConnection);
+    connect(&m_hv_tester, &HVTester::test_complete_sig,
+            this, &Dialog::test_complete_sig_hanler, Qt::QueuedConnection);
 }
 
 Dialog::~Dialog()
@@ -171,14 +171,14 @@ void Dialog::select_modbus_device()
             m_modbus_device->setTimeout(m_hv_conn_params.resp_wait_time_ms);
 
             connect(m_modbus_device, &QModbusClient::errorOccurred,
-                    this, &Dialog::modbus_error_handler, Qt::QueuedConnection);
+                    this, &Dialog::modbus_error_sig_handler, Qt::QueuedConnection);
             connect(m_modbus_device, &QModbusClient::stateChanged,
-                    this, &Dialog::modbus_state_changed_handler, Qt::QueuedConnection);
+                    this, &Dialog::modbus_state_changed_sig_handler, Qt::QueuedConnection);
         }
     }
 }
 
-void Dialog::modbus_error_handler(QModbusDevice::Error error)
+void Dialog::modbus_error_sig_handler(QModbusDevice::Error error)
 {
     /*The strings below are in the same order of enum QModbusDevice::Error.*/
     static const char* err_str[] =
@@ -211,7 +211,7 @@ void Dialog::modbus_error_handler(QModbusDevice::Error error)
     }
 }
 
-void Dialog::modbus_state_changed_handler(QModbusDevice::State state)
+void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
 {
     /*The following strings are in the same order with enum QModbusDevice::State*/
     static const char* state_str[] =
@@ -293,20 +293,26 @@ void Dialog::on_startTestBtn_clicked()
     m_testing = true;
     refresh_butoons();
 
-    emit go_test();
+    emit go_test_sig();
 }
-
-void Dialog::test_info_message_handler(LOG_LEVEL lvl, QString msg)
-{}
 
 void Dialog::on_stopTestBtn_clicked()
 {
-    emit stop_test();
+    emit stop_test_sig();
+
+    m_testing = false;
+    refresh_butoons();
 }
 
-void Dialog::rec_mb_regs_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
+void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg)
+{}
+
+void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                                  int loop_idx, int round_idx)
 {}
 
-void Dialog::test_complete_hanler()
-{}
+void Dialog::test_complete_sig_hanler()
+{
+    m_testing = false;
+    refresh_butoons();
+}

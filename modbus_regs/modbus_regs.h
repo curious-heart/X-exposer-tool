@@ -31,7 +31,7 @@
 #undef C
 #define C(a) a
 typedef enum MB_REG_ENUM hv_mb_reg_e_t;
-
+#define START_EXPO_DATA 2
 #define VALID_MB_REG_ADDR(addr) (HSV <= (addr) && (addr) < MB_REG_COUNT)
 
 const char* get_hv_mb_reg_str(hv_mb_reg_e_t reg_addr);
