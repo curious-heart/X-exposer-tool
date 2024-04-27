@@ -26,13 +26,43 @@
     C(Workstatus = 20),                    /*充能状态*/\
     C(exposureCount = 21),                 /*曝光次数*/\
 \
-    C(MB_REG_COUNT)\
+    C(MAX_HV_NORMAL_MB_REG_NUM),\
+\
+    C(EXT_MB_REG_START_FLAG = 100), /*extend register start flag.*/\
+    /*Below are extend register, that is, they are processed internally by server and not passed to hv controller.*/ \
+    C(EXT_MB_REG_DOSE_ADJ = 101),                       /*+/- key event*/\
+    C(EXT_MB_REG_CHARGER = 102),                       /*charger plug in/pull out*/\
+    C(EXT_MB_REG_DAP_HP = 103),                       /*High part of a float of DAP(Dose Area Product), big endian.*/\
+    C(EXT_MB_REG_DAP_LP = 104),                       /*Low part of a float of DAP, big endian.*/\
+    C(EXT_MB_REG_DISTANCE = 105),                       /*distance: TOF test result.*/\
+\
+    C(HV_MB_REG_END_FLAG), /*register end flag.*/\
 }
 #undef C
 #define C(a) a
 typedef enum MB_REG_ENUM hv_mb_reg_e_t;
 #define START_EXPO_DATA 2
-#define VALID_MB_REG_ADDR(addr) (HSV <= (addr) && (addr) < MB_REG_COUNT)
+
+#define NORMAL_MB_REG_ADDR(addr) (HSV <= (addr) && (addr) < MAX_HV_NORMAL_MB_REG_NUM)
+#define EXTEND_MB_REG_ADDR(addr) (EXT_MB_REG_START_FLAG < (addr) && (addr) < HV_MB_REG_END_FLAG)
+#define VALID_MB_REG_ADDR(addr) (NORMAL_MB_REG_ADDR(addr) || EXTEND_MB_REG_ADDR(addr))
+#define NORMAL_MB_REG_AND_CNT(addr, cnt) (NORMAL_MB_REG_ADDR(addr) && NORMAL_MB_REG_ADDR((addr) + (cnt) - 1))
+#define EXTEND_MB_REG_AND_CNT(addr, cnt) (EXTEND_MB_REG_ADDR(addr) && EXTEND_MB_REG_ADDR((addr) + (cnt) - 1))
+#define VALID_MB_REG_AND_CNT(addr, cnt) (VALID_MB_REG_ADDR(addr) && VALID_MB_REG_ADDR((addr) + (cnt) - 1))
+
+/*those registers that need to communicate with dsp.*/
+#define MB_REG_COMM_DSP(addr, cnt) (NORMAL_MB_REG_AND_CNT(addr, cnt) || (EXT_MB_REG_DOSE_ADJ == addr))
+
+/* The number of registers, including the two flag: MAX_HV_NORMAL_MB_REG_NUM and EXT_MB_REG_START_FLAG,
+ * but not including the HV_MB_REG_END_FLAG.
+ */
+#define ALL_MB_REG_NUM (MAX_HV_NORMAL_MB_REG_NUM + (HV_MB_REG_END_FLAG - EXT_MB_REG_START_FLAG))
+
+/* The extend reg addr to its order idx.*/
+#define EXTEND_MB_REG_ADDR2IDX(ext_reg_addr) (MAX_HV_NORMAL_MB_REG_NUM + 1 + ((ext_reg_addr) - EXT_MB_REG_START_FLAG))
+/* The reg addr to its order idx. refer to its use in function get_hv_mb_reg_str.*/
+#define MB_REG_ADDR2IDX(reg_addr) (NORMAL_MB_REG_ADDR(reg_addr) ? (reg_addr) : EXTEND_MB_REG_ADDR2IDX(reg_addr))
+
 
 typedef enum
 {

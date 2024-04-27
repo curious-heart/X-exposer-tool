@@ -396,7 +396,7 @@ void HVTester::start_readback_now_sig_handler()
     QModbusReply * mb_reply;
     QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
     mb_du.setStartAddress(HSV);
-    mb_du.setValueCount(MB_REG_COUNT);
+    mb_du.setValueCount(MAX_HV_NORMAL_MB_REG_NUM);
     mb_reply = hv_modbus_device->sendReadRequest(mb_du, hv_modbus_srvr_addr);
     hv_curr_op = TEST_OP_READ_REGS;
     if(mb_rw_reply_received(hv_curr_op, mb_reply,
