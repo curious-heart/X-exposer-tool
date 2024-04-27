@@ -2,7 +2,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QFileDialog>
-#include "common_tool_func.h"
+#include "common_tools/common_tool_func.h"
 #include "logger/logger.h"
 #include "test_param_settings.h"
 #include "ui_test_param_settings.h"

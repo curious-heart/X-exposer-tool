@@ -3,6 +3,8 @@
 
 #include <QString>
 #include <QNetworkInterface>
+#include <QTextEdit>
+#include <QFont>
 
 typedef enum
 {
@@ -85,4 +87,7 @@ public:
     QString range_str(common_data_type_enum_t d_type, double factor = 1);
 };
 
+void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
+                             Qt::GlobalColor color = (Qt::GlobalColor)-1,
+                             QFont::Weight font_w = (QFont::Weight)-1);
 #endif // COMMON_TOOL_FUNC_H

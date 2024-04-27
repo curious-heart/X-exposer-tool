@@ -1,7 +1,9 @@
 ﻿#include "main_dialog.h"
 #include "logger/logger.h"
+#include "version_def/version_def.h"
 
 #include <QApplication>
+#include <QString>
 
 int main(int argc, char *argv[])
 {
@@ -14,6 +16,9 @@ int main(int argc, char *argv[])
     int ret;
 
     start_log_thread(th);
+
+    QString title_str = QString("%1 %2").arg(a.applicationName(), APP_VER_STR);
+    w.setWindowTitle(title_str);
 
     w.show();
     ret = a.exec();

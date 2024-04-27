@@ -9,12 +9,15 @@ static const char* gs_str_plz_set_valid_conn_params = "请首先设置有效的�
 static const char* gs_str_plz_set_valid_test_params = "请首先设置有效的测试参数";
 static const char* gs_str_init_fail = "初始化失败";
 static const char* gs_str_modbus_already_connected = "modbus已连接";
+static const char* gs_str_modbus_not_connected = "modbus未连接";
 static const char* gs_str_modbus_already_disconnected = "modbus连接已断开";
 static const char* gs_str_modbus_exceptional_error = "异常的modbus错误";
 static const char* gs_str_modbus_unkonwn_state = "未知的modbus连接状态";
 static const char* gs_str_modbus_connect_err = "modbus连接失败";
 static const char* gs_str_modbus_disconnect_err = "modbus断开连接失败";
 static const char* gs_str_init_hvtester_err = "初始化hv_tester失败";
+static const char* gs_str_test_complete = "测试完成";
+static const char* gs_str_sep_line = "========================================";
 
 static const char* gs_str_test_rec_name_sufx = "曝光测试结果";
 static const char* gs_str_test_rec_file_type = ".csv";
@@ -212,20 +215,17 @@ void Dialog::modbus_error_sig_handler(QModbusDevice::Error error)
         "An unknown error occurred.",
     };
     QString curr_str;
-    QColor t_color;
 
     curr_str = (error < 0 || error >= ARRAY_COUNT(err_str)) ?
                     QString("%d:%2").arg(gs_str_modbus_exceptional_error, QString::number(error))
                     : err_str[error];
 
-    if(QModbusDevice::NoError != error)
+    if((error < 0) || (QModbusDevice::NoError != error))
     {
         DIY_LOG(LOG_ERROR, curr_str);
 
-        t_color = ui->testInfoDisplayTxt->textColor();
-        ui->testInfoDisplayTxt->setTextColor(Qt::red);
-        ui->testInfoDisplayTxt->append(curr_str);
-        ui->testInfoDisplayTxt->setTextColor(t_color);
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
+                                         Qt::red, (QFont::Weight)-1);
     }
 }
 
@@ -318,10 +318,18 @@ void Dialog::record_header()
 
 void Dialog::on_startTestBtn_clicked()
 {
-    if(!m_test_params.valid || !m_modbus_connected)
+    if(!m_test_params.valid)
     {
+        QMessageBox::critical(this, "Error", gs_str_plz_set_valid_test_params);
         return;
     }
+
+    if( !m_modbus_connected)
+    {
+        QMessageBox::critical(this, "Error", gs_str_modbus_not_connected);
+        return;
+    }
+
     if(!m_hv_tester.init(&m_test_params, m_modbus_device, m_hv_conn_params.srvr_address))
     {
         QMessageBox::critical(this, "Error", gs_str_init_hvtester_err);
@@ -420,4 +428,9 @@ void Dialog::test_complete_sig_hanler()
         m_curr_txt_stream.flush();
         m_curr_rec_file.close();
     }
+
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, gs_str_test_complete,
+                            Qt::blue, QFont::Bold);
+
+    ui->testInfoDisplayTxt->setText(gs_str_sep_line);
 }

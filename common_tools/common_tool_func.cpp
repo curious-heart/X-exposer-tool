@@ -9,6 +9,8 @@
 #include <QList>
 #include <QProcess>
 #include <QDir>
+#include <QColor>
+#include <QFont>
 
 static bool exec_external_process(QString cmd, QString cmd_args, bool as_admin = false)
 {
@@ -679,4 +681,22 @@ void RangeChecker::set_edge(range_edge_enum_t low_e, range_edge_enum_t up_e)
 void RangeChecker::set_unit_str(const char* unit_s)
 {
     unit_str = unit_s;
+}
+
+void append_str_with_color_and_weight(QTextEdit* ctrl, QString str, Qt::GlobalColor color, QFont::Weight font_w)
+{
+    QColor curr_color = ctrl->textColor();
+    QFont curr_font = ctrl->currentFont(), new_font = curr_font;
+
+    if((int)color >= 0) ctrl->setTextColor(color);
+    if((int)font_w >= 0)
+    {
+        new_font.setWeight(font_w);
+        ctrl->setCurrentFont(new_font);
+    }
+
+    ctrl->append(str);
+
+    if((int)color >= 0) ctrl->setCurrentFont(curr_font);
+    if((int)font_w >= 0) ctrl->setTextColor(curr_color);
 }

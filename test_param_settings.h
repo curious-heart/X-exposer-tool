@@ -6,7 +6,7 @@
 #include <QButtonGroup>
 #include <QLineEdit>
 
-#include "common_tool_func.h"
+#include "common_tools/common_tool_func.h"
 #include "test_params_struct.h"
 
 namespace Ui {
