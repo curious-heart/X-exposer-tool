@@ -70,12 +70,18 @@ private:
                              RangeChecker* range, void * val_ptr, QString &ret_str);
 
     void get_expo_param_vals_from_ui();
+    bool judge_dura_factor_from_str(QString h_s, float *factor);
     bool get_expo_param_vals_from_cust_file(QString file_fpn,
                                             QVector<expo_param_triple_struct_t> &param_vector,
                                             float * max_expo_dura_ms,
-                                            QString &ret_str);
+                                            QString &ret_str, QString &file_content);
+
+    bool get_expo_param_vals_from_cust2_file(QString file_fpn,
+                                            QVector<expo_param_triple_struct_t> &param_vector,
+                                            float * max_expo_dura_ms,
+                                            QString &ret_str, QString &file_content);
     void refresh_controls_display();
-    void format_test_params_info_str();
+    void format_test_params_info_str(QString &file_content);
 
 public:
     QString collect_test_params();
