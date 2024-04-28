@@ -32,7 +32,7 @@ static const char* gs_str_no = "序号";
 /*设置管电压、设置管电流、曝光时间必须连续放置*/
 const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
 {
-    HSV, VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter,
+    HSV, VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter, EXT_MB_REG_DISTANCE,
     State, ExposureStatus, BatteryLevel, BatteryVoltmeter, OilBoxTemperature,
     Workstatus, exposureCount,
 };

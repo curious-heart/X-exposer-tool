@@ -18,6 +18,7 @@ typedef enum
     TEST_OP_SET_EXPO_TRIPLE,
     TEST_OP_START_EXPO,
     TEST_OP_READ_REGS,
+    TEST_OP_READ_DISTANCE,
 }tester_op_enum_t;
 class HVTester : public QObject
 {
@@ -43,7 +44,8 @@ private:
     int hv_test_idx_in_loop = 0, hv_test_idx_in_round = -1;
     expo_param_triple_struct_t hv_curr_expo_param_triple;
     QString hv_curr_triple_mb_unit_str;
-    QTimer hv_expo_readback_sep_timer, hv_cool_timer;
+    QTimer hv_expo_readback_sep_timer, hv_before_read_distance_timer, hv_cool_timer;
+    mb_reg_val_map_t m_regs_read_result;
 
     bool is_the_last_one_test();
     void update_tester_state();
@@ -71,18 +73,22 @@ signals:
     /*signals used internally.*/
     void start_expo_now_sig();
     void start_readback_now_sig();
+    void start_read_distance_sig();
     void internal_go_test_sig();
 public slots:
     /*internal signal handler*/
     void start_expo_now_sig_handler();
     void start_readback_now_sig_handler();
+    void start_read_distance_sig_handler();
     /*modbus signal handler*/
     void mb_write_params_finished_sig_handler();
     void mb_start_expo_finished_sig_handler();
     void mb_read_finished_sig_handler();
+    void mb_read_distance_finish_sig_handler();
     void mb_rw_error_sig_handler(QModbusDevice::Error error);
     /*timer handler*/
     void expo_readback_sep_timer_sig_handler();
+    void before_read_distance_timer_sig_handler();
     void cool_timer_sig_handler();
 };
 
