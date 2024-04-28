@@ -8,9 +8,9 @@
 static const char* gs_str_plz_set_valid_conn_params = "请首先设置有效的连接参数";
 static const char* gs_str_plz_set_valid_test_params = "请首先设置有效的测试参数";
 static const char* gs_str_init_fail = "初始化失败";
-static const char* gs_str_modbus_already_connected = "modbus已连接";
+static const char* gs_str_modbus_not_in_disconnected_state = "modbus未处于断开状态";
+static const char* gs_str_modbus_not_in_connected_state = "modbus未处于连接状态";
 static const char* gs_str_modbus_not_connected = "modbus未连接";
-static const char* gs_str_modbus_already_disconnected = "modbus连接已断开";
 static const char* gs_str_modbus_exceptional_error = "异常的modbus错误";
 static const char* gs_str_modbus_unkonwn_state = "未知的modbus连接状态";
 static const char* gs_str_modbus_connect_err = "modbus连接失败";
@@ -82,7 +82,7 @@ Dialog::Dialog(QWidget *parent)
 
 Dialog::~Dialog()
 {
-    if(m_modbus_connected && m_modbus_device)
+    if(QModbusDevice::ConnectedState == m_modbus_state)
     {
         modbus_disconnect();
     }
@@ -119,13 +119,14 @@ void Dialog::on_hvConnSetBtn_clicked()
 
 void Dialog::refresh_butoons()
 {
-    ui->hvConnSetBtn->setEnabled(!m_modbus_connected && !m_testing);
+    ui->hvConnSetBtn->setEnabled((QModbusDevice::UnconnectedState == m_modbus_state)
+                                 && !m_testing);
     ui->testParamSetBtn->setEnabled(!m_testing);
     ui->dsoSetBtn->setEnabled(!m_dso_connected && !m_testing);
-    ui->hvConnBtn->setEnabled(!m_modbus_connected && !m_testing);
-    ui->hvDisconnBtn->setEnabled(m_modbus_connected && !m_testing);
-    ui->startTestBtn->setEnabled(m_modbus_connected && !m_testing);
-    ui->stopTestBtn->setEnabled(m_modbus_connected && m_testing);
+    ui->hvConnBtn->setEnabled((QModbusDevice::UnconnectedState == m_modbus_state) && !m_testing);
+    ui->hvDisconnBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
+    ui->startTestBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
+    ui->stopTestBtn->setEnabled(m_testing);
 }
 
 bool Dialog::modbus_connect()
@@ -240,18 +241,8 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
         "The device is being closed.",
     };
 
-    switch(state)
-    {
-    case QModbusDevice::ConnectedState:
-        m_modbus_connected = true;
-        break;
-
-    case QModbusDevice::UnconnectedState:
-        this->setCursor(Qt::ArrowCursor);
-    default:
-        m_modbus_connected = false;
-        break;
-    }
+    m_modbus_state = state;
+    if(QModbusDevice::UnconnectedState == state) this->setCursor(Qt::ArrowCursor);
 
     refresh_butoons();
 
@@ -269,9 +260,9 @@ void Dialog::on_hvConnBtn_clicked()
         QMessageBox::critical(this, "Error", gs_str_plz_set_valid_conn_params);
         return;
     }
-    if(m_modbus_connected)
+    if(QModbusDevice::UnconnectedState != m_modbus_state)
     {
-        QMessageBox::information(this, "", gs_str_modbus_already_connected);
+        QMessageBox::information(this, "", gs_str_modbus_not_in_disconnected_state);
         return;
     }
     ui->hvConnBtn->setDisabled(true);
@@ -285,9 +276,9 @@ void Dialog::on_hvConnBtn_clicked()
 
 void Dialog::on_hvDisconnBtn_clicked()
 {
-    if(!m_modbus_connected)
+    if(QModbusDevice::ConnectedState != m_modbus_state)
     {
-        QMessageBox::information(this, "", gs_str_modbus_already_disconnected);
+        QMessageBox::information(this, "", gs_str_modbus_not_in_connected_state);
         return;
     }
     ui->hvDisconnBtn->setDisabled(true);
@@ -324,7 +315,7 @@ void Dialog::on_startTestBtn_clicked()
         return;
     }
 
-    if( !m_modbus_connected)
+    if(QModbusDevice::ConnectedState != m_modbus_state)
     {
         QMessageBox::critical(this, "Error", gs_str_modbus_not_connected);
         return;

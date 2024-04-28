@@ -35,7 +35,7 @@ private:
 
     test_params_struct_t m_test_params;
     modbus_conn_parameters_struct_t m_hv_conn_params;
-    bool m_modbus_connected = false;
+    QModbusDevice::State m_modbus_state = QModbusDevice::UnconnectedState;
     bool m_dso_connected = false;
     bool m_testing = false;
     QString m_curr_rec_folder_name, m_curr_rec_file_name;
