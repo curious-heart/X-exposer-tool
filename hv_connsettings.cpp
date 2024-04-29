@@ -2,7 +2,7 @@
 #include <QSerialPortInfo>
 #include <QMessageBox>
 
-#include "common_tool_func.h"
+#include "common_tools/common_tool_func.h"
 #include "logger/logger.h"
 #include "hv_connsettings.h"
 #include "ui_hv_connsettings.h"

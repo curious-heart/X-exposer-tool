@@ -33,11 +33,11 @@ static const char* gs_hv_mb_reg_cnstr[] =
    /* MAX_HV_NORMAL_MB_REG_NUM */ "分割：普通reg数量",
    /* EXT_MB_REG_START_FLAG = 100 */ "分割:扩展reg开始",
 
-   /* 101 */ "扩展reg:档位调节按键",
-   /* 102 */ "扩展reg:充电器插入",
-   /* 103 */ "扩展reg:DAP高word",
-   /* 104 */ "扩展reg:DAP低word",
-   /* 105 */ "扩展reg:测距结果",
+   /* 101 */ "档位调节按键",
+   /* 102 */ "充电器插入",
+   /* 103 */ "DAP高word",
+   /* 104 */ "DAP低word",
+   /* 105 */ "测距结果",
 
    /* HV_MB_REG_END_FLAG */ "reg结束标志",
 

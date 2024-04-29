@@ -242,7 +242,10 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     };
 
     m_modbus_state = state;
-    if(QModbusDevice::UnconnectedState == state) this->setCursor(Qt::ArrowCursor);
+    if(QModbusDevice::UnconnectedState == state || QModbusDevice::ConnectedState== state)
+    {
+        this->setCursor(Qt::ArrowCursor);
+    }
 
     refresh_butoons();
 
@@ -304,7 +307,7 @@ void Dialog::record_header()
         hdr += ",";
     }
     m_curr_txt_stream << hdr << "\n";
-    ui->testInfoDisplayTxt->setText(hdr);
+    ui->testInfoDisplayTxt->append(hdr);
 }
 
 void Dialog::on_startTestBtn_clicked()
@@ -369,10 +372,18 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg)
         QString line(common_tool_get_curr_date_str() + ","
                      + common_tool_get_curr_time_str() + ",");
         line += ","; //number is null
-        line += msg;
-        m_curr_txt_stream << line << "\n";
+        line += msg + "\n";
+        m_curr_txt_stream << line;
 
-        ui->testInfoDisplayTxt->setText(line);
+        if(LOG_ERROR == lvl)
+        {
+            append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
+                                             Qt::red, (QFont::Weight)-1);
+        }
+        else
+        {
+            ui->testInfoDisplayTxt->append(line);
+        }
     }
 }
 
@@ -395,7 +406,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         line += QString::number(reg_val_map.value(FilamentSet)) + ",";
         line += QString::number(reg_val_map.value(ExposureTime)) + ",";
         m_curr_txt_stream << line << "\n";
-        ui->testInfoDisplayTxt->setText(line);
+        ui->testInfoDisplayTxt->append(line);
 
         return;
     }
@@ -406,7 +417,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         ++idx;
     }
     m_curr_txt_stream << line << "\n";
-    ui->testInfoDisplayTxt->setText(line);
+    ui->testInfoDisplayTxt->append(line);
 }
 
 void Dialog::test_complete_sig_hanler()
@@ -423,5 +434,5 @@ void Dialog::test_complete_sig_hanler()
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, gs_str_test_complete,
                             Qt::blue, QFont::Bold);
 
-    ui->testInfoDisplayTxt->setText(gs_str_sep_line);
+    ui->testInfoDisplayTxt->append(QString(gs_str_sep_line) + "\n\n");
 }

@@ -14,6 +14,7 @@ enum LOG_LEVEL {
     LOG_WARN,   //警告
     LOG_ERROR   //错误
 };
+Q_DECLARE_METATYPE(LOG_LEVEL)
 
 class Logger : public QObject
 {

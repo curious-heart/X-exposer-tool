@@ -22,6 +22,9 @@ HVTester::HVTester(QObject *parent)
     : QObject{parent},
       hv_expo_readback_sep_timer(this), hv_before_read_distance_timer(this), hv_cool_timer(this)
 {
+    qRegisterMetaType<mb_reg_val_map_t>();
+    qRegisterMetaType<tester_op_enum_t>();
+
     connect(this, &HVTester::start_expo_now_sig, this, &HVTester::start_expo_now_sig_handler,
                 Qt::QueuedConnection);
 
@@ -40,6 +43,9 @@ HVTester::HVTester(QObject *parent)
 
     connect(this, &HVTester::start_readback_now_sig,
             this, &HVTester::start_readback_now_sig_handler, Qt::QueuedConnection);
+
+    connect(this, &HVTester::start_read_distance_sig,
+            this, &HVTester::start_read_distance_sig_handler, Qt::QueuedConnection);
 
     connect(this, &HVTester::internal_go_test_sig, this, &HVTester::go_test_sig_handler,
                 Qt::QueuedConnection);
@@ -290,8 +296,11 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                     {
                         m_regs_read_result.insert(hv_mb_reg_e_t(st_addr + idx), rb_du.value(idx));
                     }
-                    emit rec_mb_regs_sig(TEST_OP_READ_REGS, m_regs_read_result, hv_test_idx_in_loop,
-                                         hv_test_idx_in_round);
+                    if(TEST_OP_READ_DISTANCE == op)
+                    {
+                        emit rec_mb_regs_sig(TEST_OP_READ_REGS, m_regs_read_result,
+                                             hv_test_idx_in_loop, hv_test_idx_in_round);
+                    }
                 }
             }
 
@@ -349,8 +358,9 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
 
 void HVTester::go_test_sig_handler()
 {
-    if(!hv_test_params || hv_modbus_device || !hv_test_params->valid)
+    if(!hv_test_params || !hv_modbus_device || !hv_test_params->valid)
     {
+        DIY_LOG(LOG_ERROR, gs_str_not_init);
         emit test_info_message_sig(LOG_ERROR, gs_str_not_init);
         end_test();
         return;
@@ -405,6 +415,7 @@ void HVTester::start_expo_now_sig_handler()
     QModbusReply * mb_reply;
     QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
     mb_du.setStartAddress(ExposureStart);
+    mb_du.setValueCount(1);
     mb_du.setValue(0, START_EXPO_DATA);
     mb_reply = hv_modbus_device->sendWriteRequest(mb_du, hv_modbus_srvr_addr);
     hv_curr_op = TEST_OP_START_EXPO;

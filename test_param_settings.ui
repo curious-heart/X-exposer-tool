@@ -164,7 +164,7 @@
           <item row="1" column="1">
            <widget class="QLineEdit" name="cubeVoltStartEdit">
             <property name="text">
-             <string>40</string>
+             <string>60</string>
             </property>
            </widget>
           </item>

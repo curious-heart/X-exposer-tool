@@ -12,6 +12,8 @@
 #include "modbus_regs/modbus_regs.h"
 
 typedef QMap<hv_mb_reg_e_t, quint16> mb_reg_val_map_t;
+Q_DECLARE_METATYPE(mb_reg_val_map_t)
+
 typedef enum
 {
     TEST_OP_NULL,
@@ -20,6 +22,8 @@ typedef enum
     TEST_OP_READ_REGS,
     TEST_OP_READ_DISTANCE,
 }tester_op_enum_t;
+Q_DECLARE_METATYPE(tester_op_enum_t)
+
 class HVTester : public QObject
 {
     Q_OBJECT

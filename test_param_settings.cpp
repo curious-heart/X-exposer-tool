@@ -754,6 +754,7 @@ QString testParamSettingsDialog::collect_test_params()
                         ret_str += m_expo_params_from_ui.err_msg_cool_dura;
                         break;
                     }
+                    m_test_params->expo_param_block.expo_cool_dura_ms = m_expo_params_from_ui.expo_cool_dura_ms;
                 }
                 else
                 {

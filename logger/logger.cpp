@@ -6,7 +6,7 @@
 #include <QString>
 
 #include "logger.h"
-#include "version_def.h"
+#include "version_def/version_def.h"
 
 LogSigEmitter *g_LogSigEmitter = nullptr;
 static Logger * g_LogWorker = nullptr;
@@ -84,6 +84,7 @@ void Logger::receive_log(int level, QString loc_str, QString log_str)
 
 bool start_log_thread(QThread &th)
 {
+    qRegisterMetaType<LOG_LEVEL>();
     g_LogSigEmitter = new LogSigEmitter;
     g_LogWorker = new Logger;
     if(g_LogSigEmitter && g_LogWorker)
