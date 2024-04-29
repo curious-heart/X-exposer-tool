@@ -29,6 +29,10 @@ static const char* gs_str_date = "日期";
 static const char* gs_str_time = "时间";
 static const char* gs_str_no = "序号";
 
+extern const char* g_str_loop;
+extern const char* g_str_time_ci;
+extern const char* g_str_the_line_pron;
+
 /*设置管电压、设置管电流、曝光时间必须连续放置*/
 const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
 {
@@ -393,7 +397,9 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     int idx = 0;
     QString line(common_tool_get_curr_date_str() + ","
                  + common_tool_get_curr_time_str() + ",");
-    line += QString("%1-%2,").arg(QString::number(loop_idx), QString::number(round_idx));
+    line += QString("%1%2%3%4%5%6,").
+            arg(g_str_the_line_pron, QString::number(loop_idx), g_str_loop,
+                g_str_the_line_pron, QString::number(round_idx), g_str_time_ci);
     if(TEST_OP_SET_EXPO_TRIPLE == op)
     {
         idx = 0;

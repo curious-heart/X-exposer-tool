@@ -161,9 +161,16 @@ void HVTester::update_tester_state()
             bool roundup = false;
 #define MOVE_A_STEP(low_e, up_e, step, curr) \
 {\
-    (curr) += (step);\
-    if((step) >= 0) {if((curr) > (up_e)) (curr) = (up_e);}\
-    else if((curr) < (up_e)) (curr) = (up_e);\
+    if((curr) == (up_e))\
+    {\
+        (curr) = (low_e);\
+    }\
+    else\
+    {\
+        (curr) += (step);\
+        if((step) >= 0) {if((curr) >= (up_e)) (curr) = (up_e);}\
+        else if((curr) < (up_e)) (curr) = (up_e);\
+    }\
     if((curr) == (low_e)) roundup = true;\
 }
             MOVE_A_STEP(
@@ -413,9 +420,7 @@ void HVTester::go_test_sig_handler()
 void HVTester::start_expo_now_sig_handler()
 {
     QModbusReply * mb_reply;
-    QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
-    mb_du.setStartAddress(ExposureStart);
-    mb_du.setValueCount(1);
+    QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters, ExposureStart, 1);
     mb_du.setValue(0, START_EXPO_DATA);
     mb_reply = hv_modbus_device->sendWriteRequest(mb_du, hv_modbus_srvr_addr);
     hv_curr_op = TEST_OP_START_EXPO;

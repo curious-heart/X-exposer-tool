@@ -47,6 +47,8 @@ static const char* gs_str_1st_line_should_be = "首行应为";
 static const char* gs_str_or = "或";
 static const char* gs_str_expo_params = "曝光参数";
 static const char* gs_str_group = "组";
+const char* g_str_loop = "轮";
+const char* g_str_time_ci = "次";
 
 static const char* gs_cust_expo_file_filter = "CSV File (*.csv)";
 static const char* gs_valid_header_line_ms = "volt-kv,current-ma,dura-ms";
@@ -54,12 +56,14 @@ static const char* gs_valid_header_line_s = "volt-kv,current-ma,dura-s";
 static const char* gs_cust_expo_file_item_sep_in_line = ",";
 static const int gs_cust_expo_file_item_num_in_line = 3;
 
-static const char* gs_str_the_line_pron = "第";
+const char* g_str_the_line_pron = "第";
 static const char* gs_str_line = "行";
 static const char* gs_str_item = "项";
 static const char* gs_str_no_valid_data_item = "无有效数据";
 static const char* gs_str_format_error = "格式错误";
 const char* gs_str_data_item_invalid = "数据无效";
+
+static const char* gs_info_str_seperator = "--------------------";
 
 static const char* gs_str_cust1_notes =
 "文件格式：文本文件，第一行指定曝光时间单位（s或ms），之后每行一组电压、电流、时间值，ASCII逗号隔开";
@@ -383,7 +387,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                     {
                         valid_line = false;
                         ret_str = QString("%1%2%3%4%5:\n%6%7,%8%9").arg(gs_str_cust_file,
-                                  gs_str_the_line_pron, QString::number(line_no), gs_str_line,
+                                  g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   gs_str_cube_volt, item_str, gs_str_exceeds_valid_range,
                                   gs_valid_cube_volt_kv_range.range_str(INT_DATA));
@@ -398,7 +402,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                 {
                     valid_line = false;
                     ret_str = QString("%1%2%3%4%5:\n%6%7,%8").arg(gs_str_cust_file,
-                                  gs_str_the_line_pron, QString::number(line_no), gs_str_line,
+                                  g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   gs_str_cube_volt, item_str, gs_str_should_be_int);
                     DIY_LOG(LOG_ERROR, QString("%1%2%3%4").arg(file_fpn, ":the ",
@@ -415,7 +419,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                     {
                         valid_line = false;
                         ret_str = QString("%1%2%3%4%5\n:%6%7,%8%9").arg(gs_str_cust_file,
-                                  gs_str_the_line_pron, QString::number(line_no), gs_str_line,
+                                  g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   gs_str_cube_current, item_str, gs_str_exceeds_valid_range,
                                   gs_valid_cube_current_ma_range.range_str(FLOAT_DATA));
@@ -430,7 +434,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                 {
                     valid_line = false;
                     ret_str = QString("%1%2%3%4%5:\n%6%7,%8").arg(gs_str_cust_file,
-                                  gs_str_the_line_pron, QString::number(line_no), gs_str_line,
+                                  g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   gs_str_cube_current, item_str, gs_str_should_be_number);
                     DIY_LOG(LOG_ERROR, QString("%1%2%3%4").arg(file_fpn, ":the ",
@@ -449,7 +453,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                     {
                         valid_line = false;
                         ret_str = QString("%1%2%3%4%5:\n%6%7,%8%9").arg(gs_str_cust_file,
-                                  gs_str_the_line_pron, QString::number(line_no), gs_str_line,
+                                  g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   gs_str_expo_dura, item_str, gs_str_exceeds_valid_range,
                                   gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA, 1/factor));
@@ -464,7 +468,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                 {
                     valid_line = false;
                     ret_str = QString("%1%2%3%4%5:\n%6%7,%8").arg(gs_str_cust_file,
-                                  gs_str_the_line_pron, QString::number(line_no), gs_str_line,
+                                  g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   gs_str_expo_dura, item_str, gs_str_should_be_number);
                     DIY_LOG(LOG_ERROR, QString("%1%2%3%4").arg(file_fpn, ":the ",
@@ -479,7 +483,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
             {
                 valid_line = false;
                 ret_str = QString("%1%2%3%4%5").arg(gs_str_cust_file,
-                                  gs_str_the_line_pron, QString::number(line_no), gs_str_line,
+                                  g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_no_valid_data_item);
                 DIY_LOG(LOG_ERROR, QString("%1%2%3%4").arg(file_fpn, ":the ",
                                        QString::number(line_no), " line has no valid data."));
@@ -542,7 +546,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
 #define CUST_FILE_LINE_FORMAT_ERROR \
 {\
     ret_str = QString("%1%2%3%4%5").arg(gs_str_cust_file,\
-                      gs_str_the_line_pron, QString::number(line_no), gs_str_line,\
+                      g_str_the_line_pron, QString::number(line_no), gs_str_line,\
                       gs_str_format_error);\
     DIY_LOG(LOG_ERROR, QString("%1%2%3%4").arg(file_fpn, ":the ",\
                            QString::number(line_no), " line has no valid data."));\
@@ -553,8 +557,8 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
 #define CUST_FILE_ITEM_FORMAT_ERROR(extra_str) \
 {\
     ret_str = QString("%1%2%3%4%5%6%7%8%9").arg(gs_str_cust_file,\
-                      gs_str_the_line_pron, QString::number(line_no), gs_str_line,\
-                      gs_str_the_line_pron, QString::number(item_idx), gs_str_item,\
+                      g_str_the_line_pron, QString::number(line_no), gs_str_line,\
+                      g_str_the_line_pron, QString::number(item_idx), gs_str_item,\
                       gs_str_format_error, extra_str);\
     DIY_LOG(LOG_ERROR, QString("%1%2%3%4%5").arg(file_fpn, ":the ",\
                            QString::number(line_no), " line has no valid data.", extra_str));\
@@ -1006,6 +1010,7 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
 
     info_str = QString("%1:").arg(gs_str_test_mode);
     info_str += test_mode_list[test_mode].s + "\n";
+    info_str += QString(gs_info_str_seperator) + "\n";
 
     QString start_val_str("");
     if(TEST_MODE_TRAVERSE == test_mode) start_val_str = gs_str_start_val;
@@ -1029,6 +1034,7 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
                                                 regular_parms.cube_volt_kv_step),
                             gs_str_volt_unit_kv);
         }
+        info_str += QString(gs_info_str_seperator) + "\n";
 
         info_str += QString("%1%2:%3%4\n").
                     arg(gs_str_cube_current, start_val_str,
@@ -1048,6 +1054,7 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
                                                 regular_parms.cube_current_ma_step),
                             gs_str_current_unit_ma);
         }
+        info_str += QString(gs_info_str_seperator) + "\n";
 
         info_str += QString("%1%2:%3%4\n").
                     arg(gs_str_expo_dura, start_val_str,
@@ -1067,16 +1074,20 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
                                                 regular_parms.expo_dura_ms_step),
                             dura_unit_s);
         }
+        info_str += QString(gs_info_str_seperator) + "\n";
 
         if(TEST_MODE_TRAVERSE == test_mode || TEST_MODE_REPEAT == test_mode)
         {
             info_str += QString("%1:%2\n").
                         arg(gs_str_repeats_num,
                             QString::number(m_test_params->expo_param_block.expo_cnt));
+            info_str += QString(gs_info_str_seperator) + "\n";
+
             info_str += QString("%1:%2%3\n").
                         arg(gs_str_cool_dura,
                             QString::number(m_test_params->expo_param_block.expo_cool_dura_ms / 1000),
                             gs_str_dura_unit_s);
+            info_str += QString(gs_info_str_seperator) + "\n";
         }
     }
     else
@@ -1089,10 +1100,12 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
         info_str += QString("%1:%2\n").
                     arg(gs_str_repeats_num,
                         QString::number(m_test_params->expo_param_block.expo_cnt));
+        info_str += QString(gs_info_str_seperator) + "\n";
         info_str += QString("%1:%2%3\n").
                     arg(gs_str_cool_dura,
                         QString::number(m_test_params->expo_param_block.expo_cool_dura_ms / 1000),
                         gs_str_dura_unit_s);
+        info_str += QString(gs_info_str_seperator) + "\n";
     }
     info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
     info_str += ui->hvCtrlBoardNoLbl->text() + ":" + ui->hvCtrlBoardNoEdit->text() + "\n";
