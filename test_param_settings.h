@@ -47,19 +47,20 @@ private:
     {
         regular_expo_parms_struct_t vals;
         int expo_cnt;
-        float expo_cool_dura_ms;
+        float expo_cool_dura_ms, expo_cool_dura_factor;
+        bool fixed_cool_dura;
         bool valid_cube_volt_start, valid_cube_volt_end, valid_cube_volt_step,
              valid_cube_current_start, valid_cube_current_end, valid_cube_current_step,
              valid_expo_dura_start, valid_expo_dura_end, valid_expo_dura_step,
-             valid_expo_cnt, valid_cool_dura;
+             valid_expo_cnt, valid_cool_dura, valid_cool_dura_factor;
         QString err_msg_cube_volt_start, err_msg_cube_volt_end, err_msg_cube_volt_step,
              err_msg_cube_current_start, err_msg_cube_current_end, err_msg_cube_current_step,
              err_msg_expo_dura_start, err_msg_expo_dura_end, err_msg_expo_dura_step,
-             err_msg_expo_cnt, err_msg_cool_dura;
+             err_msg_expo_cnt, err_msg_cool_dura, err_msg_cool_dura_factor;
     }expo_params_from_ui_struct_t;
 
     Ui::testParamSettingsDialog *ui;
-    QButtonGroup *m_expoDuraUnitBtnGrp;
+    QButtonGroup *m_expoDuraUnitBtnGrp, *m_coolDuraModeBtnGrp;
     QVector<test_params_ctrls_ability_struct_t> m_test_params_ctrls_abilities;
 
     test_params_struct_t * m_test_params;

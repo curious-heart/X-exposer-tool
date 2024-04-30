@@ -39,7 +39,8 @@ typedef struct expo_params_struct
     bool cust;
     expo_base_params_struct_t expo_params;
     int expo_cnt;
-    float expo_cool_dura_ms;
+    bool fixed_cool_dura;
+    float expo_cool_dura_ms, expo_cool_dura_factor;
 }expo_params_struct_t;
 
 typedef struct

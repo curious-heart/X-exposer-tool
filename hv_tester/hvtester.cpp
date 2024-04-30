@@ -15,7 +15,7 @@ static const char* gs_str_mb_read_distance_invalid = "modbus读取距离数据�
 const char* g_str_fail = "失败";
 
 static const int gs_mb_write_triple_error_cool_tims_ms = 1500;
-static const int gs_mb_expo_readparm_sep_ms = 1500;
+static const int gs_mb_expo_readparm_sep_ms = 2000;
 static const int gs_mb_consec_rw_wait_ms = 1000;
 
 HVTester::HVTester(QObject *parent)
@@ -272,7 +272,15 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                             :
                               QString("%1").arg(gs_str_mb_read_null_reply));
         timer = &hv_cool_timer;
-        timer_ms = hv_test_params->expo_param_block.expo_cool_dura_ms;
+        if(hv_test_params->expo_param_block.fixed_cool_dura)
+        {
+            timer_ms = hv_test_params->expo_param_block.expo_cool_dura_ms;
+        }
+        else
+        {
+            timer_ms = hv_test_params->expo_param_block.expo_cool_dura_factor
+                    * hv_curr_expo_param_triple.dura_ms;
+        }
         break;
     }
 

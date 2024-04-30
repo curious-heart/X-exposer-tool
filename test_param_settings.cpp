@@ -20,6 +20,9 @@ static RangeChecker gs_valid_cool_dura_range(gs_min_expo_dura_ms * gs_cool_dura_
                                              "s",
                                              RangeChecker::EDGE_INCLUDED,
                                              RangeChecker::EDGE_INFINITE);
+static RangeChecker gs_valid_cool_dura_factor(0, 0, "",
+                                            RangeChecker::EDGE_EXCLUDED,
+                                            RangeChecker::EDGE_INFINITE);
 
 static const char* gs_str_test_mode = "测试模式";
 static const char* gs_str_cube_volt = "管电压";
@@ -110,6 +113,8 @@ const testParamSettingsDialog::test_mode_espair_struct_t
     ui->repeatsNumEdit->setWhatsThis(QString(gs_str_repeats_num));\
     ARRANGE_CTRLS_ABILITY(ui->coolDuraEdit, false, true, true, true, true)\
     ui->coolDuraEdit->setWhatsThis(QString(gs_str_cool_dura));\
+    ARRANGE_CTRLS_ABILITY(ui->fixedCoolDuraRButton, false, true, true, true, true)\
+    ARRANGE_CTRLS_ABILITY(ui->timesCoolDuraRButton, false, true, true, true, true)\
     \
     ARRANGE_CTRLS_ABILITY(ui->custExpoParamFileSelBtn, false, false, false, true, true)\
     ARRANGE_CTRLS_ABILITY(ui->custExpoParamFileNoteEdit, false, false, false, true, true)\
@@ -128,10 +133,14 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent, test_params_st
 
     ui->setupUi(this);
     m_expoDuraUnitBtnGrp = new QButtonGroup(this);
-
     m_expoDuraUnitBtnGrp->addButton(ui->expoDuraUnitmsRButton);
     m_expoDuraUnitBtnGrp->addButton(ui->expoDuraUnitsecRButton);
     ui->expoDuraUnitmsRButton->setChecked(true);
+
+    m_coolDuraModeBtnGrp = new QButtonGroup(this);
+    m_coolDuraModeBtnGrp->addButton(ui->fixedCoolDuraRButton);
+    m_coolDuraModeBtnGrp->addButton(ui->timesCoolDuraRButton);
+    ui->timesCoolDuraRButton->setChecked(true);
 
     int idx;
     for(idx = 0; idx < ARRAY_COUNT(test_mode_list); ++idx)
@@ -275,6 +284,18 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
                            &gs_valid_expo_cnt_range,
                            &m_expo_params_from_ui.expo_cnt,
                            m_expo_params_from_ui.err_msg_expo_cnt);
+
+    m_expo_params_from_ui.fixed_cool_dura
+            = ui->fixedCoolDuraRButton->isChecked() ? true : false;
+    if(!m_expo_params_from_ui.fixed_cool_dura)
+    {
+        ui->coolDuraEdit->setWhatsThis(ui->timesCoolDuraRButton->text());
+        m_expo_params_from_ui.valid_cool_dura_factor =
+            get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1,
+                               &gs_valid_cool_dura_factor,
+                               &m_expo_params_from_ui.expo_cool_dura_factor,
+                               m_expo_params_from_ui.err_msg_cool_dura_factor);
+    }
 
     /* cool duration is not got here because it is related to the exposure duration.
      * so we count it after checking the latter.
@@ -669,7 +690,13 @@ QString testParamSettingsDialog::collect_test_params()
     m_test_params->valid = false;
 
     get_expo_param_vals_from_ui();
-    if((TEST_MODE_CUST1_TRIPLES == test_mode) || (TEST_MODE_CUST2_DISCRETE == test_mode))
+
+    m_test_params->expo_param_block.fixed_cool_dura = m_expo_params_from_ui.fixed_cool_dura;
+    if(!m_expo_params_from_ui.fixed_cool_dura && !m_expo_params_from_ui.valid_cool_dura_factor)
+    {
+        ret_str += m_expo_params_from_ui.err_msg_cool_dura_factor;
+    }
+    else if((TEST_MODE_CUST1_TRIPLES == test_mode) || (TEST_MODE_CUST2_DISCRETE == test_mode))
     {
         m_test_params->expo_param_block.cust = false;
         m_test_params->expo_param_block.expo_params.cust_params_arr.clear();
@@ -679,6 +706,8 @@ QString testParamSettingsDialog::collect_test_params()
         }
         else
         {
+            m_test_params->expo_param_block.expo_cnt = m_expo_params_from_ui.expo_cnt;
+
             bool draw_from_file;
             if(TEST_MODE_CUST1_TRIPLES == test_mode)
             {
@@ -698,24 +727,36 @@ QString testParamSettingsDialog::collect_test_params()
             }
             if(draw_from_file)
             {
-                gs_valid_cool_dura_range.set_min_max(max_expo_dura * gs_cool_dura_factor, 0);
-                m_expo_params_from_ui.valid_cool_dura =
-                    get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
-                                       &gs_valid_cool_dura_range,
-                                       &m_expo_params_from_ui.expo_cool_dura_ms,
-                                       m_expo_params_from_ui.err_msg_cool_dura);
-                if(m_expo_params_from_ui.valid_cool_dura)
+                m_test_params->expo_param_block.cust = true;
+                if(m_expo_params_from_ui.fixed_cool_dura)
                 {
-                    m_test_params->expo_param_block.cust = true;
+                    gs_valid_cool_dura_range.set_min_max(max_expo_dura * gs_cool_dura_factor,
+                                                         0);
+                    m_expo_params_from_ui.valid_cool_dura =
+                        get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
+                                           &gs_valid_cool_dura_range,
+                                           &m_expo_params_from_ui.expo_cool_dura_ms,
+                                           m_expo_params_from_ui.err_msg_cool_dura);
+                    if(m_expo_params_from_ui.valid_cool_dura)
+                    {
+                        m_test_params->expo_param_block.expo_cool_dura_ms
+                                = m_expo_params_from_ui.expo_cool_dura_ms;
+                        m_test_params->valid = true;
 
-                    m_test_params->expo_param_block.expo_cool_dura_ms
-                            = m_expo_params_from_ui.expo_cool_dura_ms;
-                    m_test_params->expo_param_block.expo_cnt = m_expo_params_from_ui.expo_cnt;
-                    m_test_params->valid = true;
+                    }
+                    else
+                    {
+                        ret_str += m_expo_params_from_ui.err_msg_cool_dura;
+                    }
+                    m_test_params->expo_param_block.expo_cool_dura_factor = 1; //no use in fact
                 }
                 else
                 {
-                    ret_str += m_expo_params_from_ui.err_msg_cool_dura;
+                    m_test_params->expo_param_block.expo_cool_dura_factor
+                            = m_expo_params_from_ui.expo_cool_dura_factor;
+                    m_test_params->valid = true;
+
+                    m_expo_params_from_ui.valid_cool_dura = true; // no use in fact
                 }
             }
         }
@@ -744,28 +785,6 @@ QString testParamSettingsDialog::collect_test_params()
             }
             else
             {
-                if(TEST_MODE_REPEAT == test_mode)
-                {
-                    gs_valid_cool_dura_range.
-                    set_min_max(m_expo_params_from_ui.vals.expo_dura_ms_start * gs_cool_dura_factor, 0);
-                    m_expo_params_from_ui.valid_cool_dura =
-                        get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
-                                           &gs_valid_cool_dura_range,
-                                           &m_expo_params_from_ui.expo_cool_dura_ms,
-                                           m_expo_params_from_ui.err_msg_cool_dura);
-                    if(!m_expo_params_from_ui.valid_cool_dura)
-                    {
-                        ret_str += m_expo_params_from_ui.err_msg_cool_dura;
-                        break;
-                    }
-                    m_test_params->expo_param_block.expo_cool_dura_ms = m_expo_params_from_ui.expo_cool_dura_ms;
-                }
-                else
-                {
-                    m_expo_params_from_ui.valid_cool_dura = true;
-                    m_test_params->expo_param_block.expo_cool_dura_ms = 0;
-                }
-
                 m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_start
                         = m_expo_params_from_ui.vals.cube_volt_kv_start;
                 m_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_end
@@ -786,6 +805,42 @@ QString testParamSettingsDialog::collect_test_params()
                         = 0;
                 m_test_params->expo_param_block.expo_cnt
                         = (TEST_MODE_SINGLE == test_mode) ? 1 : m_expo_params_from_ui.expo_cnt;
+
+                if(TEST_MODE_REPEAT == test_mode)
+                {
+                    if(m_expo_params_from_ui.fixed_cool_dura)
+                    {
+                        gs_valid_cool_dura_range.
+                        set_min_max(m_expo_params_from_ui.vals.expo_dura_ms_start
+                                    * gs_cool_dura_factor, 0);
+                        m_expo_params_from_ui.valid_cool_dura =
+                            get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
+                                               &gs_valid_cool_dura_range,
+                                               &m_expo_params_from_ui.expo_cool_dura_ms,
+                                               m_expo_params_from_ui.err_msg_cool_dura);
+                        if(!m_expo_params_from_ui.valid_cool_dura)
+                        {
+                            ret_str += m_expo_params_from_ui.err_msg_cool_dura;
+                            break;
+                        }
+                        m_test_params->expo_param_block.expo_cool_dura_ms
+                                = m_expo_params_from_ui.expo_cool_dura_ms;
+                        m_test_params->expo_param_block.expo_cool_dura_factor = 1; //no use
+                    }
+                    else
+                    {
+                        m_test_params->expo_param_block.expo_cool_dura_factor
+                                = m_expo_params_from_ui.expo_cool_dura_factor;
+                        m_expo_params_from_ui.valid_cool_dura = true;
+                        m_test_params->expo_param_block.expo_cool_dura_ms = 0;
+                    }
+                }
+                else
+                {
+                    m_expo_params_from_ui.valid_cool_dura = true;
+                    m_test_params->expo_param_block.expo_cool_dura_ms = 0;
+                    m_test_params->expo_param_block.expo_cool_dura_factor = 1;
+                }
 
                 m_test_params->valid = true;
             }
@@ -893,22 +948,34 @@ QString testParamSettingsDialog::collect_test_params()
                             = m_expo_params_from_ui.vals.expo_dura_ms_step;
                 }
 
-                max_expo_dura = qMax(m_expo_params_from_ui.vals.expo_dura_ms_start,
-                                     m_expo_params_from_ui.vals.expo_dura_ms_end);
-                gs_valid_cool_dura_range.set_min_max(max_expo_dura * gs_cool_dura_factor, 0);
-                m_expo_params_from_ui.valid_cool_dura =
-                    get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
-                                       &gs_valid_cool_dura_range,
-                                       &m_expo_params_from_ui.expo_cool_dura_ms,
-                                       m_expo_params_from_ui.err_msg_cool_dura);
-                if(!m_expo_params_from_ui.valid_cool_dura)
+                if(m_expo_params_from_ui.fixed_cool_dura)
                 {
-                    ret_str += m_expo_params_from_ui.err_msg_cool_dura;
-                    break;
-                }
+                    max_expo_dura = qMax(m_expo_params_from_ui.vals.expo_dura_ms_start,
+                                         m_expo_params_from_ui.vals.expo_dura_ms_end);
+                    gs_valid_cool_dura_range.set_min_max(max_expo_dura * gs_cool_dura_factor, 0);
+                    m_expo_params_from_ui.valid_cool_dura =
+                        get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
+                                           &gs_valid_cool_dura_range,
+                                           &m_expo_params_from_ui.expo_cool_dura_ms,
+                                           m_expo_params_from_ui.err_msg_cool_dura);
+                    if(!m_expo_params_from_ui.valid_cool_dura)
+                    {
+                        ret_str += m_expo_params_from_ui.err_msg_cool_dura;
+                        break;
+                    }
 
-                m_test_params->expo_param_block.expo_cool_dura_ms
-                        = m_expo_params_from_ui.expo_cool_dura_ms;
+                    m_test_params->expo_param_block.expo_cool_dura_ms
+                            = m_expo_params_from_ui.expo_cool_dura_ms;
+
+                    m_test_params->expo_param_block.expo_cool_dura_factor = 1; //no use
+                }
+                else
+                {
+                    m_test_params->expo_param_block.expo_cool_dura_factor
+                            = m_expo_params_from_ui.expo_cool_dura_factor;
+                    m_expo_params_from_ui.valid_cool_dura = true;
+                    m_test_params->expo_param_block.expo_cool_dura_ms = 0; // no use
+                }
 
                 m_test_params->expo_param_block.expo_cnt = m_expo_params_from_ui.expo_cnt;
 
