@@ -442,3 +442,9 @@ void Dialog::test_complete_sig_hanler()
 
     ui->testInfoDisplayTxt->append(QString(gs_str_sep_line) + "\n\n");
 }
+
+void Dialog::on_clearTestInfoBtn_clicked()
+{
+    ui->testInfoDisplayTxt->clear();
+}
+

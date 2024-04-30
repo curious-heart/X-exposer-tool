@@ -67,6 +67,8 @@ private slots:
                                  int loop_idx, int round_idx);
     void test_complete_sig_hanler();
 
+    void on_clearTestInfoBtn_clicked();
+
 signals:
     void go_test_sig();
     void stop_test_sig();
