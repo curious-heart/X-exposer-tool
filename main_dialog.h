@@ -69,9 +69,14 @@ private slots:
 
     void on_clearTestInfoBtn_clicked();
 
+    /*internal used signal handler*/
+    void auto_reconnect_sig_handler();
+
 signals:
     void go_test_sig();
     void stop_test_sig();
 
+    /*internal used signal*/
+    void auto_reconnect_sig();
 };
 #endif // DIALOG_H

@@ -82,6 +82,8 @@ Dialog::Dialog(QWidget *parent)
             this, &Dialog::rec_mb_regs_sig_handler, Qt::QueuedConnection);
     connect(&m_hv_tester, &HVTester::test_complete_sig,
             this, &Dialog::test_complete_sig_hanler, Qt::QueuedConnection);
+    connect(this, &Dialog::auto_reconnect_sig,
+            this, &Dialog::auto_reconnect_sig_handler, Qt::QueuedConnection);
 }
 
 Dialog::~Dialog()
@@ -91,6 +93,11 @@ Dialog::~Dialog()
         modbus_disconnect();
     }
 
+    if(m_curr_rec_file.isOpen())
+    {
+        m_curr_txt_stream.flush();
+        m_curr_rec_file.close();
+    }
     delete ui;
 }
 
@@ -251,8 +258,6 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
         this->setCursor(Qt::ArrowCursor);
     }
 
-    refresh_butoons();
-
     QString curr_str;
     curr_str = (state < 0 || (int)state >= ARRAY_COUNT(state_str)) ?
                 QString("%1:%2").arg(gs_str_modbus_unkonwn_state, QString::number(state))
@@ -270,6 +275,16 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     else
     {
         ui->testInfoDisplayTxt->append(curr_str);
+    }
+
+    if(m_testing && (QModbusDevice::UnconnectedState == state))
+    {
+        DIY_LOG(LOG_ERROR, "modbus disconnected during testing. now emit reconnect signal.");
+        emit auto_reconnect_sig();
+    }
+    else
+    {
+        refresh_butoons();
     }
 }
 
@@ -311,7 +326,7 @@ void Dialog::on_hvDisconnBtn_clicked()
 void Dialog::record_header()
 {
     /*test info*/
-    m_curr_txt_stream << m_curr_rec_file.fileName();
+    m_curr_txt_stream << m_curr_rec_file.fileName() << "\n\n";
     m_curr_txt_stream << m_hv_conn_params.info_str << "\n";
     m_curr_txt_stream << m_test_params.info_str << "\n\n";
 
@@ -461,3 +476,10 @@ void Dialog::on_clearTestInfoBtn_clicked()
     ui->testInfoDisplayTxt->clear();
 }
 
+void Dialog::auto_reconnect_sig_handler()
+{
+    if(m_modbus_device)
+    {
+        m_modbus_device->connectDevice();
+    }
+}
