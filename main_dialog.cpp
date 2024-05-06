@@ -257,7 +257,20 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     curr_str = (state < 0 || (int)state >= ARRAY_COUNT(state_str)) ?
                 QString("%1:%2").arg(gs_str_modbus_unkonwn_state, QString::number(state))
               : state_str[state];
-    ui->testInfoDisplayTxt->append(curr_str);
+    if(QModbusDevice::ConnectedState == state)
+    {
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
+                                         Qt::darkGreen);
+    }
+    else if(QModbusDevice::UnconnectedState == state)
+    {
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
+                                         Qt::darkGray);
+    }
+    else
+    {
+        ui->testInfoDisplayTxt->append(curr_str);
+    }
 }
 
 void Dialog::on_hvConnBtn_clicked()

@@ -52,6 +52,7 @@ static const char* gs_str_expo_params = "曝光参数";
 static const char* gs_str_group = "组";
 const char* g_str_loop = "轮";
 const char* g_str_time_ci = "次";
+const char* g_str_time_bei = "倍";
 
 static const char* gs_cust_expo_file_filter = "CSV File (*.csv)";
 static const char* gs_valid_header_line_ms = "volt-kv,current-ma,dura-ms";
@@ -1150,10 +1151,21 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
                             QString::number(m_test_params->expo_param_block.expo_cnt));
             info_str += QString(gs_info_str_seperator) + "\n";
 
-            info_str += QString("%1:%2%3\n").
-                        arg(gs_str_cool_dura,
-                            QString::number(m_test_params->expo_param_block.expo_cool_dura_ms / 1000),
-                            gs_str_dura_unit_s);
+            if(m_test_params->expo_param_block.fixed_cool_dura)
+            {
+                info_str += QString("%1:%2%3\n").
+                    arg(gs_str_cool_dura,
+                    QString::number(m_test_params->expo_param_block.expo_cool_dura_ms / 1000),
+                    gs_str_dura_unit_s);
+            }
+            else
+            {
+                info_str += QString("%1:%2%3%4\n").
+                    arg(gs_str_cool_dura,
+                        QString::number(m_test_params->expo_param_block.expo_cool_dura_factor),
+                        g_str_time_bei,
+                        gs_str_expo_dura);
+            }
             info_str += QString(gs_info_str_seperator) + "\n";
         }
     }
@@ -1168,10 +1180,21 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
                     arg(gs_str_repeats_num,
                         QString::number(m_test_params->expo_param_block.expo_cnt));
         info_str += QString(gs_info_str_seperator) + "\n";
-        info_str += QString("%1:%2%3\n").
-                    arg(gs_str_cool_dura,
-                        QString::number(m_test_params->expo_param_block.expo_cool_dura_ms / 1000),
-                        gs_str_dura_unit_s);
+        if(m_test_params->expo_param_block.fixed_cool_dura)
+        {
+            info_str += QString("%1:%2%3\n").
+                arg(gs_str_cool_dura,
+                    QString::number(m_test_params->expo_param_block.expo_cool_dura_ms / 1000),
+                    gs_str_dura_unit_s);
+        }
+        else
+        {
+            info_str += QString("%1:%2%3%4\n").
+                arg(gs_str_cool_dura,
+                    QString::number(m_test_params->expo_param_block.expo_cool_dura_factor),
+                    g_str_time_bei,
+                    gs_str_expo_dura);
+        }
         info_str += QString(gs_info_str_seperator) + "\n";
     }
     info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
