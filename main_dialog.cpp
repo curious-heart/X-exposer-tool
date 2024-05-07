@@ -4,6 +4,7 @@
 #include "logger/logger.h"
 #include "main_dialog.h"
 #include "ui_main_dialog.h"
+#include "sysconfigs/sysconfigs.h"
 
 static const char* gs_str_plz_set_valid_conn_params = "请首先设置有效的连接参数";
 static const char* gs_str_plz_set_valid_test_params = "请首先设置有效的测试参数";
@@ -57,6 +58,9 @@ Dialog::Dialog(QWidget *parent)
         QMessageBox::critical(this, "Error", gs_str_init_fail);
         return;
     }
+
+    fill_sys_configs();
+
     m_testParamSettingsDialog->collect_test_params();
     if(m_test_params.valid)
     {
@@ -422,7 +426,8 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg)
 void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                                  int loop_idx, int round_idx)
 {
-    int idx = 0;
+    int idx = 0, base = 10;
+    hv_mb_reg_e_t reg_no;
     QString line(common_tool_get_curr_date_str() + ","
                  + common_tool_get_curr_time_str() + ",");
     line += QString("%1%2%3%4%5%6,").
@@ -447,7 +452,9 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     idx = 0;
     while(idx < ARRAY_COUNT(m_mbregs_to_record))
     {
-        line += QString::number(reg_val_map.value(m_mbregs_to_record[idx])) + ",";
+        reg_no = m_mbregs_to_record[idx];
+        base = (State == reg_no) ? 2 : 10;
+        line += QString::number(reg_val_map.value(reg_no), base) + ",";
         ++idx;
     }
     m_curr_txt_stream << line << "\n";

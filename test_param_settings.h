@@ -49,6 +49,7 @@ private:
         int expo_cnt;
         float expo_cool_dura_ms, expo_cool_dura_factor;
         bool fixed_cool_dura;
+        bool limit_shortest_cool_dura, read_dist;
         bool valid_cube_volt_start, valid_cube_volt_end, valid_cube_volt_step,
              valid_cube_current_start, valid_cube_current_end, valid_cube_current_step,
              valid_expo_dura_start, valid_expo_dura_end, valid_expo_dura_step,

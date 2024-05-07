@@ -14,6 +14,7 @@ SOURCES += \
     hv_tester/hvtester.cpp \
     logger/logger.cpp \
     modbus_regs/modbus_regs.cpp \
+    sysconfigs/sysconfigs.cpp \
     test_param_settings.cpp \
     main.cpp \
     main_dialog.cpp \
@@ -25,6 +26,7 @@ HEADERS += \
     hv_tester/hvtester.h \
     logger/logger.h \
     modbus_regs/modbus_regs.h \
+    sysconfigs/sysconfigs.h \
     test_param_settings.h \
     main_dialog.h \
     test_params_struct.h \

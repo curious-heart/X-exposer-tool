@@ -6,8 +6,8 @@
 #include "logger/logger.h"
 #include "test_param_settings.h"
 #include "ui_test_param_settings.h"
+#include "sysconfigs/sysconfigs.h"
 
-static const float gs_cool_dura_factor = 30; //cool time shuld not be less than this times of expp dura.
 static RangeChecker gs_valid_cube_volt_kv_range(10, 1000);
 static RangeChecker gs_valid_cube_current_ma_range(0.1, 1000);
 static const float gs_min_expo_dura_ms = 1;
@@ -15,7 +15,7 @@ static RangeChecker gs_valid_expo_dura_ms_range(gs_min_expo_dura_ms, 3600*1000);
 static RangeChecker gs_valid_expo_cnt_range(1, 0, "",
                                             RangeChecker::EDGE_INCLUDED,
                                             RangeChecker::EDGE_INFINITE);
-static RangeChecker gs_valid_cool_dura_range(gs_min_expo_dura_ms * gs_cool_dura_factor,
+static RangeChecker gs_valid_cool_dura_range(gs_min_expo_dura_ms * g_sys_configs_block.cool_dura_factor,
                                              0,
                                              "s",
                                              RangeChecker::EDGE_INCLUDED,
@@ -53,6 +53,7 @@ static const char* gs_str_group = "组";
 const char* g_str_loop = "轮";
 const char* g_str_time_ci = "次";
 const char* g_str_time_bei = "倍";
+const char* g_str_no_bu = "不";
 
 static const char* gs_cust_expo_file_filter = "CSV File (*.csv)";
 static const char* gs_valid_header_line_ms = "volt-kv,current-ma,dura-ms";
@@ -113,9 +114,13 @@ const testParamSettingsDialog::test_mode_espair_struct_t
     ARRANGE_CTRLS_ABILITY(ui->repeatsNumEdit, false, true, true, true, true)\
     ui->repeatsNumEdit->setWhatsThis(QString(gs_str_repeats_num));\
     ARRANGE_CTRLS_ABILITY(ui->coolDuraEdit, false, true, true, true, true)\
-    ui->coolDuraEdit->setWhatsThis(QString(gs_str_cool_dura));\
+    if(ui->fixedCoolDuraRButton->isChecked())\
+    {ui->coolDuraEdit->setWhatsThis(QString(gs_str_cool_dura));}\
+    else\
+    {ui->coolDuraEdit->setWhatsThis(ui->timesCoolDuraRButton->text());}\
     ARRANGE_CTRLS_ABILITY(ui->fixedCoolDuraRButton, false, true, true, true, true)\
     ARRANGE_CTRLS_ABILITY(ui->timesCoolDuraRButton, false, true, true, true, true)\
+    ARRANGE_CTRLS_ABILITY(ui->limitShortestCoolDuraChBox, false, true, true, true, true)\
     \
     ARRANGE_CTRLS_ABILITY(ui->custExpoParamFileSelBtn, false, false, false, true, true)\
     ARRANGE_CTRLS_ABILITY(ui->custExpoParamFileNoteEdit, false, false, false, true, true)\
@@ -149,6 +154,8 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent, test_params_st
         ui->testModeComboBox->addItem(test_mode_list[idx].s, test_mode_list[idx].e);
     }
     ui->testModeComboBox->setCurrentIndex(0);
+    ui->limitShortestCoolDuraChBox->setChecked(true);
+    ui->readDistChBox->setChecked(true);
 
     TEST_PARAMS_CTRLS_ABT_TBL;
 
@@ -286,21 +293,40 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
                            &m_expo_params_from_ui.expo_cnt,
                            m_expo_params_from_ui.err_msg_expo_cnt);
 
-    m_expo_params_from_ui.fixed_cool_dura
-            = ui->fixedCoolDuraRButton->isChecked() ? true : false;
+    m_expo_params_from_ui.limit_shortest_cool_dura
+            = ui->limitShortestCoolDuraChBox->isChecked();
+
+    m_expo_params_from_ui.fixed_cool_dura = ui->fixedCoolDuraRButton->isChecked();
     if(!m_expo_params_from_ui.fixed_cool_dura)
     {
         ui->coolDuraEdit->setWhatsThis(ui->timesCoolDuraRButton->text());
+        if(m_expo_params_from_ui.limit_shortest_cool_dura)
+        {
+            gs_valid_cool_dura_factor.set_min_max(g_sys_configs_block.cool_dura_factor, 0);
+            gs_valid_cool_dura_factor.set_edge(RangeChecker::EDGE_INCLUDED,
+                                               RangeChecker::EDGE_INFINITE);
+        }
+        else
+        {
+            gs_valid_cool_dura_factor.set_min_max(0, 0);
+            gs_valid_cool_dura_factor.set_edge(RangeChecker::EDGE_EXCLUDED,
+                                               RangeChecker::EDGE_INFINITE);
+        }
         m_expo_params_from_ui.valid_cool_dura_factor =
             get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1,
                                &gs_valid_cool_dura_factor,
                                &m_expo_params_from_ui.expo_cool_dura_factor,
                                m_expo_params_from_ui.err_msg_cool_dura_factor);
     }
+    else
+    {
+        ui->coolDuraEdit->setWhatsThis(gs_str_cool_dura);
+    }
 
     /* cool duration is not got here because it is related to the exposure duration.
      * so we count it after checking the latter.
      */
+    m_expo_params_from_ui.read_dist = ui->readDistChBox->isChecked();
 }
 
 bool testParamSettingsDialog::judge_dura_factor_from_str(QString h_s, float *ret_factor)
@@ -308,7 +334,7 @@ bool testParamSettingsDialog::judge_dura_factor_from_str(QString h_s, float *ret
     QString qstr_s = QString(gs_str_dura_unit_s), qstr_ms = QString(gs_str_dura_unit_ms);
     int s_len = qstr_s.length(), ms_len = qstr_ms.length();
     int h_s_len = h_s.length();
-    float factor;
+    float factor = 1;
     bool ret = false;
 
     if(h_s_len >= ms_len)
@@ -633,7 +659,6 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
     line_items = line.split(gs_cust_expo_file_item_sep_in_line, Qt::SkipEmptyParts);
     item_cnt = line_items.count();
     if(item_cnt < min_items_per_line) CUST_FILE_LINE_FORMAT_ERROR;
-    item_idx = 0;
     if(!judge_dura_factor_from_str(line_items[0], &factor)) CUST_FILE_LINE_FORMAT_ERROR;
     QVector<float> dura_ms_v;
     max_ms = 0;
@@ -731,8 +756,21 @@ QString testParamSettingsDialog::collect_test_params()
                 m_test_params->expo_param_block.cust = true;
                 if(m_expo_params_from_ui.fixed_cool_dura)
                 {
-                    gs_valid_cool_dura_range.set_min_max(max_expo_dura * gs_cool_dura_factor,
-                                                         0);
+                    if(m_expo_params_from_ui.limit_shortest_cool_dura)
+                    {
+                        gs_valid_cool_dura_range.set_min_max(
+                                    max_expo_dura * g_sys_configs_block.cool_dura_factor,
+                                     0);
+                        gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
+                                                           RangeChecker::EDGE_INFINITE);
+                    }
+                    else
+                    {
+                        gs_valid_cool_dura_range.set_min_max(0, 0);
+                        gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_EXCLUDED,
+                                                           RangeChecker::EDGE_INFINITE);
+
+                    }
                     m_expo_params_from_ui.valid_cool_dura =
                         get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
                                            &gs_valid_cool_dura_range,
@@ -811,9 +849,24 @@ QString testParamSettingsDialog::collect_test_params()
                 {
                     if(m_expo_params_from_ui.fixed_cool_dura)
                     {
-                        gs_valid_cool_dura_range.
-                        set_min_max(m_expo_params_from_ui.vals.expo_dura_ms_start
-                                    * gs_cool_dura_factor, 0);
+
+                        if(m_expo_params_from_ui.limit_shortest_cool_dura)
+                        {
+                            gs_valid_cool_dura_range.
+                            set_min_max(m_expo_params_from_ui.vals.expo_dura_ms_start
+                                        * g_sys_configs_block.cool_dura_factor, 0);
+
+                            gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
+                                                               RangeChecker::EDGE_INFINITE);
+                        }
+                        else
+                        {
+                            gs_valid_cool_dura_range.set_min_max(0, 0);
+                            gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_EXCLUDED,
+                                                               RangeChecker::EDGE_INFINITE);
+
+                        }
+
                         m_expo_params_from_ui.valid_cool_dura =
                             get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
                                                &gs_valid_cool_dura_range,
@@ -953,7 +1006,23 @@ QString testParamSettingsDialog::collect_test_params()
                 {
                     max_expo_dura = qMax(m_expo_params_from_ui.vals.expo_dura_ms_start,
                                          m_expo_params_from_ui.vals.expo_dura_ms_end);
-                    gs_valid_cool_dura_range.set_min_max(max_expo_dura * gs_cool_dura_factor, 0);
+
+                    if(m_expo_params_from_ui.limit_shortest_cool_dura)
+                    {
+                        gs_valid_cool_dura_range.set_min_max(
+                                    max_expo_dura * g_sys_configs_block.cool_dura_factor,
+                                     0);
+                        gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
+                                                           RangeChecker::EDGE_INFINITE);
+                    }
+                    else
+                    {
+                        gs_valid_cool_dura_range.set_min_max(0, 0);
+                        gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_EXCLUDED,
+                                                           RangeChecker::EDGE_INFINITE);
+
+                    }
+
                     m_expo_params_from_ui.valid_cool_dura =
                         get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
                                            &gs_valid_cool_dura_range,
@@ -990,6 +1059,8 @@ QString testParamSettingsDialog::collect_test_params()
     m_test_params->other_param_block.hv_ctrl_board_number_str = ui->hvCtrlBoardNoEdit->text();
     m_test_params->other_param_block.sw_ver_str = ui->swVerStrEdit->text();
     m_test_params->other_param_block.hw_ver_str = ui->hwVerStrEdit->text();
+
+    m_test_params->other_param_block.read_dist = m_expo_params_from_ui.read_dist;
 
     format_test_params_info_str(file_content);
     return ret_str;
@@ -1197,6 +1268,14 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
         }
         info_str += QString(gs_info_str_seperator) + "\n";
     }
+
+    if(!ui->readDistChBox->isChecked())
+    {
+        info_str += g_str_no_bu;
+    }
+    info_str += ui->readDistChBox->text() + "\n";
+    info_str += QString(gs_info_str_seperator) + "\n";
+
     info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
     info_str += ui->hvCtrlBoardNoLbl->text() + ":" + ui->hvCtrlBoardNoEdit->text() + "\n";
     info_str += ui->swVerStrLbl->text() + ":" + ui->swVerStrEdit->text() + "\n";
