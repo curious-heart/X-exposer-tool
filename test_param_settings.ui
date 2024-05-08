@@ -7,30 +7,61 @@
     <x>0</x>
     <y>0</y>
     <width>614</width>
-    <height>441</height>
+    <height>407</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
+   <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>16777215</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_7">
+   <property name="spacing">
+    <number>6</number>
+   </property>
+   <property name="sizeConstraint">
+    <enum>QLayout::SetDefaultConstraint</enum>
+   </property>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLabel" name="testModeLbl">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>24</height>
+        </size>
+       </property>
        <property name="text">
         <string>测试模式</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="testModeComboBox"/>
+      <widget class="QComboBox" name="testModeComboBox">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>24</height>
+        </size>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer">
@@ -50,19 +81,43 @@
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+      <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
      </property>
      <property name="title">
       <string>曝光参数</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_5">
+      <property name="spacing">
+       <number>2</number>
+      </property>
+      <property name="topMargin">
+       <number>2</number>
+      </property>
+      <property name="bottomMargin">
+       <number>2</number>
+      </property>
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_8">
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_4">
+          <property name="spacing">
+           <number>0</number>
+          </property>
           <item>
            <layout class="QGridLayout" name="gridLayout" rowminimumheight="0,0,0,0">
             <property name="sizeConstraint">
@@ -134,6 +189,12 @@
             </item>
             <item row="1" column="1">
              <widget class="QLineEdit" name="cubeVoltStartEdit">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>23</height>
+               </size>
+              </property>
               <property name="text">
                <string>60</string>
               </property>
@@ -141,6 +202,12 @@
             </item>
             <item row="1" column="2">
              <widget class="QLineEdit" name="cubeCurrentStartEdit">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>23</height>
+               </size>
+              </property>
               <property name="text">
                <string>0.5</string>
               </property>
@@ -150,6 +217,12 @@
              <layout class="QHBoxLayout" name="horizontalLayout_11">
               <item>
                <widget class="QLineEdit" name="expoDuraStartEdit">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>23</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string>500</string>
                 </property>
@@ -166,6 +239,12 @@
             </item>
             <item row="2" column="1">
              <widget class="QLineEdit" name="cubeVoltEndEdit">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>23</height>
+               </size>
+              </property>
               <property name="text">
                <string>90</string>
               </property>
@@ -173,6 +252,12 @@
             </item>
             <item row="2" column="2">
              <widget class="QLineEdit" name="cubeCurrentEndEdit">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>23</height>
+               </size>
+              </property>
               <property name="text">
                <string>5</string>
               </property>
@@ -182,6 +267,12 @@
              <layout class="QHBoxLayout" name="horizontalLayout_12">
               <item>
                <widget class="QLineEdit" name="expoDuraEndEdit">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>23</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string>1400</string>
                 </property>
@@ -201,6 +292,12 @@
               <property name="enabled">
                <bool>true</bool>
               </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>23</height>
+               </size>
+              </property>
               <property name="text">
                <string>1</string>
               </property>
@@ -208,6 +305,12 @@
             </item>
             <item row="3" column="2">
              <widget class="QLineEdit" name="cubeCurrentStepEdit">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>23</height>
+               </size>
+              </property>
               <property name="text">
                <string>0.5</string>
               </property>
@@ -217,6 +320,12 @@
              <layout class="QHBoxLayout" name="horizontalLayout_13">
               <item>
                <widget class="QLineEdit" name="expoDuraStepEdit">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>23</height>
+                 </size>
+                </property>
                 <property name="text">
                  <string>200</string>
                 </property>
@@ -230,6 +339,9 @@
            <spacer name="verticalSpacer">
             <property name="orientation">
              <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Maximum</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
@@ -251,7 +363,7 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <property name="spacing">
-           <number>2</number>
+           <number>0</number>
           </property>
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_6">
@@ -264,6 +376,12 @@
             </item>
             <item>
              <widget class="QLineEdit" name="repeatsNumEdit">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>23</height>
+               </size>
+              </property>
               <property name="maximumSize">
                <size>
                 <width>100</width>
@@ -295,6 +413,12 @@
             </item>
             <item>
              <widget class="QLineEdit" name="coolDuraEdit">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>23</height>
+               </size>
+              </property>
               <property name="maximumSize">
                <size>
                 <width>100</width>
@@ -310,6 +434,9 @@
           </item>
           <item>
            <layout class="QVBoxLayout" name="verticalLayout">
+            <property name="spacing">
+             <number>2</number>
+            </property>
             <item>
              <widget class="QRadioButton" name="fixedCoolDuraRButton">
               <property name="text">
@@ -366,6 +493,12 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>23</height>
+             </size>
+            </property>
            </widget>
           </item>
           <item>
@@ -385,6 +518,12 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="maximumSize">
            <size>
             <width>16777215</width>
@@ -400,8 +539,29 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_14">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetDefaultConstraint</enum>
+     </property>
      <item>
       <widget class="QGroupBox" name="groupBox_2">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>16777215</width>
+         <height>16777215</height>
+        </size>
+       </property>
        <property name="title">
         <string>设备参数</string>
        </property>
@@ -434,7 +594,20 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="oilBoxNoEdit"/>
+           <widget class="QLineEdit" name="oilBoxNoEdit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>23</height>
+             </size>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -448,7 +621,20 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="swVerStrEdit"/>
+           <widget class="QLineEdit" name="swVerStrEdit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>23</height>
+             </size>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -462,7 +648,20 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="hvCtrlBoardNoEdit"/>
+           <widget class="QLineEdit" name="hvCtrlBoardNoEdit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>23</height>
+             </size>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -476,7 +675,20 @@
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="hwVerStrEdit"/>
+           <widget class="QLineEdit" name="hwVerStrEdit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>23</height>
+             </size>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
@@ -513,6 +725,9 @@
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Maximum</enum>
+         </property>
          <property name="sizeHint" stdset="0">
           <size>
            <width>20</width>
@@ -527,6 +742,12 @@
    </item>
    <item>
     <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>24</height>
+      </size>
+     </property>
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
