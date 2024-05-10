@@ -1,5 +1,6 @@
 ﻿#include "logger/logger.h"
 #include "hvtester.h"
+#include "sysconfigs/sysconfigs.h"
 
 static const char* gs_str_not_init = "tester未正常初始化";
 static const char* gs_str_a_new_round = "新一轮测试开始";
@@ -13,10 +14,6 @@ static const char* gs_str_mb_read_distance= "modbus读取距离寄存器";
 static const char* gs_str_mb_read_regs_invalid = "modbus读取常规寄存器数据无效";
 static const char* gs_str_mb_read_distance_invalid = "modbus读取距离数据无效";
 const char* g_str_fail = "失败";
-
-static const int gs_mb_write_triple_error_cool_tims_ms = 1500;
-static const int gs_mb_expo_readparm_sep_ms = 2000;
-static const int gs_mb_consec_rw_wait_ms = 1000;
 
 HVTester::HVTester(QObject *parent)
     : QObject{parent},
@@ -226,6 +223,16 @@ void HVTester::update_tester_state()
                    QString::number((quint16)(hv_curr_expo_param_triple.dura_ms)));
 }
 
+int HVTester::calc_cool_dura_ms()
+{
+    float cool_dura_ms = hv_test_params->expo_param_block.fixed_cool_dura ?
+                   hv_test_params->expo_param_block.expo_cool_dura_ms :
+                   hv_test_params->expo_param_block.expo_cool_dura_factor
+                   * hv_curr_expo_param_triple.dura_ms;
+    cool_dura_ms += g_sys_configs_block.extra_cool_time_ms;
+    return (int)cool_dura_ms;
+}
+
 bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                                     void (HVTester::*finished_sig_handler)(),
                                     bool sync, bool err_notify)
@@ -244,7 +251,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                               QString("%1:%2").arg(gs_str_mb_write_null_reply,
                                               hv_curr_triple_mb_unit_str));
         timer = &hv_cool_timer;
-        timer_ms = gs_mb_write_triple_error_cool_tims_ms;
+        timer_ms = g_sys_configs_block.consec_rw_wait_ms;
         break;
 
     case TEST_OP_START_EXPO:
@@ -253,7 +260,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                             :
                               QString("%1").arg(gs_str_mb_start_expo_null_reply));
         timer = &hv_expo_readback_sep_timer;
-        timer_ms = gs_mb_expo_readparm_sep_ms;
+        timer_ms = g_sys_configs_block.expo_prepare_time_ms + hv_curr_expo_param_triple.dura_ms;
         break;
 
     case TEST_OP_READ_REGS:
@@ -264,15 +271,12 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         if(hv_test_params->other_param_block.read_dist)
         {
             timer = &hv_before_read_distance_timer;
-            timer_ms = gs_mb_consec_rw_wait_ms;
+            timer_ms = g_sys_configs_block.consec_rw_wait_ms;
         }
         else
         {
             timer = &hv_cool_timer;
-            timer_ms = hv_test_params->expo_param_block.fixed_cool_dura ?
-                       hv_test_params->expo_param_block.expo_cool_dura_ms :
-                       hv_test_params->expo_param_block.expo_cool_dura_factor
-                       * hv_curr_expo_param_triple.dura_ms;
+            timer_ms = calc_cool_dura_ms();
         }
         break;
 
@@ -283,10 +287,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                             :
                               QString("%1").arg(gs_str_mb_read_null_reply));
         timer = &hv_cool_timer;
-        timer_ms = hv_test_params->expo_param_block.fixed_cool_dura ?
-                   hv_test_params->expo_param_block.expo_cool_dura_ms :
-                   hv_test_params->expo_param_block.expo_cool_dura_factor
-                   * hv_curr_expo_param_triple.dura_ms;
+        timer_ms = calc_cool_dura_ms();
         break;
     }
 

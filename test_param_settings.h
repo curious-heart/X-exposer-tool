@@ -43,6 +43,12 @@ private:
         bool ability[TEXT_MODE_CNT];
     }test_params_ctrls_ability_struct_t;
 
+#define UI_PARAM_ITEM(v, c) valid_##c
+#define LIST_PROC_UI_PARAM_ITEM(v) \
+UI_PARAM_ITEM(v, cube_volt_start), UI_PARAM_ITEM(v, cube_volt_end), UI_PARAM_ITEM(v, cube_volt_step),\
+UI_PARAM_ITEM(v, cube_current_start), UI_PARAM_ITEM(v, cube_current_end), UI_PARAM_ITEM(v, cube_current_step),\
+UI_PARAM_ITEM(v, expo_dura_start), UI_PARAM_ITEM(v, expo_dura_end), UI_PARAM_ITEM(v, expo_dura_step),\
+UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_dura_factor)
     typedef struct
     {
         regular_expo_parms_struct_t vals;
@@ -50,15 +56,16 @@ private:
         float expo_cool_dura_ms, expo_cool_dura_factor;
         bool fixed_cool_dura;
         bool limit_shortest_cool_dura, read_dist;
-        bool valid_cube_volt_start, valid_cube_volt_end, valid_cube_volt_step,
-             valid_cube_current_start, valid_cube_current_end, valid_cube_current_step,
-             valid_expo_dura_start, valid_expo_dura_end, valid_expo_dura_step,
-             valid_expo_cnt, valid_cool_dura, valid_cool_dura_factor;
-        QString err_msg_cube_volt_start, err_msg_cube_volt_end, err_msg_cube_volt_step,
-             err_msg_cube_current_start, err_msg_cube_current_end, err_msg_cube_current_step,
-             err_msg_expo_dura_start, err_msg_expo_dura_end, err_msg_expo_dura_step,
-             err_msg_expo_cnt, err_msg_cool_dura, err_msg_cool_dura_factor;
+        bool LIST_PROC_UI_PARAM_ITEM(_);
+#undef UI_PARAM_ITEM
+#define UI_PARAM_ITEM(v, c) err_msg_##c
+        QString LIST_PROC_UI_PARAM_ITEM(_);
     }expo_params_from_ui_struct_t;
+#undef UI_PARAM_ITEM
+/* maybe used in future...
+#define UI_PARAM_ITEM(v, c) (v).err_msg_##c.clear()
+#define CLEAR_UI_PARAM_ERR_MSGS(v) UI_PARAM_ITEM(v)
+*/
 
     Ui::testParamSettingsDialog *ui;
     QButtonGroup *m_expoDuraUnitBtnGrp, *m_coolDuraModeBtnGrp;
@@ -67,9 +74,9 @@ private:
     test_params_struct_t * m_test_params;
     expo_params_from_ui_struct_t m_expo_params_from_ui;
 
-    void clear_local_buffer();
     bool get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, float factor,
-                             RangeChecker* range, void * val_ptr, QString &ret_str);
+                             RangeChecker* range, void * val_ptr, QString &ret_str,
+                             QString new_unit_str = "");
 
     void get_expo_param_vals_from_ui();
     bool judge_dura_factor_from_str(QString h_s, float *factor);

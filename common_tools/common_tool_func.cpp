@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QColor>
 #include <QFont>
+#include <QtMath>
 
 static bool exec_external_process(QString cmd, QString cmd_args, bool as_admin = false)
 {
@@ -646,7 +647,7 @@ double RangeChecker::range_max()
 {
     return max;
 }
-QString RangeChecker::range_str(common_data_type_enum_t d_type, double factor)
+QString RangeChecker::range_str(common_data_type_enum_t d_type, double factor, QString new_unit_str )
 {
     QString ret_str;
 
@@ -661,7 +662,7 @@ QString RangeChecker::range_str(common_data_type_enum_t d_type, double factor)
                 ((INT_DATA == d_type) ? QString::number((int)(max * factor)) :
                                         QString::number((float)(max * factor)));
     ret_str += (EDGE_INCLUDED == up_edge) ? "]" : ")";
-    ret_str += QString(unit_str);
+    ret_str += ((1 == factor) || new_unit_str.isEmpty()) ? QString(unit_str) : new_unit_str;
     return ret_str;
 }
 
@@ -699,4 +700,15 @@ void append_str_with_color_and_weight(QTextEdit* ctrl, QString str, Qt::GlobalCo
 
     if((int)font_w >= 0) ctrl->setCurrentFont(curr_font);
     if((int)color >= 0) ctrl->setTextColor(curr_color);
+}
+
+int count_discrete_steps(double low_edge, double up_edge, double step)
+{
+    if(low_edge == up_edge) return 1;
+    if(0 == step) return 0;
+
+    double tmp = (up_edge - low_edge) / step;
+    if(tmp < 0) return 0;
+
+    return qCeil(tmp) + 1;
 }

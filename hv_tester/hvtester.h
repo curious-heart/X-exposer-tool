@@ -62,6 +62,7 @@ private:
     bool mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                               void (HVTester::*finished_sig_handler)(),
                               bool sync, bool error_notify);
+    int calc_cool_dura_ms();
 
 public slots:
     /*user signal handler.*/

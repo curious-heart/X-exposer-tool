@@ -72,6 +72,8 @@ private slots:
     /*internal used signal handler*/
     void auto_reconnect_sig_handler();
 
+    void on_dsoSetBtn_clicked();
+
 signals:
     void go_test_sig();
     void stop_test_sig();

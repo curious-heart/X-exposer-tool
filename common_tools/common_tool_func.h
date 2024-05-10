@@ -84,10 +84,12 @@ public:
     range_edge_enum_t range_up_edge();
     double range_min();
     double range_max();
-    QString range_str(common_data_type_enum_t d_type, double factor = 1);
+    QString range_str(common_data_type_enum_t d_type, double factor = 1, QString new_unit_str = "");
 };
 
 void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
                              Qt::GlobalColor color = (Qt::GlobalColor)-1,
                              QFont::Weight font_w = (QFont::Weight)-1);
+
+int count_discrete_steps(double low_edge, double up_edge, double step);
 #endif // COMMON_TOOL_FUNC_H

@@ -49,6 +49,8 @@ Dialog::Dialog(QWidget *parent)
 {
     ui->setupUi(this);
 
+    fill_sys_configs();
+
     m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params);
     m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params);
 
@@ -58,8 +60,6 @@ Dialog::Dialog(QWidget *parent)
         QMessageBox::critical(this, "Error", gs_str_init_fail);
         return;
     }
-
-    fill_sys_configs();
 
     m_testParamSettingsDialog->collect_test_params();
     if(m_test_params.valid)
@@ -107,9 +107,6 @@ Dialog::~Dialog()
 
 void Dialog::on_testParamSetBtn_clicked()
 {
-    m_test_params.valid = false;
-    m_test_params.expo_param_block.expo_params.cust_params_arr.clear();
-    m_test_params.info_str.clear();
     m_testParamSettingsDialog->exec();
 
     if(m_test_params.valid)
@@ -120,9 +117,6 @@ void Dialog::on_testParamSetBtn_clicked()
 
 void Dialog::on_hvConnSetBtn_clicked()
 {
-    m_hv_conn_params.valid = false;
-    m_hv_conn_params.info_str.clear();
-
     m_hvConnSettingsDialog->exec();
 
     if(m_hv_conn_params.valid)
@@ -490,3 +484,9 @@ void Dialog::auto_reconnect_sig_handler()
         m_modbus_device->connectDevice();
     }
 }
+
+void Dialog::on_dsoSetBtn_clicked()
+{
+    QMessageBox::information(this, "", "功能尚未实现！");
+}
+
