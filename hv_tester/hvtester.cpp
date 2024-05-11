@@ -391,7 +391,7 @@ void HVTester::go_test_sig_handler()
     {
         DIY_LOG(LOG_ERROR, gs_str_not_init);
         emit test_info_message_sig(LOG_ERROR, gs_str_not_init);
-        end_test();
+        end_test(TEST_END_EXCEPTION);
         return;
     }
     update_tester_state();
@@ -400,7 +400,7 @@ void HVTester::go_test_sig_handler()
     case TESTER_IDLE:
         emit test_info_message_sig(LOG_ERROR, "Tester is IDLE!!!");
     case TESTER_COMPLETE:
-        end_test();
+        end_test(TEST_END_NORMAL);
         return;
 
     case TESTER_A_NEW_ROUND:
@@ -536,7 +536,7 @@ void HVTester::cool_timer_sig_handler()
     emit internal_go_test_sig();
 }
 
-void HVTester::stop_test_sig_handler()
+void HVTester::stop_test_sig_handler(tester_end_code_enum_t /*code*/)
 {
     if(hv_expo_readback_sep_timer.isActive()) hv_expo_readback_sep_timer.stop();
     if(hv_cool_timer.isActive()) hv_cool_timer.stop();
@@ -552,8 +552,8 @@ void HVTester::stop_test_sig_handler()
     m_regs_read_result.clear();
 }
 
-void HVTester::end_test()
+void HVTester::end_test(tester_end_code_enum_t code)
 {
-    emit test_complete_sig();
-    stop_test_sig_handler();
+    emit test_complete_sig(code);
+    stop_test_sig_handler(code);
 }

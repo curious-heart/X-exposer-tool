@@ -65,7 +65,7 @@ private slots:
     void test_info_message_sig_handler(LOG_LEVEL lvl, QString msg);
     void rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                                  int loop_idx, int round_idx);
-    void test_complete_sig_hanler();
+    void test_complete_sig_hanler(tester_end_code_enum_t code);
 
     void on_clearTestInfoBtn_clicked();
 
@@ -76,7 +76,7 @@ private slots:
 
 signals:
     void go_test_sig();
-    void stop_test_sig();
+    void stop_test_sig(tester_end_code_enum_t code);
 
     /*internal used signal*/
     void auto_reconnect_sig();

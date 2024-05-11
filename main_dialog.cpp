@@ -18,6 +18,8 @@ static const char* gs_str_modbus_connect_err = "modbus连接失败";
 static const char* gs_str_modbus_disconnect_err = "modbus断开连接失败";
 static const char* gs_str_init_hvtester_err = "初始化hv_tester失败";
 static const char* gs_str_test_complete = "测试完成";
+static const char* gs_str_test_abort_by_user = "用户中止测试";
+static const char* gs_str_test_end_exception = "测试异常中止";
 static const char* gs_str_sep_line = "========================================";
 
 static const char* gs_str_test_rec_name_sufx = "曝光测试结果";
@@ -391,8 +393,8 @@ void Dialog::on_startTestBtn_clicked()
 
 void Dialog::on_stopTestBtn_clicked()
 {
-    emit stop_test_sig();
-    test_complete_sig_hanler();
+    emit stop_test_sig(TEST_END_ABORT_BY_USER);
+    test_complete_sig_hanler(TEST_END_ABORT_BY_USER);
 }
 
 void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg)
@@ -455,21 +457,44 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     ui->testInfoDisplayTxt->append(line);
 }
 
-void Dialog::test_complete_sig_hanler()
+void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 {
+    QString complete_str(common_tool_get_curr_date_str() + ","
+                 + common_tool_get_curr_time_str() + ",");
+    Qt::GlobalColor color;
+    QFont::Weight weight = QFont::Bold;
+
+    switch(code)
+    {
+    case TEST_END_NORMAL:
+        complete_str += gs_str_test_complete;
+        color = Qt::blue; weight = QFont::Bold;
+        break;
+
+    case TEST_END_ABORT_BY_USER:
+        complete_str += gs_str_test_abort_by_user;
+        color = Qt::darkYellow;
+        break;
+
+    case TEST_END_EXCEPTION:
+    default:
+        complete_str += gs_str_test_end_exception;
+        color = Qt::red;
+        break;
+    }
+
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, complete_str, color, weight);
+    ui->testInfoDisplayTxt->append(QString(gs_str_sep_line) + "\n\n");
+
     m_testing = false;
     refresh_butoons();
 
     if(m_curr_rec_file.isOpen())
     {
+        m_curr_txt_stream << complete_str << "\n" << gs_str_sep_line << "\n";
         m_curr_txt_stream.flush();
         m_curr_rec_file.close();
     }
-
-    append_str_with_color_and_weight(ui->testInfoDisplayTxt, gs_str_test_complete,
-                            Qt::blue, QFont::Bold);
-
-    ui->testInfoDisplayTxt->append(QString(gs_str_sep_line) + "\n\n");
 }
 
 void Dialog::on_clearTestInfoBtn_clicked()

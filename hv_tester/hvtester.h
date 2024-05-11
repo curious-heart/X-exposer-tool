@@ -24,6 +24,14 @@ typedef enum
 }tester_op_enum_t;
 Q_DECLARE_METATYPE(tester_op_enum_t)
 
+typedef enum
+{
+    TEST_END_NORMAL = 0,
+    TEST_END_ABORT_BY_USER,
+    TEST_END_EXCEPTION,
+}tester_end_code_enum_t;
+Q_DECLARE_METATYPE(tester_end_code_enum_t)
+
 class HVTester : public QObject
 {
     Q_OBJECT
@@ -53,7 +61,7 @@ private:
 
     bool is_the_last_one_test();
     void update_tester_state();
-    void end_test();
+    void end_test(tester_end_code_enum_t code);
 
 public:
     bool init(test_params_struct_t *test_params, QModbusClient * modbus_device, int srvr_addr);
@@ -67,14 +75,14 @@ private:
 public slots:
     /*user signal handler.*/
     void go_test_sig_handler(); //this handler is also used as internal signal slot.
-    void stop_test_sig_handler();
+    void stop_test_sig_handler(tester_end_code_enum_t code);
 
 signals:
     /*signals sent to user.*/
     void test_info_message_sig(LOG_LEVEL lvl, QString msg);
     void rec_mb_regs_sig(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                          int loop_idx, int round_idx);
-    void test_complete_sig();
+    void test_complete_sig(tester_end_code_enum_t code);
     /*signals used internally.*/
     void start_expo_now_sig();
     void start_readback_now_sig();
