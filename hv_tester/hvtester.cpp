@@ -17,7 +17,7 @@ const char* g_str_fail = "失败";
 
 HVTester::HVTester(QObject *parent)
     : QObject{parent},
-      hv_expo_readback_sep_timer(this), hv_before_read_distance_timer(this), hv_cool_timer(this)
+      hv_test_op_timer(this)
 {
     qRegisterMetaType<mb_reg_val_map_t>();
     qRegisterMetaType<tester_op_enum_t>();
@@ -25,17 +25,8 @@ HVTester::HVTester(QObject *parent)
     connect(this, &HVTester::start_expo_now_sig, this, &HVTester::start_expo_now_sig_handler,
                 Qt::QueuedConnection);
 
-    hv_expo_readback_sep_timer.setSingleShot(true);
-    connect(&hv_expo_readback_sep_timer, &QTimer::timeout, this,
-            &HVTester::expo_readback_sep_timer_sig_handler, Qt::QueuedConnection);
-
-    hv_before_read_distance_timer.setSingleShot(true);
-    connect(&hv_before_read_distance_timer, &QTimer::timeout,
-            this, &HVTester::before_read_distance_timer_sig_handler,
-                Qt::QueuedConnection);
-
-    hv_cool_timer.setSingleShot(true);
-    connect(&hv_cool_timer, &QTimer::timeout, this, &HVTester::cool_timer_sig_handler,
+    hv_test_op_timer.setSingleShot(true);
+    connect(&hv_test_op_timer, &QTimer::timeout, this, &HVTester::hv_test_op_timer_handler,
                 Qt::QueuedConnection);
 
     connect(this, &HVTester::start_readback_now_sig,
@@ -69,9 +60,7 @@ bool HVTester::init(test_params_struct_t *test_params, QModbusClient * modbus_de
     hv_test_idx_in_loop = 0;
     hv_test_idx_in_round = -1;
 
-    hv_expo_readback_sep_timer.stop();
-    hv_before_read_distance_timer.stop();
-    hv_cool_timer.stop();
+    hv_test_op_timer.stop();
 
     m_regs_read_result.clear();
     return true;
@@ -238,7 +227,6 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                                     bool sync, bool err_notify)
 {
     QString err_str;
-    QTimer * timer = nullptr;
     int timer_ms;
     bool delete_now = false;
     switch(op)
@@ -250,8 +238,8 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                             :
                               QString("%1:%2").arg(gs_str_mb_write_null_reply,
                                               hv_curr_triple_mb_unit_str));
-        timer = &hv_cool_timer;
         timer_ms = g_sys_configs_block.consec_rw_wait_ms;
+        m_current_handler = &HVTester::set_expo_parameters;
         break;
 
     case TEST_OP_START_EXPO:
@@ -259,8 +247,8 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                                                   mb_reply->errorString())
                             :
                               QString("%1").arg(gs_str_mb_start_expo_null_reply));
-        timer = &hv_expo_readback_sep_timer;
         timer_ms = g_sys_configs_block.expo_prepare_time_ms + hv_curr_expo_param_triple.dura_ms;
+        m_current_handler = &HVTester::start_expo_now_sig_handler;
         break;
 
     case TEST_OP_READ_REGS:
@@ -270,14 +258,13 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                               QString("%1").arg(gs_str_mb_read_null_reply));
         if(hv_test_params->other_param_block.read_dist)
         {
-            timer = &hv_before_read_distance_timer;
             timer_ms = g_sys_configs_block.consec_rw_wait_ms;
         }
         else
         {
-            timer = &hv_cool_timer;
             timer_ms = calc_cool_dura_ms();
         }
+        m_current_handler = &HVTester::start_readback_now_sig_handler;
         break;
 
     case TEST_OP_READ_DISTANCE:
@@ -286,15 +273,18 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                                                   mb_reply->errorString())
                             :
                               QString("%1").arg(gs_str_mb_read_null_reply));
-        timer = &hv_cool_timer;
         timer_ms = calc_cool_dura_ms();
+        m_current_handler = &HVTester::start_read_distance_sig_handler;
         break;
     }
 
     if(!mb_reply)
     {
         emit test_info_message_sig(LOG_ERROR, err_str);
-        if(TESTER_IDLE != hv_tester_proc) timer->start(timer_ms);
+        emit mb_op_err_req_reconnect_sig();
+        /*
+        if(TESTER_IDLE != hv_tester_proc) hv_test_op_timer.start(timer_ms);
+        */
     }
     else if(!sync || mb_reply->isFinished())
     {
@@ -309,6 +299,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                     QString err_str = (TEST_OP_READ_REGS == op) ? gs_str_mb_read_regs_invalid
                                                                 : gs_str_mb_read_distance_invalid;
                     emit test_info_message_sig(LOG_ERROR, err_str);
+                    emit mb_op_err_req_reconnect_sig();
                 }
                 else
                 {
@@ -330,11 +321,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
 
             if(TESTER_IDLE != hv_tester_proc)
             {
-                if(TEST_OP_SET_EXPO_TRIPLE == op)
-                {
-                    emit start_expo_now_sig();
-                }
-                else if((hv_test_params->other_param_block.read_dist
+                if((hv_test_params->other_param_block.read_dist
                            && (TEST_OP_READ_DISTANCE == op)
                            && (TESTER_LAST_ONE == hv_tester_proc))
                     || (!hv_test_params->other_param_block.read_dist
@@ -347,7 +334,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                 }
                 else
                 {
-                    timer->start(timer_ms);
+                    hv_test_op_timer.start(timer_ms);
                 }
             }
         }
@@ -355,9 +342,16 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         {
             DIY_LOG(LOG_ERROR, err_str);
             emit test_info_message_sig(LOG_ERROR, err_str);
+            emit mb_op_err_req_reconnect_sig();
+            /*
             if(TESTER_IDLE != hv_tester_proc)
             {
-                if((TEST_OP_READ_DISTANCE == op) && (TESTER_LAST_ONE == hv_tester_proc))
+                if((hv_test_params->other_param_block.read_dist
+                           && (TEST_OP_READ_DISTANCE == op)
+                           && (TESTER_LAST_ONE == hv_tester_proc))
+                    || (!hv_test_params->other_param_block.read_dist
+                           && (TEST_OP_READ_REGS == op)
+                           && (TESTER_LAST_ONE == hv_tester_proc)))
                 {
                     //for the last one, no need to set timer again, and let go_test to end
                     //the loop.
@@ -365,9 +359,10 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                 }
                 else
                 {
-                    timer->start(timer_ms);
+                    hv_test_op_timer.start(timer_ms);
                 }
             }
+            */
         }
         if(sync) delete_now = true;
     }
@@ -408,34 +403,39 @@ void HVTester::go_test_sig_handler()
     case TESTER_LAST_ONE:
     case TESTER_WORKING:
     default:
-    {
-        QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
-        QModbusReply *mb_reply;
-        QVector<quint16> mb_reg_vals;
-        mb_reg_vals.append((quint16)(hv_curr_expo_param_triple.cube_volt_kv));
-        mb_reg_vals.append((quint16)(1000* hv_curr_expo_param_triple.cube_current_ma));
-        mb_reg_vals.append((quint16)(hv_curr_expo_param_triple.dura_ms));
-
-        mb_reg_val_map_t reg_val_map;
-        reg_val_map.insert(VoltSet, mb_reg_vals.at(0));
-        reg_val_map.insert(FilamentSet, mb_reg_vals.at(1));
-        reg_val_map.insert(ExposureTime, mb_reg_vals.at(2));
-        emit rec_mb_regs_sig(TEST_OP_SET_EXPO_TRIPLE, reg_val_map,
-                         hv_test_idx_in_loop, hv_test_idx_in_round);
-
-        /*now write to modbus server*/
-        mb_du.setStartAddress(VoltSet);
-        mb_du.setValues(mb_reg_vals);
-        mb_reply = hv_modbus_device->sendWriteRequest(mb_du, hv_modbus_srvr_addr);
-        hv_curr_op = TEST_OP_SET_EXPO_TRIPLE;
-        if(mb_rw_reply_received(hv_curr_op, mb_reply,
-                                &HVTester::mb_write_params_finished_sig_handler,
-                                true, false))
         {
-            delete mb_reply;
+            set_expo_parameters();
         }
-    }
         break;
+    }
+}
+
+void HVTester::set_expo_parameters()
+{
+    QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
+    QModbusReply *mb_reply;
+    QVector<quint16> mb_reg_vals;
+    mb_reg_vals.append((quint16)(hv_curr_expo_param_triple.cube_volt_kv));
+    mb_reg_vals.append((quint16)(1000* hv_curr_expo_param_triple.cube_current_ma));
+    mb_reg_vals.append((quint16)(hv_curr_expo_param_triple.dura_ms));
+
+    mb_reg_val_map_t reg_val_map;
+    reg_val_map.insert(VoltSet, mb_reg_vals.at(0));
+    reg_val_map.insert(FilamentSet, mb_reg_vals.at(1));
+    reg_val_map.insert(ExposureTime, mb_reg_vals.at(2));
+    emit rec_mb_regs_sig(TEST_OP_SET_EXPO_TRIPLE, reg_val_map,
+                     hv_test_idx_in_loop, hv_test_idx_in_round);
+
+    /*now write to modbus server*/
+    mb_du.setStartAddress(VoltSet);
+    mb_du.setValues(mb_reg_vals);
+    mb_reply = hv_modbus_device->sendWriteRequest(mb_du, hv_modbus_srvr_addr);
+    hv_curr_op = TEST_OP_SET_EXPO_TRIPLE;
+    if(mb_rw_reply_received(hv_curr_op, mb_reply,
+                            &HVTester::mb_write_params_finished_sig_handler,
+                            true, false))
+    {
+        delete mb_reply;
     }
 }
 
@@ -521,26 +521,41 @@ void HVTester::mb_rw_error_sig_handler(QModbusDevice::Error /*error*/)
     mb_reply->deleteLater();
 }
 
-void HVTester::expo_readback_sep_timer_sig_handler()
+void HVTester::hv_test_op_timer_handler()
 {
-    emit start_readback_now_sig();
-}
+    switch(hv_curr_op)
+    {
+    case TEST_OP_SET_EXPO_TRIPLE:
+        emit start_expo_now_sig();
+        break;
 
-void HVTester::before_read_distance_timer_sig_handler()
-{
-    emit start_read_distance_sig();
-}
+    case TEST_OP_START_EXPO:
+        emit start_readback_now_sig();
+        break;
 
-void HVTester::cool_timer_sig_handler()
-{
-    emit internal_go_test_sig();
+    case TEST_OP_READ_REGS:
+        if(hv_test_params->other_param_block.read_dist)
+        {
+            emit start_read_distance_sig();
+        }
+        else
+        {
+            emit internal_go_test_sig();
+        }
+        break;
+
+    case TEST_OP_READ_DISTANCE:
+        emit internal_go_test_sig();
+        break;
+
+    default:
+        break;
+    }
 }
 
 void HVTester::stop_test_sig_handler(tester_end_code_enum_t /*code*/)
 {
-    if(hv_expo_readback_sep_timer.isActive()) hv_expo_readback_sep_timer.stop();
-    if(hv_cool_timer.isActive()) hv_cool_timer.stop();
-    if(hv_before_read_distance_timer.isActive()) hv_before_read_distance_timer.stop();
+    if(hv_test_op_timer.isActive()) hv_test_op_timer.stop();
 
     hv_test_params = nullptr;
     hv_modbus_device = nullptr;
@@ -556,4 +571,9 @@ void HVTester::end_test(tester_end_code_enum_t code)
 {
     emit test_complete_sig(code);
     stop_test_sig_handler(code);
+}
+
+void HVTester::mb_reconnected_sig_handler()
+{
+    if(m_current_handler) (this->*m_current_handler)();
 }

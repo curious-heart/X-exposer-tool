@@ -56,12 +56,14 @@ private:
     int hv_test_idx_in_loop = 0, hv_test_idx_in_round = -1;
     expo_param_triple_struct_t hv_curr_expo_param_triple;
     QString hv_curr_triple_mb_unit_str;
-    QTimer hv_expo_readback_sep_timer, hv_before_read_distance_timer, hv_cool_timer;
+    QTimer hv_test_op_timer;
     mb_reg_val_map_t m_regs_read_result;
 
     bool is_the_last_one_test();
     void update_tester_state();
     void end_test(tester_end_code_enum_t code);
+    typedef void (HVTester::*mb_operation_handler_t)();
+    mb_operation_handler_t m_current_handler = nullptr;
 
 public:
     bool init(test_params_struct_t *test_params, QModbusClient * modbus_device, int srvr_addr);
@@ -70,12 +72,14 @@ private:
     bool mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                               void (HVTester::*finished_sig_handler)(),
                               bool sync, bool error_notify);
+    void set_expo_parameters();
     int calc_cool_dura_ms();
 
 public slots:
     /*user signal handler.*/
     void go_test_sig_handler(); //this handler is also used as internal signal slot.
     void stop_test_sig_handler(tester_end_code_enum_t code);
+    void mb_reconnected_sig_handler();
 
 signals:
     /*signals sent to user.*/
@@ -83,6 +87,7 @@ signals:
     void rec_mb_regs_sig(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                          int loop_idx, int round_idx);
     void test_complete_sig(tester_end_code_enum_t code);
+    void mb_op_err_req_reconnect_sig();
     /*signals used internally.*/
     void start_expo_now_sig();
     void start_readback_now_sig();
@@ -100,9 +105,7 @@ public slots:
     void mb_read_distance_finish_sig_handler();
     void mb_rw_error_sig_handler(QModbusDevice::Error error);
     /*timer handler*/
-    void expo_readback_sep_timer_sig_handler();
-    void before_read_distance_timer_sig_handler();
-    void cool_timer_sig_handler();
+    void hv_test_op_timer_handler();
 };
 
 #endif // HVTESTER_H

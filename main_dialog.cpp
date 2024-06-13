@@ -81,6 +81,8 @@ Dialog::Dialog(QWidget *parent)
             &m_hv_tester, &HVTester::go_test_sig_handler, Qt::QueuedConnection);
     connect(this, &Dialog::stop_test_sig,
             &m_hv_tester, &HVTester::stop_test_sig_handler, Qt::QueuedConnection);
+    connect(this, &Dialog::mb_reconnected_sig,
+            &m_hv_tester, &HVTester::mb_reconnected_sig_handler, Qt::QueuedConnection);
 
     connect(&m_hv_tester, &HVTester::test_info_message_sig,
             this, &Dialog::test_info_message_sig_handler, Qt::QueuedConnection);
@@ -88,6 +90,9 @@ Dialog::Dialog(QWidget *parent)
             this, &Dialog::rec_mb_regs_sig_handler, Qt::QueuedConnection);
     connect(&m_hv_tester, &HVTester::test_complete_sig,
             this, &Dialog::test_complete_sig_hanler, Qt::QueuedConnection);
+    connect(&m_hv_tester, &HVTester::mb_op_err_req_reconnect_sig,
+            this, &Dialog::mb_op_err_req_reconnect_sig_handler, Qt::QueuedConnection);
+
     connect(this, &Dialog::auto_reconnect_sig,
             this, &Dialog::auto_reconnect_sig_handler, Qt::QueuedConnection);
 }
@@ -264,6 +269,7 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
               : state_str[state];
     if(QModbusDevice::ConnectedState == state)
     {
+        m_self_reconnecting = false;
         append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
                                          Qt::darkGreen);
     }
@@ -277,15 +283,27 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
         ui->testInfoDisplayTxt->append(curr_str);
     }
 
-    if(m_testing && (QModbusDevice::UnconnectedState == state))
+    if(m_asked_for_reconnecting)
+    {
+        if(QModbusDevice::ConnectedState == state)
+        {
+            m_asked_for_reconnecting = false;
+            emit mb_reconnected_sig();
+        }
+        else if(QModbusDevice::UnconnectedState == state && !m_self_reconnecting)
+        {
+            emit auto_reconnect_sig();
+        }
+
+    }
+    else if(m_testing && (QModbusDevice::UnconnectedState == state))
     {
         DIY_LOG(LOG_ERROR, "modbus disconnected during testing. now emit reconnect signal.");
+        m_self_reconnecting = true;
         emit auto_reconnect_sig();
     }
-    else
-    {
-        refresh_butoons();
-    }
+
+    refresh_butoons();
 }
 
 void Dialog::on_hvConnBtn_clicked()
@@ -387,6 +405,8 @@ void Dialog::on_startTestBtn_clicked()
     record_header();
 
     m_testing = true;
+    m_self_reconnecting = false;
+    m_asked_for_reconnecting = false;
     refresh_butoons();
     emit go_test_sig();
 }
@@ -497,6 +517,13 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     }
 }
 
+void Dialog::mb_op_err_req_reconnect_sig_handler()
+{
+    DIY_LOG(LOG_ERROR, "received modbus reconnect req from tester, now reconnect.");
+    m_asked_for_reconnecting = true;
+    auto_reconnect_sig_handler();
+}
+
 void Dialog::on_clearTestInfoBtn_clicked()
 {
     ui->testInfoDisplayTxt->clear();
@@ -506,6 +533,7 @@ void Dialog::auto_reconnect_sig_handler()
 {
     if(m_modbus_device)
     {
+        m_modbus_device->disconnectDevice();
         m_modbus_device->connectDevice();
     }
 }
