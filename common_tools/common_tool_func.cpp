@@ -684,22 +684,25 @@ void RangeChecker::set_unit_str(const char* unit_s)
     unit_str = unit_s;
 }
 
-void append_str_with_color_and_weight(QTextEdit* ctrl, QString str, Qt::GlobalColor color, QFont::Weight font_w)
+void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
+                                      QColor new_color, int new_font_weight)
 {
-    QColor curr_color = ctrl->textColor(), new_color(color);
+    QColor curr_color = ctrl->textColor();
     QFont curr_font = ctrl->currentFont(), new_font = curr_font;
+    bool modify_color = !(new_color == curr_color),
+         modify_font_weight = !(new_font_weight < 0 || new_font_weight == curr_font.weight());
 
-    if((int)color >= 0) ctrl->setTextColor(new_color);
-    if((int)font_w >= 0)
+    if(modify_color) ctrl->setTextColor(new_color);
+    if(modify_font_weight)
     {
-        new_font.setWeight(font_w);
+        new_font.setWeight(new_font_weight);
         ctrl->setCurrentFont(new_font);
     }
 
     ctrl->append(str);
 
-    if((int)font_w >= 0) ctrl->setCurrentFont(curr_font);
-    if((int)color >= 0) ctrl->setTextColor(curr_color);
+    if(modify_font_weight) ctrl->setCurrentFont(curr_font);
+    if(modify_color) ctrl->setTextColor(curr_color);
 }
 
 int count_discrete_steps(double low_edge, double up_edge, double step)

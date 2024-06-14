@@ -229,6 +229,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
     QString err_str;
     int timer_ms;
     bool delete_now = false;
+    bool goon = true;
     switch(op)
     {
     case TEST_OP_SET_EXPO_TRIPLE:
@@ -281,6 +282,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
     if(!mb_reply)
     {
         emit test_info_message_sig(LOG_ERROR, err_str);
+        DIY_LOG(LOG_ERROR, "tester sends reconnect req because of null reply");
         emit mb_op_err_req_reconnect_sig();
         /*
         if(TESTER_IDLE != hv_tester_proc) hv_test_op_timer.start(timer_ms);
@@ -288,6 +290,8 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
     }
     else if(!sync || mb_reply->isFinished())
     {
+        if(sync) delete_now = true;
+
         QModbusDevice::Error err = mb_reply->error();
         if((QModbusDevice::NoError == err) && (sync || !err_notify))
         {
@@ -299,7 +303,9 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                     QString err_str = (TEST_OP_READ_REGS == op) ? gs_str_mb_read_regs_invalid
                                                                 : gs_str_mb_read_distance_invalid;
                     emit test_info_message_sig(LOG_ERROR, err_str);
+                    DIY_LOG(LOG_ERROR, "tester sends reconnect req because of invalid du");
                     emit mb_op_err_req_reconnect_sig();
+                    goon = false;
                 }
                 else
                 {
@@ -319,7 +325,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                 }
             }
 
-            if(TESTER_IDLE != hv_tester_proc)
+            if(goon && (TESTER_IDLE != hv_tester_proc))
             {
                 if((hv_test_params->other_param_block.read_dist
                            && (TEST_OP_READ_DISTANCE == op)
@@ -340,7 +346,7 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         }
         else if((QModbusDevice::NoError != err) && (sync || err_notify))
         {
-            DIY_LOG(LOG_ERROR, err_str);
+            DIY_LOG(LOG_ERROR, QString("tester sends reconnect req because of error:") + err_str);
             emit test_info_message_sig(LOG_ERROR, err_str);
             emit mb_op_err_req_reconnect_sig();
             /*
@@ -364,7 +370,6 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
             }
             */
         }
-        if(sync) delete_now = true;
     }
     else
     {
@@ -431,6 +436,7 @@ void HVTester::set_expo_parameters()
     mb_du.setValues(mb_reg_vals);
     mb_reply = hv_modbus_device->sendWriteRequest(mb_du, hv_modbus_srvr_addr);
     hv_curr_op = TEST_OP_SET_EXPO_TRIPLE;
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     if(mb_rw_reply_received(hv_curr_op, mb_reply,
                             &HVTester::mb_write_params_finished_sig_handler,
                             true, false))
@@ -446,6 +452,7 @@ void HVTester::start_expo_now_sig_handler()
     mb_du.setValue(0, START_EXPO_DATA);
     mb_reply = hv_modbus_device->sendWriteRequest(mb_du, hv_modbus_srvr_addr);
     hv_curr_op = TEST_OP_START_EXPO;
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     if(mb_rw_reply_received(hv_curr_op, mb_reply,
                             &HVTester::mb_start_expo_finished_sig_handler,
                             true, false))
@@ -462,6 +469,7 @@ void HVTester::start_readback_now_sig_handler()
     mb_du.setValueCount(MAX_HV_NORMAL_MB_REG_NUM);
     mb_reply = hv_modbus_device->sendReadRequest(mb_du, hv_modbus_srvr_addr);
     hv_curr_op = TEST_OP_READ_REGS;
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     if(mb_rw_reply_received(hv_curr_op, mb_reply,
                             &HVTester::mb_read_finished_sig_handler,
                             true, false))
@@ -478,6 +486,7 @@ void HVTester::start_read_distance_sig_handler()
     mb_du.setValueCount(1);
     mb_reply = hv_modbus_device->sendReadRequest(mb_du, hv_modbus_srvr_addr);
     hv_curr_op = TEST_OP_READ_DISTANCE;
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     if(mb_rw_reply_received(hv_curr_op, mb_reply,
                             &HVTester::mb_read_distance_finish_sig_handler,
                             true, false))
@@ -489,6 +498,7 @@ void HVTester::start_read_distance_sig_handler()
 void HVTester::mb_write_params_finished_sig_handler()
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     mb_rw_reply_received(TEST_OP_SET_EXPO_TRIPLE, mb_reply, nullptr, false, false);
     mb_reply->deleteLater();
 }
@@ -496,6 +506,7 @@ void HVTester::mb_write_params_finished_sig_handler()
 void HVTester::mb_start_expo_finished_sig_handler()
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     mb_rw_reply_received(TEST_OP_START_EXPO, mb_reply, nullptr, false, false);
     mb_reply->deleteLater();
 }
@@ -503,6 +514,7 @@ void HVTester::mb_start_expo_finished_sig_handler()
 void HVTester::mb_read_finished_sig_handler()
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     mb_rw_reply_received(TEST_OP_READ_REGS, mb_reply, nullptr, false, false);
     mb_reply->deleteLater();
 }
@@ -510,6 +522,7 @@ void HVTester::mb_read_finished_sig_handler()
 void HVTester::mb_read_distance_finish_sig_handler()
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     mb_rw_reply_received(TEST_OP_READ_DISTANCE, mb_reply, nullptr, false, false);
     mb_reply->deleteLater();
 }
@@ -517,6 +530,7 @@ void HVTester::mb_read_distance_finish_sig_handler()
 void HVTester::mb_rw_error_sig_handler(QModbusDevice::Error /*error*/)
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
+    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
     mb_rw_reply_received(hv_curr_op, mb_reply, nullptr, false, true);
     mb_reply->deleteLater();
 }

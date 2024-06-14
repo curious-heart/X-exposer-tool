@@ -88,8 +88,8 @@ public:
 };
 
 void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
-                             Qt::GlobalColor color = (Qt::GlobalColor)-1,
-                             QFont::Weight font_w = (QFont::Weight)-1);
+                             QColor new_color = Qt::black,
+                             int new_font_weight = -1);
 
 int count_discrete_steps(double low_edge, double up_edge, double step);
 #endif // COMMON_TOOL_FUNC_H

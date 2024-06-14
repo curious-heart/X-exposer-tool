@@ -74,7 +74,7 @@ void end_log_thread(QThread &th);
 */
 #define DIY_LOG(level, log) \
     {\
-        QString loc_str = QString(__FILE__) + QString("  [%1]").arg(__LINE__);\
+        QString loc_str = QString(__FILE__) + QString("  [%1][%2]").arg(__LINE__).arg(__FUNCTION__);\
         if(g_LogSigEmitter)\
         {\
             __emit_log_signal__((int)level, loc_str, (log));\

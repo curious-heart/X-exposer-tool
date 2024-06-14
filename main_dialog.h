@@ -42,6 +42,8 @@ private:
     QFile m_curr_rec_file;
     QTextStream m_curr_txt_stream;
     static const hv_mb_reg_e_t m_mbregs_to_record[];
+    QColor m_txt_def_color;
+    QFont m_txt_def_font;
 
     hv_conn_type_enum_t m_curr_conn_type = CONN_TYPE_NONE;
     QModbusClient * m_modbus_device = nullptr;

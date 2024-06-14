@@ -13,6 +13,8 @@ typedef struct
     float cube_current_ma_max;
     float dura_ms_min;
     float dura_ms_max;
+
+    int mb_reconnect_wait_ms;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

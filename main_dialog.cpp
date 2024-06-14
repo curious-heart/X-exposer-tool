@@ -95,6 +95,9 @@ Dialog::Dialog(QWidget *parent)
 
     connect(this, &Dialog::auto_reconnect_sig,
             this, &Dialog::auto_reconnect_sig_handler, Qt::QueuedConnection);
+
+    m_txt_def_color = ui->testInfoDisplayTxt->textColor();
+    m_txt_def_font = ui->testInfoDisplayTxt->currentFont();
 }
 
 Dialog::~Dialog()
@@ -241,8 +244,7 @@ void Dialog::modbus_error_sig_handler(QModbusDevice::Error error)
     {
         DIY_LOG(LOG_ERROR, curr_str);
 
-        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
-                                         Qt::red, (QFont::Weight)-1);
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str, Qt::red);
     }
 }
 
@@ -267,40 +269,46 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     curr_str = (state < 0 || (int)state >= ARRAY_COUNT(state_str)) ?
                 QString("%1:%2").arg(gs_str_modbus_unkonwn_state, QString::number(state))
               : state_str[state];
+
+    DIY_LOG(LOG_INFO, curr_str);
     if(QModbusDevice::ConnectedState == state)
     {
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str, Qt::darkGreen);
+
         m_self_reconnecting = false;
-        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
-                                         Qt::darkGreen);
+        if(m_asked_for_reconnecting)
+        {
+            m_asked_for_reconnecting = false;
+            DIY_LOG(LOG_INFO, "user asks for reconnect, connected.");
+            emit mb_reconnected_sig();
+        }
     }
     else if(QModbusDevice::UnconnectedState == state)
     {
-        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
-                                         Qt::darkGray);
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str, Qt::darkGray);
+
+        if(m_testing)
+        {
+            if(m_asked_for_reconnecting)
+            {
+                DIY_LOG(LOG_INFO, "user asks for reconnect."
+                                   " wait some time then emit reconnect sig.");
+            }
+            else
+            {
+                DIY_LOG(LOG_INFO, "modbus disconnected during testing."
+                                   " wait some time then emit reconnect signal.");
+            }
+
+            QThread::msleep(g_sys_configs_block.mb_reconnect_wait_ms);
+            m_self_reconnecting = true;
+            emit auto_reconnect_sig();
+        }
     }
     else
     {
-        ui->testInfoDisplayTxt->append(curr_str);
-    }
-
-    if(m_asked_for_reconnecting)
-    {
-        if(QModbusDevice::ConnectedState == state)
-        {
-            m_asked_for_reconnecting = false;
-            emit mb_reconnected_sig();
-        }
-        else if(QModbusDevice::UnconnectedState == state && !m_self_reconnecting)
-        {
-            emit auto_reconnect_sig();
-        }
-
-    }
-    else if(m_testing && (QModbusDevice::UnconnectedState == state))
-    {
-        DIY_LOG(LOG_ERROR, "modbus disconnected during testing. now emit reconnect signal.");
-        m_self_reconnecting = true;
-        emit auto_reconnect_sig();
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
+                                         m_txt_def_color, m_txt_def_font.weight());
     }
 
     refresh_butoons();
@@ -357,7 +365,8 @@ void Dialog::record_header()
         hdr += ",";
     }
     m_curr_txt_stream << hdr << "\n";
-    ui->testInfoDisplayTxt->append(hdr);
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, hdr,
+                                     m_txt_def_color, m_txt_def_font.weight());
 }
 
 void Dialog::on_startTestBtn_clicked()
@@ -429,12 +438,12 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg)
 
         if(LOG_ERROR == lvl)
         {
-            append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
-                                             Qt::red, (QFont::Weight)-1);
+            append_str_with_color_and_weight(ui->testInfoDisplayTxt, line, Qt::red);
         }
         else
         {
-            ui->testInfoDisplayTxt->append(line);
+            append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
+                                             m_txt_def_color, m_txt_def_font.weight());
         }
     }
 }
@@ -461,7 +470,8 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         line += QString::number(reg_val_map.value(FilamentSet)) + ",";
         line += QString::number(reg_val_map.value(ExposureTime)) + ",";
         m_curr_txt_stream << line << "\n";
-        ui->testInfoDisplayTxt->append(line);
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
+                                         m_txt_def_color, m_txt_def_font.weight());
 
         return;
     }
@@ -474,7 +484,8 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         ++idx;
     }
     m_curr_txt_stream << line << "\n";
-    ui->testInfoDisplayTxt->append(line);
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
+                                     m_txt_def_color, m_txt_def_font.weight());
 }
 
 void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
@@ -504,9 +515,12 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     }
 
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, complete_str, color, weight);
-    ui->testInfoDisplayTxt->append(QString(gs_str_sep_line) + "\n\n");
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, QString(gs_str_sep_line) + "\n\n",
+                                     m_txt_def_color, m_txt_def_font.weight());
 
     m_testing = false;
+    m_self_reconnecting = false;
+    m_asked_for_reconnecting = false;
     refresh_butoons();
 
     if(m_curr_rec_file.isOpen())
@@ -519,9 +533,17 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 
 void Dialog::mb_op_err_req_reconnect_sig_handler()
 {
-    DIY_LOG(LOG_ERROR, "received modbus reconnect req from tester, now reconnect.");
+    DIY_LOG(LOG_INFO, "received modbus reconnect req from tester.");
     m_asked_for_reconnecting = true;
-    auto_reconnect_sig_handler();
+    if(!m_self_reconnecting)
+    {
+        DIY_LOG(LOG_INFO, "now emit reconnect sig on tester req.");
+        auto_reconnect_sig_handler();
+    }
+    else
+    {
+        DIY_LOG(LOG_INFO, "self reconnecting is already working.");
+    }
 }
 
 void Dialog::on_clearTestInfoBtn_clicked()
@@ -533,7 +555,10 @@ void Dialog::auto_reconnect_sig_handler()
 {
     if(m_modbus_device)
     {
-        m_modbus_device->disconnectDevice();
+        if(QModbusDevice::ConnectedState == m_modbus_state)
+        {
+            m_modbus_device->disconnectDevice();
+        }
         m_modbus_device->connectDevice();
     }
 }
