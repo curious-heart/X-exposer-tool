@@ -21,6 +21,7 @@ set ver_str=%2
 
 xcopy .\configs %dest_folder%\configs /Y /E /I
 xcopy .\*.csv %dest_folder%\ /Y /I
+xcopy .\*.docx %dest_folder%\ /Y /I
 copy %exe_folder%\%exe_file_base_name%.exe %dest_folder%\
 %QT_DEPLOY_EXE% %dest_folder%\%exe_file_base_name%.exe
 %winrar_exe% a -df -r -ep1 -tk %dest_folder%\%exe_file_base_name%-%ver_str%.zip %dest_folder%\*
