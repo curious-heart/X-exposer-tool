@@ -49,10 +49,12 @@ const hvConnSettings::combobox_item_struct_t hvConnSettings::stop_bit_list[] =
 };
 
 
-hvConnSettings::hvConnSettings(QWidget *parent, modbus_conn_parameters_struct_t* param_ptr) :
+hvConnSettings::hvConnSettings(QWidget *parent, modbus_conn_parameters_struct_t* param_ptr,
+                               UiConfigRecorder * cfg_recorder) :
     QDialog(parent),
     ui(new Ui::hvConnSettings),
-    modbus_conn_params(param_ptr)
+    modbus_conn_params(param_ptr),
+    m_cfg_recorder(cfg_recorder)
 {
     ui->setupUi(this);
 
@@ -89,6 +91,7 @@ hvConnSettings::hvConnSettings(QWidget *parent, modbus_conn_parameters_struct_t*
     }
     ui->COMNumComBox->setCurrentIndex(0);
 
+    if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this);
     select_conn_type_param_block();
 }
 
@@ -244,6 +247,7 @@ void hvConnSettings::on_buttonBox_clicked(QAbstractButton *button)
         ret_str = collect_conn_params();
         if(modbus_conn_params->valid)
         {
+            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this);
             accept();
         }
         else

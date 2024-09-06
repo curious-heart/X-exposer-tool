@@ -9,6 +9,7 @@
 #include "test_param_settings.h"
 #include "hv_connsettings.h"
 #include "hv_tester/hvtester.h"
+#include "config_recorder/uiconfigrecorder.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
@@ -47,6 +48,7 @@ private:
 
     hv_conn_type_enum_t m_curr_conn_type = CONN_TYPE_NONE;
     QModbusClient * m_modbus_device = nullptr;
+    UiConfigRecorder m_cfg_recorder;
     void select_modbus_device();
 
     void refresh_butoons();

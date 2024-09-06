@@ -10,6 +10,7 @@ CONFIG += c++17
 
 SOURCES += \
     common_tools/common_tool_func.cpp \
+    config_recorder/uiconfigrecorder.cpp \
     hv_connsettings.cpp \
     hv_tester/hvtester.cpp \
     logger/logger.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
 
 HEADERS += \
     common_tools/common_tool_func.h \
+    config_recorder/uiconfigrecorder.h \
     hv_connsettings.h \
     hv_tester/hvtester.h \
     logger/logger.h \

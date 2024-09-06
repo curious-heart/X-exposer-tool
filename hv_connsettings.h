@@ -6,6 +6,8 @@
 #include <QDialogButtonBox>
 #include <QPushButton>
 
+#include "config_recorder/uiconfigrecorder.h"
+
 namespace Ui {
 class hvConnSettings;
 }
@@ -47,7 +49,9 @@ class hvConnSettings : public QDialog
     Q_OBJECT
 
 public:
-    explicit hvConnSettings(QWidget *parent = nullptr, modbus_conn_parameters_struct_t* param_ptr = nullptr);
+    explicit hvConnSettings(QWidget *parent = nullptr,
+                            modbus_conn_parameters_struct_t* param_ptr = nullptr,
+                            UiConfigRecorder * cfg_recorder = nullptr);
     ~hvConnSettings();
 
 private slots:
@@ -72,6 +76,8 @@ private:
 
     void select_conn_type_param_block();
     void format_hv_conn_info_str();
+
+    UiConfigRecorder * m_cfg_recorder = nullptr;
 
 public:
     QString collect_conn_params();

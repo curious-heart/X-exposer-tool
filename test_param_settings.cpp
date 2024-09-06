@@ -124,10 +124,13 @@ const testParamSettingsDialog::test_mode_espair_struct_t
     ARRANGE_CTRLS_ABILITY(ui->custExpoParamFileNoteEdit, false, false, false, true, true)\
 }
 
-testParamSettingsDialog::testParamSettingsDialog(QWidget *parent, test_params_struct_t *test_params_ptr) :
+testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
+                                                 test_params_struct_t *test_params_ptr,
+                                                 UiConfigRecorder * cfg_recorder) :
     QDialog(parent),
     ui(new Ui::testParamSettingsDialog),
-    m_test_params(test_params_ptr)
+    m_test_params(test_params_ptr),
+    m_cfg_recorder(cfg_recorder)
 {
     if(!m_test_params)
     {
@@ -139,21 +142,24 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent, test_params_st
     m_expoDuraUnitBtnGrp = new QButtonGroup(this);
     m_expoDuraUnitBtnGrp->addButton(ui->expoDuraUnitmsRButton);
     m_expoDuraUnitBtnGrp->addButton(ui->expoDuraUnitsecRButton);
-    ui->expoDuraUnitmsRButton->setChecked(true);
 
     m_coolDuraModeBtnGrp = new QButtonGroup(this);
     m_coolDuraModeBtnGrp->addButton(ui->fixedCoolDuraRButton);
     m_coolDuraModeBtnGrp->addButton(ui->timesCoolDuraRButton);
-    ui->timesCoolDuraRButton->setChecked(true);
 
     int idx;
     for(idx = 0; idx < ARRAY_COUNT(test_mode_list); ++idx)
     {
         ui->testModeComboBox->addItem(test_mode_list[idx].s, test_mode_list[idx].e);
     }
+
+    ui->expoDuraUnitmsRButton->setChecked(true);
+    ui->timesCoolDuraRButton->setChecked(true);
     ui->testModeComboBox->setCurrentIndex(0);
     ui->limitShortestCoolDuraChBox->setChecked(true);
     ui->readDistChBox->setChecked(true);
+
+    if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this);
 
     TEST_PARAMS_CTRLS_ABT_TBL;
 
@@ -1136,6 +1142,7 @@ void testParamSettingsDialog::on_buttonBox_clicked(QAbstractButton *button)
         QString ret_str = collect_test_params();
         if(m_test_params->valid)
         {
+            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this);
             accept();
         }
         else

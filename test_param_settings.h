@@ -8,6 +8,7 @@
 
 #include "common_tools/common_tool_func.h"
 #include "test_params_struct.h"
+#include "config_recorder/uiconfigrecorder.h"
 
 namespace Ui {
 class testParamSettingsDialog;
@@ -19,7 +20,8 @@ class testParamSettingsDialog : public QDialog
 
 public:
     explicit testParamSettingsDialog(QWidget *parent = nullptr,
-                                     test_params_struct_t * test_params_ptr = nullptr);
+                                     test_params_struct_t * test_params_ptr = nullptr,
+                                     UiConfigRecorder * cfg_recorder = nullptr );
     ~testParamSettingsDialog();
 
 private slots:
@@ -92,6 +94,7 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     void refresh_controls_display();
     void format_test_params_info_str(QString &file_content);
 
+    UiConfigRecorder * m_cfg_recorder = nullptr;
 public:
     QString collect_test_params();
 };

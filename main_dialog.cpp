@@ -36,6 +36,8 @@ extern const char* g_str_loop;
 extern const char* g_str_time_ci;
 extern const char* g_str_the_line_pron;
 
+static const char* gs_cfg_recorder_file_fpn = ".cfg_settings.ini";
+
 /*设置管电压、设置管电流、曝光时间必须连续放置*/
 const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
 {
@@ -48,13 +50,15 @@ Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
     , m_hv_tester(this)
+    , m_cfg_recorder(this, gs_cfg_recorder_file_fpn)
 {
     ui->setupUi(this);
 
     fill_sys_configs();
 
-    m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params);
-    m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params);
+    m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params,
+                                                            &m_cfg_recorder);
+    m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params, &m_cfg_recorder);
 
     if(!m_testParamSettingsDialog || !m_hvConnSettingsDialog)
     {
