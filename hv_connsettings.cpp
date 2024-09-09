@@ -91,12 +91,17 @@ hvConnSettings::hvConnSettings(QWidget *parent, modbus_conn_parameters_struct_t*
     }
     ui->COMNumComBox->setCurrentIndex(0);
 
-    if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this);
+    m_rec_ui_cfg_fin.clear();
+    m_rec_ui_cfg_fout.clear();
+    if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this,
+                                                          m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
     select_conn_type_param_block();
 }
 
 hvConnSettings::~hvConnSettings()
 {
+    m_rec_ui_cfg_fin.clear();
+    m_rec_ui_cfg_fout.clear();
     delete ui;
 }
 
@@ -247,7 +252,8 @@ void hvConnSettings::on_buttonBox_clicked(QAbstractButton *button)
         ret_str = collect_conn_params();
         if(modbus_conn_params->valid)
         {
-            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this);
+            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this,
+                                                                 m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
             accept();
         }
         else

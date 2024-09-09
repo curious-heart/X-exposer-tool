@@ -5,6 +5,7 @@
 #include <QModbusRtuSerialMaster>
 #include <QModbusTcpClient>
 #include <QFile>
+#include <QSet>
 
 #include "test_param_settings.h"
 #include "hv_connsettings.h"
@@ -49,6 +50,7 @@ private:
     hv_conn_type_enum_t m_curr_conn_type = CONN_TYPE_NONE;
     QModbusClient * m_modbus_device = nullptr;
     UiConfigRecorder m_cfg_recorder;
+    qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
     void select_modbus_device();
 
     void refresh_butoons();
@@ -78,6 +80,8 @@ private slots:
     void auto_reconnect_sig_handler();
 
     void on_dsoSetBtn_clicked();
+
+    void on_Dialog_finished(int result);
 
 signals:
     void go_test_sig();

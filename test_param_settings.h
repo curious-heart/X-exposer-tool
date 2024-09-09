@@ -95,6 +95,8 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     void format_test_params_info_str(QString &file_content);
 
     UiConfigRecorder * m_cfg_recorder = nullptr;
+    qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
+
 public:
     QString collect_test_params();
 };

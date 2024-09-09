@@ -36,8 +36,6 @@ extern const char* g_str_loop;
 extern const char* g_str_time_ci;
 extern const char* g_str_the_line_pron;
 
-static const char* gs_cfg_recorder_file_fpn = ".cfg_settings.ini";
-
 /*设置管电压、设置管电流、曝光时间必须连续放置*/
 const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
 {
@@ -50,7 +48,7 @@ Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
     , m_hv_tester(this)
-    , m_cfg_recorder(this, gs_cfg_recorder_file_fpn)
+    , m_cfg_recorder(this)
 {
     ui->setupUi(this);
 
@@ -78,6 +76,10 @@ Dialog::Dialog(QWidget *parent)
         ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
     }
     select_modbus_device();
+
+    m_rec_ui_cfg_fin.insert(nullptr); //no items needs to record.
+    m_rec_ui_cfg_fout.clear();
+    m_cfg_recorder.load_configs_to_ui(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
 
     refresh_butoons();
 
@@ -116,6 +118,10 @@ Dialog::~Dialog()
         m_curr_txt_stream.flush();
         m_curr_rec_file.close();
     }
+
+    m_rec_ui_cfg_fin.clear();
+    m_rec_ui_cfg_fout.clear();
+
     delete ui;
 }
 
@@ -375,6 +381,8 @@ void Dialog::record_header()
 
 void Dialog::on_startTestBtn_clicked()
 {
+    m_cfg_recorder.record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+
     if(!m_test_params.valid)
     {
         QMessageBox::critical(this, "Error", gs_str_plz_set_valid_test_params);
@@ -570,5 +578,11 @@ void Dialog::auto_reconnect_sig_handler()
 void Dialog::on_dsoSetBtn_clicked()
 {
     QMessageBox::information(this, "", "功能尚未实现！");
+}
+
+
+void Dialog::on_Dialog_finished(int /*result*/)
+{
+    m_cfg_recorder.record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
 }
 

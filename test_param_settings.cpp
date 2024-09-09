@@ -159,7 +159,10 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     ui->limitShortestCoolDuraChBox->setChecked(true);
     ui->readDistChBox->setChecked(true);
 
-    if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this);
+    m_rec_ui_cfg_fin.clear();
+    m_rec_ui_cfg_fout.insert(ui->custExpoParamFileNoteEdit);
+    if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this,
+                                                          m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
 
     TEST_PARAMS_CTRLS_ABT_TBL;
 
@@ -192,6 +195,8 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
 
 testParamSettingsDialog::~testParamSettingsDialog()
 {
+    m_rec_ui_cfg_fin.clear();
+    m_rec_ui_cfg_fout.clear();
     delete ui;
 }
 
@@ -1142,7 +1147,8 @@ void testParamSettingsDialog::on_buttonBox_clicked(QAbstractButton *button)
         QString ret_str = collect_test_params();
         if(m_test_params->valid)
         {
-            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this);
+            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this,
+                                                         m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
             accept();
         }
         else

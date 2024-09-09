@@ -78,6 +78,7 @@ private:
     void format_hv_conn_info_str();
 
     UiConfigRecorder * m_cfg_recorder = nullptr;
+    qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
 
 public:
     QString collect_conn_params();
