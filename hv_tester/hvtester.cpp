@@ -14,6 +14,8 @@ static const char* gs_str_mb_read_distance= "modbus读取距离寄存器";
 static const char* gs_str_mb_read_regs_invalid = "modbus读取常规寄存器数据无效";
 static const char* gs_str_mb_read_distance_invalid = "modbus读取距离数据无效";
 const char* g_str_fail = "失败";
+static const char* gs_str_op_is_null = "test operation为空";
+static const char* gs_str_uninit_or_end = "tester未初始化或已被中止";
 
 HVTester::HVTester(QObject *parent)
     : QObject{parent},
@@ -269,7 +271,6 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         break;
 
     case TEST_OP_READ_DISTANCE:
-    default:
         err_str = (mb_reply ? QString("%1 %2: %3").arg(gs_str_mb_read_distance, g_str_fail,
                                                   mb_reply->errorString())
                             :
@@ -277,6 +278,15 @@ bool HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         timer_ms = calc_cool_dura_ms();
         m_current_handler = &HVTester::start_read_distance_sig_handler;
         break;
+
+    default: //TEST_OP_NULL
+        err_str = QString("%1. %2").arg(gs_str_op_is_null, gs_str_uninit_or_end);
+        emit test_info_message_sig(LOG_ERROR, err_str);
+        if(!sync || mb_reply->isFinished())
+        {
+            delete_now = true;
+        }
+        return delete_now;
     }
 
     if(!mb_reply)
@@ -498,7 +508,7 @@ void HVTester::start_read_distance_sig_handler()
 void HVTester::mb_write_params_finished_sig_handler()
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
-    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
+    DIY_LOG(LOG_INFO, "mb_write_params_finished_sig_handler.");
     mb_rw_reply_received(TEST_OP_SET_EXPO_TRIPLE, mb_reply, nullptr, false, false);
     mb_reply->deleteLater();
 }
@@ -506,7 +516,7 @@ void HVTester::mb_write_params_finished_sig_handler()
 void HVTester::mb_start_expo_finished_sig_handler()
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
-    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
+    DIY_LOG(LOG_INFO, "mb_start_expo_finished_sig_handler.");
     mb_rw_reply_received(TEST_OP_START_EXPO, mb_reply, nullptr, false, false);
     mb_reply->deleteLater();
 }
@@ -514,7 +524,7 @@ void HVTester::mb_start_expo_finished_sig_handler()
 void HVTester::mb_read_finished_sig_handler()
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
-    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
+    DIY_LOG(LOG_INFO, "mb_read_finished_sig_handler.");
     mb_rw_reply_received(TEST_OP_READ_REGS, mb_reply, nullptr, false, false);
     mb_reply->deleteLater();
 }
@@ -522,17 +532,20 @@ void HVTester::mb_read_finished_sig_handler()
 void HVTester::mb_read_distance_finish_sig_handler()
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
-    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
+    DIY_LOG(LOG_INFO, "mb_read_distance_finish_sig_handler.");
     mb_rw_reply_received(TEST_OP_READ_DISTANCE, mb_reply, nullptr, false, false);
     mb_reply->deleteLater();
 }
 
-void HVTester::mb_rw_error_sig_handler(QModbusDevice::Error /*error*/)
+void HVTester::mb_rw_error_sig_handler(QModbusDevice::Error error)
 {
     QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
-    DIY_LOG(LOG_INFO, "call mb_rw_reply_received.");
-    mb_rw_reply_received(hv_curr_op, mb_reply, nullptr, false, true);
-    mb_reply->deleteLater();
+    QString err_str = mb_reply ? mb_reply->errorString() : "";
+    DIY_LOG(LOG_INFO, QString("mb_rw_error_sig_handler: %1 ").arg(error) + err_str);
+    if(mb_reply && mb_rw_reply_received(hv_curr_op, mb_reply, nullptr, false, true))
+    {
+        mb_reply->deleteLater();
+    }
 }
 
 void HVTester::hv_test_op_timer_handler()

@@ -102,6 +102,14 @@ Dialog::Dialog(QWidget *parent)
     connect(this, &Dialog::auto_reconnect_sig,
             this, &Dialog::auto_reconnect_sig_handler, Qt::QueuedConnection);
 
+    m_reconn_wait_timer.setSingleShot(true);
+    connect(&m_reconn_wait_timer, &QTimer::timeout,
+            this, &Dialog::reconn_wait_timer_sig_handler, Qt::QueuedConnection);
+
+    m_gap_between_disconn_conn_timer.setSingleShot(true);
+    connect(&m_gap_between_disconn_conn_timer, &QTimer::timeout,
+            this, &Dialog::gap_between_disconn_conn_timer_sig_handler, Qt::QueuedConnection);
+
     m_txt_def_color = ui->testInfoDisplayTxt->textColor();
     m_txt_def_font = ui->testInfoDisplayTxt->currentFont();
 }
@@ -310,9 +318,8 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
                                    " wait some time then emit reconnect signal.");
             }
 
-            QThread::msleep(g_sys_configs_block.mb_reconnect_wait_ms);
             m_self_reconnecting = true;
-            emit auto_reconnect_sig();
+            m_reconn_wait_timer.start(g_sys_configs_block.mb_reconnect_wait_ms);
         }
     }
     else
@@ -567,11 +574,19 @@ void Dialog::auto_reconnect_sig_handler()
 {
     if(m_modbus_device)
     {
-        if(QModbusDevice::ConnectedState == m_modbus_state)
+        m_modbus_state = m_modbus_device->state();
+        if(QModbusDevice::UnconnectedState != m_modbus_state)
         {
-            m_modbus_device->disconnectDevice();
+            if(QModbusDevice::ConnectedState == m_modbus_state)
+            {
+                m_modbus_device->disconnectDevice();
+            }
+            m_gap_between_disconn_conn_timer.start(g_sys_configs_block.mb_gap_between_disconn_conn_ms);
         }
-        m_modbus_device->connectDevice();
+        else
+        {
+            m_modbus_device->connectDevice();
+        }
     }
 }
 
@@ -580,9 +595,23 @@ void Dialog::on_dsoSetBtn_clicked()
     QMessageBox::information(this, "", "功能尚未实现！");
 }
 
+void Dialog::reconn_wait_timer_sig_handler()
+{
+    m_self_reconnecting = true;
+    emit auto_reconnect_sig();
+}
+
+void Dialog::gap_between_disconn_conn_timer_sig_handler()
+{
+    if(m_modbus_device)
+    {
+        m_modbus_device->connectDevice();
+    }
+}
 
 void Dialog::on_Dialog_finished(int /*result*/)
 {
+    modbus_disconnect();
     m_cfg_recorder.record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
 }
 

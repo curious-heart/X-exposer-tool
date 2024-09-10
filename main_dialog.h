@@ -6,6 +6,7 @@
 #include <QModbusTcpClient>
 #include <QFile>
 #include <QSet>
+#include <QTimer>
 
 #include "test_param_settings.h"
 #include "hv_connsettings.h"
@@ -60,6 +61,8 @@ private:
 
     void record_header();
 
+    QTimer m_reconn_wait_timer, m_gap_between_disconn_conn_timer;
+
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
     void modbus_state_changed_sig_handler(QModbusDevice::State state);
@@ -82,6 +85,9 @@ private slots:
     void on_dsoSetBtn_clicked();
 
     void on_Dialog_finished(int result);
+
+    void reconn_wait_timer_sig_handler();
+    void gap_between_disconn_conn_timer_sig_handler();
 
 signals:
     void go_test_sig();

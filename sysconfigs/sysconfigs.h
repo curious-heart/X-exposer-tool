@@ -14,7 +14,7 @@ typedef struct
     float dura_ms_min;
     float dura_ms_max;
 
-    int mb_reconnect_wait_ms;
+    int mb_reconnect_wait_ms, mb_gap_between_disconn_conn_ms;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;
