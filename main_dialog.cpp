@@ -251,7 +251,7 @@ void Dialog::modbus_error_sig_handler(QModbusDevice::Error error)
     QString curr_str;
 
     curr_str = (error < 0 || error >= ARRAY_COUNT(err_str)) ?
-                    QString("%d:%2").arg(gs_str_modbus_exceptional_error, QString::number(error))
+                    QString("%1:%2").arg(gs_str_modbus_exceptional_error, QString::number(error))
                     : err_str[error];
 
     if((error < 0) || (QModbusDevice::NoError != error))

@@ -8,7 +8,8 @@ static const char* gs_ini_grp_expo_ctrl = "expo_ctrl";
 static const char* gs_ini_key_cool_dura_factor = "cool_dura_factor";
 static const char* gs_ini_key_extra_cool_time_ms = "extra_cool_time_ms";
 static const char* gs_ini_key_expo_prepare_time_ms = "expo_prepare_tims_ms";
-static const char* gs_ini_key_consec_rw_wait_ms = "consec_rw_wait_ms";
+static const char* gs_ini_key_mb_consec_rw_wait_ms = "mb_consec_rw_wait_ms";
+static const char* gs_ini_key_mb_err_retry_wait_ms = "mb_err_retry_wait_ms";
 
 static const char* gs_ini_key_cube_volt_kv_min = "cube_volt_kv_min";
 static const char* gs_ini_key_cube_volt_kv_max = "cube_volt_kv_max";
@@ -17,7 +18,6 @@ static const char* gs_ini_key_cube_current_ma_max = "cube_current_ma_max";
 static const char* gs_ini_key_dura_ms_min = "dura_ms_min";
 static const char* gs_ini_key_dura_ms_max = "dura_ms_max";
 static const char* gs_ini_key_mb_reconnect_wait_sep_ms = "mb_reconnect_wait_sep_ms";
-static const char* gs_ini_key_mb_gap_between_disconn_conn_ms = "mb_gap_between_disconn_conn_ms";
 
 static RangeChecker gs_cfg_file_value_ge0_ranger(0, 0, "",
                                        RangeChecker::EDGE_INCLUDED, RangeChecker::EDGE_INFINITE);
@@ -36,9 +36,9 @@ static const float gs_def_dura_ms_max = 1400;
 static const float gs_def_cool_dura_factor = 30;
 static const int gs_def_extra_cool_time_ms = 2000;
 static const int gs_def_expo_prepare_time_ms = 3500;
-static const int gs_def_consec_rw_wait_ms = 500;
-static const int gs_def_mb_reconnect_wait_sep_ms = 3000;
-static const int gs_def_mb_gap_between_disconn_conn_ms = 300;
+static const int gs_def_mb_consec_rw_wait_ms = 500;
+static const int gs_def_mb_err_retry_wait_ms = 1000;
+static const int gs_def_mb_reconnect_wait_sep_ms = 1000;
 
 #define GET_INF_CFG_NUMBER_VAL(settings, key, type_func, var, def, checker)\
 {\
@@ -91,17 +91,16 @@ void fill_sys_configs()
                                g_sys_configs_block.expo_prepare_time_ms, gs_def_expo_prepare_time_ms,
                                &gs_cfg_file_value_ge0_ranger);
 
-    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_consec_rw_wait_ms, toInt,
-                               g_sys_configs_block.consec_rw_wait_ms, gs_def_consec_rw_wait_ms,
-                               &gs_cfg_file_value_gt0_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_consec_rw_wait_ms, toInt,
+                           g_sys_configs_block.consec_rw_wait_ms, gs_def_mb_consec_rw_wait_ms,
+                           &gs_cfg_file_value_gt0_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_reconnect_wait_sep_ms, toInt,
                            g_sys_configs_block.mb_reconnect_wait_ms, gs_def_mb_reconnect_wait_sep_ms,
                            &gs_cfg_file_value_ge0_ranger);
 
-    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_gap_between_disconn_conn_ms, toInt,
-                           g_sys_configs_block.mb_gap_between_disconn_conn_ms,
-                           gs_def_mb_gap_between_disconn_conn_ms,
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_err_retry_wait_ms, toInt,
+                       g_sys_configs_block.mb_err_retry_wait_ms, gs_def_mb_err_retry_wait_ms,
                            &gs_cfg_file_value_ge0_ranger);
 
     settings.endGroup();
