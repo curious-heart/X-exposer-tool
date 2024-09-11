@@ -61,7 +61,7 @@ private:
 
     void record_header();
 
-    QTimer m_reconn_wait_timer, m_gap_between_disconn_conn_timer;
+    QTimer m_reconn_wait_timer;
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
@@ -87,7 +87,6 @@ private slots:
     void on_Dialog_finished(int result);
 
     void reconn_wait_timer_sig_handler();
-    void gap_between_disconn_conn_timer_sig_handler();
 
 signals:
     void go_test_sig();

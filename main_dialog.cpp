@@ -106,10 +106,6 @@ Dialog::Dialog(QWidget *parent)
     connect(&m_reconn_wait_timer, &QTimer::timeout,
             this, &Dialog::reconn_wait_timer_sig_handler, Qt::QueuedConnection);
 
-    m_gap_between_disconn_conn_timer.setSingleShot(true);
-    connect(&m_gap_between_disconn_conn_timer, &QTimer::timeout,
-            this, &Dialog::gap_between_disconn_conn_timer_sig_handler, Qt::QueuedConnection);
-
     m_txt_def_color = ui->testInfoDisplayTxt->textColor();
     m_txt_def_font = ui->testInfoDisplayTxt->currentFont();
 }
@@ -575,17 +571,22 @@ void Dialog::auto_reconnect_sig_handler()
     if(m_modbus_device)
     {
         m_modbus_state = m_modbus_device->state();
-        if(QModbusDevice::UnconnectedState != m_modbus_state)
+        switch(m_modbus_state)
         {
-            if(QModbusDevice::ConnectedState == m_modbus_state)
-            {
+            case QModbusDevice::ClosingState:
+                break;
+
+            case QModbusDevice::UnconnectedState:
+                m_modbus_device->connectDevice();
+                break;
+
+            case QModbusDevice::ConnectingState:
+                break;
+
+            case QModbusDevice::ConnectedState:
+            default:
                 m_modbus_device->disconnectDevice();
-            }
-            m_gap_between_disconn_conn_timer.start(g_sys_configs_block.mb_gap_between_disconn_conn_ms);
-        }
-        else
-        {
-            m_modbus_device->connectDevice();
+                break;
         }
     }
 }
@@ -598,11 +599,6 @@ void Dialog::on_dsoSetBtn_clicked()
 void Dialog::reconn_wait_timer_sig_handler()
 {
     m_self_reconnecting = true;
-    emit auto_reconnect_sig();
-}
-
-void Dialog::gap_between_disconn_conn_timer_sig_handler()
-{
     if(m_modbus_device)
     {
         m_modbus_device->connectDevice();
