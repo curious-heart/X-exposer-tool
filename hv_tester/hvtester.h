@@ -6,6 +6,7 @@
 #include <QString>
 #include <QMap>
 #include <QTimer>
+#include <QColor>
 
 #include "logger/logger.h"
 #include "test_params_struct.h"
@@ -88,11 +89,18 @@ public slots:
 
 signals:
     /*signals sent to user.*/
-    void test_info_message_sig(LOG_LEVEL lvl, QString msg);
+    void test_info_message_sig(LOG_LEVEL lvl, QString msg,
+                               bool always_rec = false,
+                               QColor set_color = QColor(), int set_font_w = -1);
     void rec_mb_regs_sig(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                          int loop_idx, int round_idx);
     void test_complete_sig(tester_end_code_enum_t code);
+
+    /* now we do not use this signal. tester just retry and retry, and main_dialog matain the
+       connection.
+    */
     void mb_op_err_req_reconnect_sig();
+
     /*signals used internally.*/
     void tester_next_operation_sig(tester_op_enum_t op);
     void internal_go_test_sig();

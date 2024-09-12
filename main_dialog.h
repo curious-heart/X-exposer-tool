@@ -71,7 +71,9 @@ private slots:
     void on_startTestBtn_clicked();
     void on_stopTestBtn_clicked();
 
-    void test_info_message_sig_handler(LOG_LEVEL lvl, QString msg);
+    void test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
+                                       bool always_rec = false,
+                                       QColor set_color = QColor(), int set_font_w = -1);
     void rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                                  int loop_idx, int round_idx);
     void test_complete_sig_hanler(tester_end_code_enum_t code);

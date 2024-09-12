@@ -687,9 +687,11 @@ void RangeChecker::set_unit_str(const char* unit_s)
 void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
                                       QColor new_color, int new_font_weight)
 {
+    if(!ctrl) return;
+
     QColor curr_color = ctrl->textColor();
     QFont curr_font = ctrl->currentFont(), new_font = curr_font;
-    bool modify_color = !(new_color == curr_color),
+    bool modify_color = (new_color.isValid() && (new_color != curr_color)),
          modify_font_weight = !(new_font_weight < 0 || new_font_weight == curr_font.weight());
 
     if(modify_color) ctrl->setTextColor(new_color);

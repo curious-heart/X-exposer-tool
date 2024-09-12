@@ -67,17 +67,22 @@ void Logger::writeLog(QString level_str, QString loc_str, QString msg)
     qDebug() << str1 << str2;
 }
 //void Logger::receive_log(LOG_LEVEL level, QString loc_str, QString log_str)
+#undef LOG_LEVEL_ITEM
+#define LOG_LEVEL_ITEM(lvl) #lvl
+static const char* gs_log_level_strs[] =
+{
+    LOG_LEVEL_LIST
+};
 void Logger::receive_log(int level, QString loc_str, QString log_str)
 {
-    static const char *levels[] = {"DEBUG", "INFO", "WARN", "ERROR"};
     QString level_str;
-    if((quint32)level >= (quint32)(sizeof(levels)/sizeof(levels[0])))
+    if(!VALID_LOG_LVL(level))
     {
         level_str = QString("[%1]").arg("Unknown Level");
     }
     else
     {
-        level_str = QString("[%1]").arg(levels[level]);
+        level_str = QString("[%1]").arg(gs_log_level_strs[level]);
     }
     writeLog(level_str, loc_str, log_str);
 }

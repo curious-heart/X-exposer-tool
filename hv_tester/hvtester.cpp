@@ -247,7 +247,7 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
 
     mb_reply_err_str = (mb_reply) ?
                             QString::number(mb_reply->error()) + " " + mb_reply->errorString()
-                          : gs_str_mb_op_null_reply;
+                          : (QString(gs_str_mb_op_null_reply) + ".");
     switch(op)
     {
     case TEST_OP_SET_EXPO_TRIPLE:
@@ -366,13 +366,12 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         }
         else if(sync || err_notify) // if((QModbusDevice::NoError != err) && (sync || err_notify))
         {
-            err_str += QString(". ") + gs_str_wait_some_time_then_retry;
+            err_str += gs_str_wait_some_time_then_retry;
             emit test_info_message_sig(LOG_ERROR, err_str);
             DIY_LOG(LOG_ERROR, err_str);
             hv_test_err_retry_timer.start(g_sys_configs_block.mb_err_retry_wait_ms);
 
             /*tester just retry and retry. main_dialog is responsible for reconnect.*/
-            //emit mb_op_err_req_reconnect_sig();
         }
     }
     else

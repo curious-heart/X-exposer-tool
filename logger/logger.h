@@ -8,12 +8,17 @@
 #include <QObject>
 #include <QThread>
 
+#define LOG_LEVEL_ITEM(lvl) LOG_##lvl
+#define LOG_LEVEL_LIST \
+    LOG_LEVEL_ITEM(DEBUG),\
+    LOG_LEVEL_ITEM(INFO),\
+    LOG_LEVEL_ITEM(WARN),\
+    LOG_LEVEL_ITEM(ERROR)
+
 enum LOG_LEVEL {
-    LOG_DEBUG=0,//调试
-    LOG_INFO,   //信息
-    LOG_WARN,   //警告
-    LOG_ERROR   //错误
+    LOG_LEVEL_LIST
 };
+#define VALID_LOG_LVL(lvl) ((LOG_DEBUG <= (lvl)) && ((lvl) <= LOG_ERROR))
 Q_DECLARE_METATYPE(LOG_LEVEL)
 
 class Logger : public QObject

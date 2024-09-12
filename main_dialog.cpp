@@ -258,7 +258,7 @@ void Dialog::modbus_error_sig_handler(QModbusDevice::Error error)
     {
         DIY_LOG(LOG_ERROR, curr_str);
 
-        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str, Qt::red);
+        test_info_message_sig_handler(LOG_ERROR, curr_str);
     }
 }
 
@@ -279,15 +279,14 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
         this->setCursor(Qt::ArrowCursor);
     }
 
-    QString curr_str;
-    curr_str = (state < 0 || (int)state >= ARRAY_COUNT(state_str)) ?
+    QString curr_str = (state < 0 || (int)state >= ARRAY_COUNT(state_str)) ?
                 QString("%1:%2").arg(gs_str_modbus_unkonwn_state, QString::number(state))
               : state_str[state];
 
     DIY_LOG(LOG_INFO, curr_str);
     if(QModbusDevice::ConnectedState == state)
     {
-        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str, Qt::darkGreen);
+        test_info_message_sig_handler(LOG_INFO, curr_str, true, Qt::darkGreen);
 
         m_self_reconnecting = false;
         if(m_asked_for_reconnecting)
@@ -299,7 +298,7 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     }
     else if(QModbusDevice::UnconnectedState == state)
     {
-        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str, Qt::darkGray);
+        test_info_message_sig_handler(LOG_ERROR, curr_str);
 
         if(m_testing)
         {
@@ -320,8 +319,7 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     }
     else
     {
-        append_str_with_color_and_weight(ui->testInfoDisplayTxt, curr_str,
-                                         m_txt_def_color, m_txt_def_font.weight());
+        test_info_message_sig_handler(LOG_INFO, curr_str);
     }
 
     refresh_butoons();
@@ -441,26 +439,38 @@ void Dialog::on_stopTestBtn_clicked()
     test_complete_sig_hanler(TEST_END_ABORT_BY_USER);
 }
 
-void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg)
+void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
+                                       bool always_rec, QColor set_color, int set_font_w )
 {
-    if(lvl >= LOG_WARN)
+    static QColor log_lvl_fonts_arr[] =
     {
-        QString line(common_tool_get_curr_date_str() + ","
-                     + common_tool_get_curr_time_str() + ",");
-        line += ","; //number is null
-        line += msg + "\n";
-        m_curr_txt_stream << line;
+        Qt::gray, //DEBUG, gray
+        Qt::black, //INFO, black
+        QColor(255, 128, 0), //WARNING, orange
+        Qt::red, //ERROR, red
+    };
 
-        if(LOG_ERROR == lvl)
-        {
-            append_str_with_color_and_weight(ui->testInfoDisplayTxt, line, Qt::red);
-        }
-        else
-        {
-            append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
-                                             m_txt_def_color, m_txt_def_font.weight());
-        }
+    QColor text_color;
+    int text_font_w;
+    QString line(common_tool_get_curr_date_str() + ","
+                 + common_tool_get_curr_time_str() + ",");
+    line += ","; //number is null
+    line += msg + "\n";
+
+    if(always_rec)
+    {
+        m_curr_txt_stream << line;
     }
+    else if(lvl >= LOG_WARN)
+    {
+        m_curr_txt_stream << line;
+    }
+
+    lvl = VALID_LOG_LVL(lvl) ? lvl : LOG_ERROR;
+    text_color = set_color.isValid() ? set_color : log_lvl_fonts_arr[lvl];
+    text_font_w = (set_font_w > 0) ? set_font_w : m_txt_def_font.weight();
+
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, line, text_color, text_font_w);
 }
 
 void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
@@ -498,15 +508,14 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         line += QString::number(reg_val_map.value(reg_no), base) + ",";
         ++idx;
     }
-    m_curr_txt_stream << line << "\n";
+    m_curr_txt_stream << line << "\n\n";
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
                                      m_txt_def_color, m_txt_def_font.weight());
 }
 
 void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 {
-    QString complete_str(common_tool_get_curr_date_str() + ","
-                 + common_tool_get_curr_time_str() + ",");
+    QString complete_str;
     Qt::GlobalColor color;
     QFont::Weight weight = QFont::Bold;
 
@@ -529,9 +538,8 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
         break;
     }
 
-    append_str_with_color_and_weight(ui->testInfoDisplayTxt, complete_str, color, weight);
-    append_str_with_color_and_weight(ui->testInfoDisplayTxt, QString(gs_str_sep_line) + "\n\n",
-                                     m_txt_def_color, m_txt_def_font.weight());
+    test_info_message_sig_handler(LOG_INFO, complete_str, true, color, weight);
+    test_info_message_sig_handler(LOG_INFO, QString(gs_str_sep_line) + "\n\n", true);
 
     m_testing = false;
     m_self_reconnecting = false;
@@ -540,7 +548,6 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 
     if(m_curr_rec_file.isOpen())
     {
-        m_curr_txt_stream << complete_str << "\n" << gs_str_sep_line << "\n";
         m_curr_txt_stream.flush();
         m_curr_rec_file.close();
     }
