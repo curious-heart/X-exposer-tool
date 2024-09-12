@@ -32,6 +32,9 @@ static const char* gs_str_date = "日期";
 static const char* gs_str_time = "时间";
 static const char* gs_str_no = "序号";
 
+static const char* gs_str_pause = "暂停";
+static const char* gs_str_recover = "恢复";
+
 extern const char* g_str_loop;
 extern const char* g_str_time_ci;
 extern const char* g_str_the_line_pron;
@@ -89,6 +92,8 @@ Dialog::Dialog(QWidget *parent)
             &m_hv_tester, &HVTester::stop_test_sig_handler, Qt::QueuedConnection);
     connect(this, &Dialog::mb_reconnected_sig,
             &m_hv_tester, &HVTester::mb_reconnected_sig_handler, Qt::QueuedConnection);
+    connect(this, &Dialog::pause_restore_test_sig,
+            &m_hv_tester, &HVTester::pause_restore_test_sig_handler, Qt::QueuedConnection);
 
     connect(&m_hv_tester, &HVTester::test_info_message_sig,
             this, &Dialog::test_info_message_sig_handler, Qt::QueuedConnection);
@@ -160,6 +165,10 @@ void Dialog::refresh_butoons()
     ui->hvDisconnBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
     ui->startTestBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
     ui->stopTestBtn->setEnabled(m_testing);
+
+    ui->pauseTestBtn->setEnabled(m_testing);
+    if(m_test_paused) ui->pauseTestBtn->setText(gs_str_recover);
+    else ui->pauseTestBtn->setText(gs_str_pause);
 }
 
 bool Dialog::modbus_connect()
@@ -427,6 +436,7 @@ void Dialog::on_startTestBtn_clicked()
     record_header();
 
     m_testing = true;
+    m_test_paused = false;
     m_self_reconnecting = false;
     m_asked_for_reconnecting = false;
     refresh_butoons();
@@ -542,6 +552,7 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     test_info_message_sig_handler(LOG_INFO, QString(gs_str_sep_line) + "\n\n", true);
 
     m_testing = false;
+    m_test_paused = false;
     m_self_reconnecting = false;
     m_asked_for_reconnecting = false;
     refresh_butoons();
@@ -616,5 +627,14 @@ void Dialog::on_Dialog_finished(int /*result*/)
 {
     modbus_disconnect();
     m_cfg_recorder.record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+}
+
+
+void Dialog::on_pauseTestBtn_clicked()
+{
+    m_test_paused = !m_test_paused;
+    emit pause_restore_test_sig(m_test_paused);
+
+    refresh_butoons();
 }
 

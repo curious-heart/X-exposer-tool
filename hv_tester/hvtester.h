@@ -37,11 +37,21 @@ typedef enum
 }tester_end_code_enum_t;
 Q_DECLARE_METATYPE(tester_end_code_enum_t)
 
+typedef enum
+{
+    NORMAL_OP,
+    RECOVER_FROM_PAUSE,
+    RECOVER_FROM_DISCONN,
+    RECOVER_FROM_ERROR,
+}tester_op_recovery_type_e_t;
+Q_DECLARE_METATYPE(tester_op_recovery_type_e_t)
+
 class HVTester : public QObject
 {
     Q_OBJECT
 public:
     explicit HVTester(QObject *parent = nullptr);
+    ~HVTester();
 
 private:
     typedef enum
@@ -53,7 +63,10 @@ private:
         TESTER_COMPLETE,
     }tester_procedure_enum_t;
 
+    typedef void (HVTester::*tester_simple_handler_t)();
+
     tester_procedure_enum_t hv_tester_proc = TESTER_IDLE;
+    bool hv_test_paused = false;
     tester_op_enum_t hv_curr_op = TEST_OP_NULL;
     test_params_struct_t *hv_test_params = nullptr;
     QModbusClient * hv_modbus_device = nullptr;
@@ -64,28 +77,34 @@ private:
     QTimer hv_test_op_timer, hv_test_err_retry_timer;
     mb_reg_val_map_t m_regs_read_result;
 
+    QTimer * m_curr_timer = nullptr;
+    int m_curr_timer_remaining_time;
+    tester_simple_handler_t m_curr_timer_handler = nullptr;
+
     bool is_the_last_one_test();
     void update_tester_state();
     void end_test(tester_end_code_enum_t code);
     typedef void (HVTester::*mb_operation_handler_t)(tester_op_enum_t op);
-    mb_operation_handler_t m_current_handler = nullptr;
 
 public:
     bool init(test_params_struct_t *test_params, QModbusClient * modbus_device, int srvr_addr);
 
 private:
+    void reset_internal_state();
     void mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                               void (HVTester::*finished_sig_handler)(),
                               bool sync, bool error_notify);
     void construct_mb_du(tester_op_enum_t op, QModbusDataUnit &mb_du);
-    void tester_send_mb_cmd(tester_op_enum_t op);
+    void tester_send_mb_cmd(tester_op_enum_t op, tester_op_recovery_type_e_t r_t = NORMAL_OP);
     int calc_cool_dura_ms();
+    void end_test_due_to_exception(QString err_str);
 
 public slots:
     /*user signal handler.*/
     void go_test_sig_handler(); //this handler is also used as internal signal slot.
     void stop_test_sig_handler(tester_end_code_enum_t code);
     void mb_reconnected_sig_handler();
+    void pause_restore_test_sig_handler(bool pause);
 
 signals:
     /*signals sent to user.*/
@@ -102,7 +121,7 @@ signals:
     void mb_op_err_req_reconnect_sig();
 
     /*signals used internally.*/
-    void tester_next_operation_sig(tester_op_enum_t op);
+    void tester_next_operation_sig(tester_op_enum_t op, tester_op_recovery_type_e_t r_t = NORMAL_OP);
     void internal_go_test_sig();
 public slots:
     /*internal signal handler*/

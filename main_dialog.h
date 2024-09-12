@@ -40,7 +40,8 @@ private:
     modbus_conn_parameters_struct_t m_hv_conn_params;
     QModbusDevice::State m_modbus_state = QModbusDevice::UnconnectedState;
     bool m_dso_connected = false;
-    bool m_testing = false, m_self_reconnecting = false, m_asked_for_reconnecting = false;
+    bool m_testing = false, m_test_paused = false, m_self_reconnecting = false;
+    bool m_asked_for_reconnecting = false;
     QString m_curr_rec_folder_name, m_curr_rec_file_name;
     QFile m_curr_rec_file;
     QTextStream m_curr_txt_stream;
@@ -90,10 +91,13 @@ private slots:
 
     void reconn_wait_timer_sig_handler();
 
+    void on_pauseTestBtn_clicked();
+
 signals:
     void go_test_sig();
     void stop_test_sig(tester_end_code_enum_t code);
     void mb_reconnected_sig();
+    void pause_restore_test_sig(bool pause);
 
     /*internal used signal*/
     void auto_reconnect_sig();
