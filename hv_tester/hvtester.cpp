@@ -1,4 +1,5 @@
 ﻿#include <QDateTime>
+#include <QtMath>
 
 #include "logger/logger.h"
 #include "hvtester.h"
@@ -279,20 +280,31 @@ void HVTester::update_tester_state()
                    QString::number((quint16)(hv_curr_expo_param_triple.dura_ms)));
 }
 
-int HVTester::calc_cool_dura_ms()
+int HVTester::calc_cool_dura_ms(qint64 time_elapsed_since_cool_start)
 {
     float cool_dura_ms = hv_test_params->expo_param_block.fixed_cool_dura ?
                    hv_test_params->expo_param_block.expo_cool_dura_ms :
                    hv_test_params->expo_param_block.expo_cool_dura_factor
                    * hv_curr_expo_param_triple.dura_ms;
     cool_dura_ms += g_sys_configs_block.extra_cool_time_ms;
-    return (int)cool_dura_ms;
+
+    if(time_elapsed_since_cool_start >= cool_dura_ms)
+    {
+        return 0;
+    }
+    else
+    {
+        return qCeil(cool_dura_ms - time_elapsed_since_cool_start);
+    }
 }
 
 void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                                     void (HVTester::*finished_sig_handler)(),
                                     bool sync, bool err_notify)
 {
+    static QDateTime ls_cool_start_point = QDateTime::currentDateTime();
+    QDateTime curr_dt = QDateTime::currentDateTime();
+    qint64 time_elapsed_since_cool_start;
     QString err_str, mb_reply_err_str;
     int timer_ms;
     bool goon = true;
@@ -312,9 +324,13 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
     case TEST_OP_START_EXPO:
         err_str = QString("%1 %2: %3").arg(gs_str_mb_start_expo, g_str_fail, mb_reply_err_str);
         timer_ms = g_sys_configs_block.expo_prepare_time_ms + hv_curr_expo_param_triple.dura_ms;
+
+        ls_cool_start_point = QDateTime::currentDateTime().addMSecs(timer_ms);
         break;
 
     case TEST_OP_READ_REGS:
+        time_elapsed_since_cool_start = ls_cool_start_point.msecsTo(curr_dt);
+
         err_str = QString("%1 %2: %3").arg(gs_str_mb_read_regs, g_str_fail, mb_reply_err_str);
         if(hv_test_params->other_param_block.read_dist)
         {
@@ -322,13 +338,15 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         }
         else
         {
-            timer_ms = calc_cool_dura_ms();
+            timer_ms = calc_cool_dura_ms(time_elapsed_since_cool_start);
         }
         break;
 
     case TEST_OP_READ_DISTANCE:
+        time_elapsed_since_cool_start = ls_cool_start_point.msecsTo(curr_dt);
+
         err_str = QString("%1 %2: %3").arg(gs_str_mb_read_distance, g_str_fail, mb_reply_err_str);
-        timer_ms = calc_cool_dura_ms();
+        timer_ms = calc_cool_dura_ms(time_elapsed_since_cool_start);
         break;
 
     default: //TEST_OP_NULL

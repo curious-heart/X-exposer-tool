@@ -465,15 +465,15 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
     QString line(common_tool_get_curr_date_str() + ","
                  + common_tool_get_curr_time_str() + ",");
     line += ","; //number is null
-    line += msg + "\n";
+    line += msg;
 
     if(always_rec)
     {
-        m_curr_txt_stream << line;
+        m_curr_txt_stream << line << "\n";
     }
     else if(lvl >= LOG_WARN)
     {
-        m_curr_txt_stream << line;
+        m_curr_txt_stream << line << "\n";
     }
 
     lvl = VALID_LOG_LVL(lvl) ? lvl : LOG_ERROR;
@@ -519,7 +519,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         ++idx;
     }
     m_curr_txt_stream << line << "\n\n";
-    append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, line + "\n",
                                      m_txt_def_color, m_txt_def_font.weight());
 }
 
@@ -632,6 +632,11 @@ void Dialog::on_Dialog_finished(int /*result*/)
 
 void Dialog::on_pauseTestBtn_clicked()
 {
+    if(m_curr_rec_file.isOpen())
+    {
+        m_curr_txt_stream.flush();
+    }
+
     m_test_paused = !m_test_paused;
     emit pause_resume_test_sig(m_test_paused);
 

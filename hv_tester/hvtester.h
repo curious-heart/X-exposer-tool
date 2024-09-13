@@ -101,7 +101,7 @@ private:
                               bool sync, bool error_notify);
     void construct_mb_du(tester_op_enum_t op, QModbusDataUnit &mb_du);
     void tester_send_mb_cmd(tester_op_enum_t op, tester_op_resume_type_e_t r_t = NORMAL_OP);
-    int calc_cool_dura_ms();
+    int calc_cool_dura_ms(qint64 time_elapsed_since_cool_start);
     void end_test_due_to_exception(QString err_str);
 
 public slots:
