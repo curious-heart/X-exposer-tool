@@ -111,6 +111,9 @@ Dialog::Dialog(QWidget *parent)
     connect(&m_reconn_wait_timer, &QTimer::timeout,
             this, &Dialog::reconn_wait_timer_sig_handler, Qt::QueuedConnection);
 
+    connect(&m_time_stat_timer, &QTimer::timeout,
+            this, &Dialog::time_stat_timer_sig_handler, Qt::QueuedConnection);
+
     m_txt_def_color = ui->testInfoDisplayTxt->textColor();
     m_txt_def_font = ui->testInfoDisplayTxt->currentFont();
 }
@@ -441,12 +444,19 @@ void Dialog::on_startTestBtn_clicked()
     m_asked_for_reconnecting = false;
     refresh_butoons();
     emit go_test_sig();
+
+    m_pause_cnt = 0;
+    m_pause_dura_sec = 0;
+    m_act_test_dura_sec = 0;
+    m_test_start_time = QDateTime::currentDateTime();
+    m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
+
+    refresh_time_stat_display();
 }
 
 void Dialog::on_stopTestBtn_clicked()
 {
     emit stop_test_sig(TEST_END_ABORT_BY_USER);
-    test_complete_sig_hanler(TEST_END_ABORT_BY_USER);
 }
 
 void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
@@ -529,6 +539,9 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     Qt::GlobalColor color;
     QFont::Weight weight = QFont::Bold;
 
+    m_reconn_wait_timer.stop();
+    m_time_stat_timer.stop();
+
     switch(code)
     {
     case TEST_END_NORMAL:
@@ -551,6 +564,12 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     test_info_message_sig_handler(LOG_INFO, complete_str, true, color, weight);
     test_info_message_sig_handler(LOG_INFO, QString(gs_str_sep_line) + "\n\n", true);
 
+    if(m_test_paused)
+    {
+        m_pause_dura_sec += m_pause_dura_check_point.secsTo(QDateTime::currentDateTime());
+    }
+    refresh_time_stat_display();
+
     m_testing = false;
     m_test_paused = false;
     m_self_reconnecting = false;
@@ -562,6 +581,10 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
         m_curr_txt_stream.flush();
         m_curr_rec_file.close();
     }
+
+    m_pause_cnt = 0;
+    m_pause_dura_sec = 0;
+    m_act_test_dura_sec = 0;
 }
 
 void Dialog::mb_op_err_req_reconnect_sig_handler()
@@ -623,6 +646,22 @@ void Dialog::reconn_wait_timer_sig_handler()
     }
 }
 
+void Dialog::time_stat_timer_sig_handler()
+{
+    if(!m_testing) return;
+
+    QDateTime curr_dt = QDateTime::currentDateTime();
+
+    m_act_test_dura_sec = m_test_start_time.secsTo(curr_dt);
+
+    if(m_test_paused)
+    {
+        m_pause_dura_sec += m_pause_dura_check_point.secsTo(curr_dt);
+        m_pause_dura_check_point = curr_dt;
+    }
+    refresh_time_stat_display();
+}
+
 void Dialog::on_Dialog_finished(int /*result*/)
 {
     modbus_disconnect();
@@ -640,6 +679,47 @@ void Dialog::on_pauseTestBtn_clicked()
     m_test_paused = !m_test_paused;
     emit pause_resume_test_sig(m_test_paused);
 
+    if(m_test_paused)
+    {
+        m_pause_dura_check_point = QDateTime::currentDateTime();
+        ++m_pause_cnt;
+    }
+    else
+    {
+        m_pause_dura_sec += m_pause_dura_check_point.secsTo(QDateTime::currentDateTime());
+    }
+
     refresh_butoons();
+    refresh_time_stat_display();
 }
 
+/*sec MUST be of integer type.*/
+#define SECS_TO_HHMMSS_STR(secs_var) \
+    total_secs = (secs_var);\
+    hour = (total_secs) / 3600; (total_secs) = (total_secs) % 3600; \
+    min = (total_secs) / 60; (total_secs) = (total_secs) % 60; \
+    sec = (total_secs);\
+    hhmmss_str = QString("%1:%2:%3").arg(hour, 2, 10, QLatin1Char('0'))\
+                                   .arg(min, 2, 10, QLatin1Char('0'))\
+                                   .arg(sec, 2, 10, QLatin1Char('0'));
+
+#define SECS_TO_HHMMSS_STR_DISP(secs_var, ctrl_op) \
+    SECS_TO_HHMMSS_STR(secs_var); \
+    ctrl_op(hhmmss_str);
+
+void Dialog::refresh_time_stat_display()
+{
+    int total_secs, hour, min, sec;
+    QString hhmmss_str;
+
+    SECS_TO_HHMMSS_STR_DISP(m_expt_test_remain_dura_sec,
+                            ui->exptRemainTestDuraDisplayLbl->setText);
+
+    SECS_TO_HHMMSS_STR_DISP(m_act_test_dura_sec,
+                            ui->actTestDuraDisplayLbl->setText);
+
+    SECS_TO_HHMMSS_STR_DISP(m_pause_dura_sec,
+                            ui->pauseDuraDisplayLbl->setText);
+
+    ui->pauseCntDisplayLbl->setText(QString::number(m_pause_cnt));
+}

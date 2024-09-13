@@ -18,6 +18,7 @@ static const char* gs_ini_key_cube_current_ma_max = "cube_current_ma_max";
 static const char* gs_ini_key_dura_ms_min = "dura_ms_min";
 static const char* gs_ini_key_dura_ms_max = "dura_ms_max";
 static const char* gs_ini_key_mb_reconnect_wait_sep_ms = "mb_reconnect_wait_sep_ms";
+static const char* gs_ini_key_test_time_stat_grain_sec = "test_time_stat_grain_sec";
 
 static RangeChecker gs_cfg_file_value_ge0_ranger(0, 0, "",
                                        RangeChecker::EDGE_INCLUDED, RangeChecker::EDGE_INFINITE);
@@ -39,6 +40,7 @@ static const int gs_def_expo_prepare_time_ms = 3500;
 static const int gs_def_mb_consec_rw_wait_ms = 500;
 static const int gs_def_mb_err_retry_wait_ms = 1000;
 static const int gs_def_mb_reconnect_wait_sep_ms = 1000;
+static const int gs_def_test_time_stat_grain_sec = 3;
 
 #define GET_INF_CFG_NUMBER_VAL(settings, key, type_func, var, def, checker)\
 {\
@@ -101,6 +103,10 @@ void fill_sys_configs()
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_err_retry_wait_ms, toInt,
                        g_sys_configs_block.mb_err_retry_wait_ms, gs_def_mb_err_retry_wait_ms,
+                           &gs_cfg_file_value_ge0_ranger);
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_test_time_stat_grain_sec, toInt,
+                   g_sys_configs_block.test_time_stat_grain_sec, gs_def_test_time_stat_grain_sec,
                            &gs_cfg_file_value_ge0_ranger);
 
     settings.endGroup();

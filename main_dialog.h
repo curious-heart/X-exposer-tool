@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QSet>
 #include <QTimer>
+#include <QDateTime>
 
 #include "test_param_settings.h"
 #include "hv_connsettings.h"
@@ -64,6 +65,12 @@ private:
 
     QTimer m_reconn_wait_timer;
 
+    QDateTime m_test_start_time, m_pause_dura_check_point;
+    int m_pause_cnt = 0, m_pause_dura_sec = 0, m_act_test_dura_sec = 0;
+    int m_expt_test_dura_sec = 0, m_expt_test_remain_dura_sec = 0;
+    QTimer m_time_stat_timer; //this is a periodical timer.
+    void refresh_time_stat_display();
+
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
     void modbus_state_changed_sig_handler(QModbusDevice::State state);
@@ -92,6 +99,8 @@ private slots:
     void reconn_wait_timer_sig_handler();
 
     void on_pauseTestBtn_clicked();
+
+    void time_stat_timer_sig_handler();
 
 signals:
     void go_test_sig();

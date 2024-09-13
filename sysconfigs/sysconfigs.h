@@ -15,6 +15,7 @@ typedef struct
     float dura_ms_max;
 
     int mb_reconnect_wait_ms, mb_err_retry_wait_ms;
+    int test_time_stat_grain_sec;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

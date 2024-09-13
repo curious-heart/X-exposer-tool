@@ -650,14 +650,14 @@ void HVTester::hv_test_op_timer_handler()
     }
 }
 
-void HVTester::stop_test_sig_handler(tester_end_code_enum_t /*code*/)
+void HVTester::stop_test_sig_handler(tester_end_code_enum_t code)
 {
+    emit test_complete_sig(code);
     reset_internal_state();
 }
 
 void HVTester::end_test(tester_end_code_enum_t code)
 {
-    emit test_complete_sig(code);
     stop_test_sig_handler(code);
 }
 
