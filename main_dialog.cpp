@@ -33,7 +33,7 @@ static const char* gs_str_time = "时间";
 static const char* gs_str_no = "序号";
 
 static const char* gs_str_pause = "暂停";
-static const char* gs_str_recover = "恢复";
+static const char* gs_str_resume = "恢复";
 
 extern const char* g_str_loop;
 extern const char* g_str_time_ci;
@@ -92,8 +92,8 @@ Dialog::Dialog(QWidget *parent)
             &m_hv_tester, &HVTester::stop_test_sig_handler, Qt::QueuedConnection);
     connect(this, &Dialog::mb_reconnected_sig,
             &m_hv_tester, &HVTester::mb_reconnected_sig_handler, Qt::QueuedConnection);
-    connect(this, &Dialog::pause_restore_test_sig,
-            &m_hv_tester, &HVTester::pause_restore_test_sig_handler, Qt::QueuedConnection);
+    connect(this, &Dialog::pause_resume_test_sig,
+            &m_hv_tester, &HVTester::pause_resume_test_sig_handler, Qt::QueuedConnection);
 
     connect(&m_hv_tester, &HVTester::test_info_message_sig,
             this, &Dialog::test_info_message_sig_handler, Qt::QueuedConnection);
@@ -167,7 +167,7 @@ void Dialog::refresh_butoons()
     ui->stopTestBtn->setEnabled(m_testing);
 
     ui->pauseTestBtn->setEnabled(m_testing);
-    if(m_test_paused) ui->pauseTestBtn->setText(gs_str_recover);
+    if(m_test_paused) ui->pauseTestBtn->setText(gs_str_resume);
     else ui->pauseTestBtn->setText(gs_str_pause);
 }
 
@@ -633,7 +633,7 @@ void Dialog::on_Dialog_finished(int /*result*/)
 void Dialog::on_pauseTestBtn_clicked()
 {
     m_test_paused = !m_test_paused;
-    emit pause_restore_test_sig(m_test_paused);
+    emit pause_resume_test_sig(m_test_paused);
 
     refresh_butoons();
 }

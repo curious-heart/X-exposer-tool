@@ -97,7 +97,7 @@ signals:
     void go_test_sig();
     void stop_test_sig(tester_end_code_enum_t code);
     void mb_reconnected_sig();
-    void pause_restore_test_sig(bool pause);
+    void pause_resume_test_sig(bool pause);
 
     /*internal used signal*/
     void auto_reconnect_sig();
