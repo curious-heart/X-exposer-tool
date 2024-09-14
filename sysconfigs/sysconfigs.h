@@ -16,6 +16,7 @@ typedef struct
 
     int mb_reconnect_wait_ms, mb_err_retry_wait_ms;
     int test_time_stat_grain_sec;
+    int mb_one_cmd_round_time_ms;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

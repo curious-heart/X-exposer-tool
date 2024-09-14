@@ -42,6 +42,18 @@ static const char* gs_tester_op_name_list[] =
                && (TEST_OP_READ_REGS == (op)) \
                && (TESTER_LAST_ONE == (proc))))
 
+#define EXPO_PREP_AND_WORK_DURA(expo_dura) \
+    (g_sys_configs_block.expo_prepare_time_ms + (expo_dura))
+
+#define GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(expo_dura) \
+    (qMax<float>(EXPO_PREP_AND_WORK_DURA(expo_dura) ,g_sys_configs_block.consec_rw_wait_ms))
+
+#define FULL_COOL_DURA_MS(dura_ms) \
+    ((hv_test_params->expo_param_block.fixed_cool_dura ? \
+                   hv_test_params->expo_param_block.expo_cool_dura_ms : \
+                   hv_test_params->expo_param_block.expo_cool_dura_factor * (dura_ms)) \
+    + g_sys_configs_block.extra_cool_time_ms)
+
 HVTester::HVTester(QObject *parent)
     : QObject{parent},
       hv_test_op_timer(this), hv_test_err_retry_timer(this)
@@ -82,7 +94,7 @@ void HVTester::check_pause_to_start_timer(QTimer * c_timer,
     {
         m_curr_timer = c_timer;
         m_curr_timer_handler = timeout_handler;
-        m_curr_timer_remaining_time = dura_ms;
+        m_curr_timer_remaining_time_ms = dura_ms;
         m_dt_checkpoint_for_pause = QDateTime::currentDateTime();
     }
 }
@@ -91,7 +103,7 @@ void HVTester::reset_timer_rec()
 {
     m_curr_timer = nullptr;
     m_curr_timer_handler = nullptr;
-    m_curr_timer_remaining_time = -1;
+    m_curr_timer_remaining_time_ms = -1;
 }
 
 void HVTester::reset_internal_state()
@@ -282,11 +294,9 @@ void HVTester::update_tester_state()
 
 int HVTester::calc_cool_dura_ms(qint64 time_elapsed_since_cool_start)
 {
-    float cool_dura_ms = hv_test_params->expo_param_block.fixed_cool_dura ?
-                   hv_test_params->expo_param_block.expo_cool_dura_ms :
-                   hv_test_params->expo_param_block.expo_cool_dura_factor
-                   * hv_curr_expo_param_triple.dura_ms;
-    cool_dura_ms += g_sys_configs_block.extra_cool_time_ms;
+    float cool_dura_ms;
+
+    cool_dura_ms = FULL_COOL_DURA_MS(hv_curr_expo_param_triple.dura_ms);
 
     if(time_elapsed_since_cool_start >= cool_dura_ms)
     {
@@ -323,9 +333,10 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
 
     case TEST_OP_START_EXPO:
         err_str = QString("%1 %2: %3").arg(gs_str_mb_start_expo, g_str_fail, mb_reply_err_str);
-        timer_ms = g_sys_configs_block.expo_prepare_time_ms + hv_curr_expo_param_triple.dura_ms;
+        timer_ms = GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(hv_curr_expo_param_triple.dura_ms);
 
-        ls_cool_start_point = QDateTime::currentDateTime().addMSecs(timer_ms);
+        ls_cool_start_point = QDateTime::currentDateTime()
+                        .addMSecs(EXPO_PREP_AND_WORK_DURA(hv_curr_expo_param_triple.dura_ms));
         break;
 
     case TEST_OP_READ_REGS:
@@ -338,7 +349,8 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         }
         else
         {
-            timer_ms = calc_cool_dura_ms(time_elapsed_since_cool_start);
+            timer_ms = qMax<float>(calc_cool_dura_ms(time_elapsed_since_cool_start),
+                                    g_sys_configs_block.consec_rw_wait_ms);
         }
         break;
 
@@ -346,7 +358,8 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         time_elapsed_since_cool_start = ls_cool_start_point.msecsTo(curr_dt);
 
         err_str = QString("%1 %2: %3").arg(gs_str_mb_read_distance, g_str_fail, mb_reply_err_str);
-        timer_ms = calc_cool_dura_ms(time_elapsed_since_cool_start);
+        timer_ms = qMax<float>(calc_cool_dura_ms(time_elapsed_since_cool_start),
+                                g_sys_configs_block.consec_rw_wait_ms);
         break;
 
     default: //TEST_OP_NULL
@@ -712,7 +725,7 @@ void HVTester::pause_resume_test_sig_handler(bool pause)
 
         if(m_curr_timer)
         {
-            m_curr_timer_remaining_time = m_curr_timer->remainingTime();
+            m_curr_timer_remaining_time_ms = m_curr_timer->remainingTime();
         }
 
         hv_test_op_timer.stop();
@@ -729,7 +742,7 @@ void HVTester::pause_resume_test_sig_handler(bool pause)
         {
             QDateTime curr_datetime = QDateTime::currentDateTime();
             QDateTime expire_datetime
-                    = m_dt_checkpoint_for_pause.addMSecs(m_curr_timer_remaining_time);
+                    = m_dt_checkpoint_for_pause.addMSecs(m_curr_timer_remaining_time_ms);
 
             if(expire_datetime > curr_datetime)
             {
@@ -752,4 +765,131 @@ void HVTester::pause_resume_test_sig_handler(bool pause)
 
     }
     DIY_LOG(LOG_INFO, log_str);
+}
+
+#define EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(expo_dura) \
+qMax<float>(g_sys_configs_block.consec_rw_wait_ms, \
+    FULL_COOL_DURA_MS(expo_dura) \
+- (hv_test_params->other_param_block.read_dist ? 2 : 1) * g_sys_configs_block.mb_one_cmd_round_time_ms \
+- (hv_test_params->other_param_block.read_dist ? 1 : 0) * g_sys_configs_block.consec_rw_wait_ms \
+- qMax<float>(g_sys_configs_block.consec_rw_wait_ms - EXPO_PREP_AND_WORK_DURA(expo_dura), 0))
+
+float HVTester::expt_remaining_test_dura_ms(bool total)
+{
+    int one_cmd_round_time_ms = g_sys_configs_block.mb_one_cmd_round_time_ms;
+    float remain_dura_ms = 0;
+
+    if(!hv_test_params)
+    {
+        DIY_LOG(LOG_ERROR, "tester not init!!!");
+        return -1;
+    }
+
+    float fixed_dura_in_one_round_ms;
+    if(hv_test_params->other_param_block.read_dist)
+    {
+        /*
+         * set-triple-param + rw_waiit
+         * + expo + GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START
+         * + read_regs + rw_wait
+         *  + read_dist + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS
+        */
+        fixed_dura_in_one_round_ms = 4 * one_cmd_round_time_ms
+                + 2 * g_sys_configs_block.consec_rw_wait_ms;
+    }
+    else
+    {
+        /*
+         * set-triple-param + rw_waiit
+         * + expo + GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START
+         * + read_regs + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS
+        */
+        fixed_dura_in_one_round_ms = 3 * one_cmd_round_time_ms
+                + g_sys_configs_block.consec_rw_wait_ms;
+    }
+
+    int start_loop_idx = 0, start_round_idx = 0;
+    if(!total)
+    {
+        start_round_idx = (hv_test_idx_in_round < 0) ? 0: hv_test_idx_in_round ;
+        start_loop_idx = ((hv_test_idx_in_loop >= hv_test_params->expo_param_block.expo_cnt) ?
+                    hv_test_params->expo_param_block.expo_cnt - 1 : hv_test_idx_in_loop);
+    }
+
+    int round_cnt;
+    int loop_cnt = hv_test_params->expo_param_block.expo_cnt;
+    float one_round_dura = 0;
+    float upper_part_loop_dura = 0, lower_part_loop_dura = 0, one_loop_dura = 0;
+    float curr_expo_dura;
+
+    if(hv_test_params->expo_param_block.cust)
+    {
+        round_cnt = hv_test_params->expo_param_block.expo_params.cust_params_arr.count();
+        if(start_round_idx >= round_cnt) start_round_idx = round_cnt - 1;
+        for(int idx = 0; idx < round_cnt; ++idx)
+        {
+            curr_expo_dura =
+                hv_test_params->expo_param_block.expo_params.cust_params_arr.at(idx).dura_ms;
+            one_round_dura = GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(curr_expo_dura)
+                                + qMax<float>(FULL_COOL_DURA_MS(curr_expo_dura),
+                                              g_sys_configs_block.consec_rw_wait_ms)
+                                + fixed_dura_in_one_round_ms;
+            if(idx <= start_round_idx)
+            {
+                upper_part_loop_dura += one_round_dura;
+            }
+            else
+            {
+                lower_part_loop_dura += one_round_dura;
+            }
+        }
+        one_loop_dura = upper_part_loop_dura+ lower_part_loop_dura;
+        remain_dura_ms = lower_part_loop_dura + (loop_cnt - start_loop_idx - 1) * one_loop_dura;
+
+        /*now count the partial round dura. this part is not accurate, because we do not
+          know if current operation (mb cmd) is completed or not, and we just consider
+          the op has not start. so the counted time may be LONGer than actual.
+        */
+        float part_round_dura = 0;
+        curr_expo_dura =
+            hv_test_params->expo_param_block.expo_params.cust_params_arr.at(start_round_idx).dura_ms;
+        switch(hv_curr_op)
+        {
+            case TEST_OP_READ_DISTANCE:
+                part_round_dura += one_cmd_round_time_ms
+                                    + qMax<float>(FULL_COOL_DURA_MS(curr_expo_dura),
+                                              g_sys_configs_block.consec_rw_wait_ms);
+            case TEST_OP_READ_REGS:
+                if(hv_test_params->other_param_block.read_dist)
+                {
+                    part_round_dura += one_cmd_round_time_ms
+                                        + g_sys_configs_block.consec_rw_wait_ms;
+                }
+                else
+                {
+                    part_round_dura += one_cmd_round_time_ms
+                                        + qMax<float>(FULL_COOL_DURA_MS(curr_expo_dura),
+                                                  g_sys_configs_block.consec_rw_wait_ms);
+                }
+            case TEST_OP_START_EXPO:
+                part_round_dura += one_cmd_round_time_ms
+                                    + GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(curr_expo_dura);
+            case TEST_OP_SET_EXPO_TRIPLE:
+            default:
+                part_round_dura += one_cmd_round_time_ms
+                                    + g_sys_configs_block.consec_rw_wait_ms;
+                break;
+        }
+        remain_dura_ms += part_round_dura;
+
+        /*for the last round in the whole test period, no cool waiting is needed.
+         *  so substract it.*/
+        float last_round_dura
+            = hv_test_params->expo_param_block.expo_params.cust_params_arr.at(round_cnt - 1).dura_ms;
+        remain_dura_ms -= EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(last_round_dura);
+    }
+    else
+    {}
+
+    return remain_dura_ms;
 }

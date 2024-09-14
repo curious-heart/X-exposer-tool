@@ -79,7 +79,7 @@ private:
     mb_reg_val_map_t m_regs_read_result;
 
     QTimer * m_curr_timer = nullptr;
-    int m_curr_timer_remaining_time;
+    int m_curr_timer_remaining_time_ms;
     tester_simple_handler_t m_curr_timer_handler = nullptr;
     QDateTime m_dt_checkpoint_for_pause;
 
@@ -90,6 +90,7 @@ private:
 
 public:
     bool init(test_params_struct_t *test_params, QModbusClient * modbus_device, int srvr_addr);
+    float expt_remaining_test_dura_ms(bool total = false);
 
 private:
     void reset_internal_state();
