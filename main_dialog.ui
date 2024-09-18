@@ -204,7 +204,7 @@
          <item>
           <widget class="QLabel" name="startTestTimeDisplayLbl">
            <property name="text">
-            <string>2024-09-13 16:52:03</string>
+            <string>0000-00-00 00:00:00</string>
            </property>
           </widget>
          </item>

@@ -863,7 +863,7 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
     int loop_cnt = hv_test_params->expo_param_block.expo_cnt;
     float one_round_dura = 0;
     float upper_part_loop_dura = 0, lower_part_loop_dura = 0, one_loop_dura = 0;
-    float curr_expo_dura, start_idx_round_dura = 0;
+    float curr_expo_dura = 0, start_idx_round_dura = 0;
 
     int loop_idx = 0, round_idx = -1;
     proc = update_tester_state(&ctrl_struct, curr_triple, loop_idx, round_idx);
@@ -889,9 +889,13 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
         }
 
         proc = update_tester_state(&ctrl_struct, curr_triple, loop_idx, round_idx);
+        if(TESTER_A_NEW_ROUND == proc || TESTER_COMPLETE == proc) break;
     }
+    DIY_LOG(LOG_INFO, QString("lower_part_loop_dura: %1 ms, upper_part_loop_dura: %2 ms.")
+                            .arg(lower_part_loop_dura).arg(upper_part_loop_dura));
     one_loop_dura = upper_part_loop_dura+ lower_part_loop_dura;
     remain_dura_ms = lower_part_loop_dura + (loop_cnt - start_loop_idx - 1) * one_loop_dura;
+    DIY_LOG(LOG_INFO, QString("complete loops dura: %1 ms.").arg(remain_dura_ms));
 
     /*now count the partial round dura. this part is not accurate, because we do not
       know if current operation (mb cmd) is completed or not. so we just consider
@@ -899,36 +903,46 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
     */
     float part_round_dura = 0;
     curr_expo_dura = start_idx_round_dura;
-    switch(hv_curr_op)
+    if(curr_expo_dura > 0)
     {
-        case TEST_OP_READ_DISTANCE:
-            part_round_dura += one_cmd_round_time_ms
-                            + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(curr_expo_dura);
-        case TEST_OP_READ_REGS:
-            if(hv_test_params->other_param_block.read_dist)
-            {
+        switch(hv_curr_op)
+        {
+            case TEST_OP_NULL:
+            case TEST_OP_SET_EXPO_TRIPLE:
                 part_round_dura += one_cmd_round_time_ms
                                     + g_sys_configs_block.consec_rw_wait_ms;
-            }
-            else
-            {
+
+            case TEST_OP_START_EXPO:
                 part_round_dura += one_cmd_round_time_ms
-                            + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(curr_expo_dura);
-            }
-        case TEST_OP_START_EXPO:
-            part_round_dura += one_cmd_round_time_ms
-                                + GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(curr_expo_dura);
-        case TEST_OP_SET_EXPO_TRIPLE:
-        default:
-            part_round_dura += one_cmd_round_time_ms
-                                + g_sys_configs_block.consec_rw_wait_ms;
-            break;
+                                    + GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(curr_expo_dura);
+
+            case TEST_OP_READ_REGS:
+                if(hv_test_params->other_param_block.read_dist)
+                {
+                    part_round_dura += one_cmd_round_time_ms
+                                        + g_sys_configs_block.consec_rw_wait_ms;
+                }
+                else
+                {
+                    part_round_dura += one_cmd_round_time_ms
+                                + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(curr_expo_dura);
+                }
+
+            case TEST_OP_READ_DISTANCE:
+                part_round_dura += one_cmd_round_time_ms
+                                + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(curr_expo_dura);
+                break;
+        }
     }
+    DIY_LOG(LOG_INFO, QString("curr op is %1, part_round_dura is %2 ms.")
+            .arg(GET_TESTER_OP_NAME_STR(hv_curr_op)).arg(part_round_dura));
     remain_dura_ms += part_round_dura;
 
     /*for the last round in the whole test period, no cool waiting is needed. so substract it.*/
     float last_round_dura = LAST_ROUND_DURA_MS;
     remain_dura_ms -= EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(last_round_dura);
+    DIY_LOG(LOG_INFO, QString("last_round_dura is %1 ms.").arg(last_round_dura));
+    DIY_LOG(LOG_INFO, QString("expect dura after last cmd is %1 ms.").arg(EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(last_round_dura)));
 
     DIY_LOG(LOG_INFO, QString("remain_dura_ms: %1 ms.").arg(remain_dura_ms));
 

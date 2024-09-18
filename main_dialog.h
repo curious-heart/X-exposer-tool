@@ -69,7 +69,7 @@ private:
     int m_pause_cnt = 0, m_pause_dura_sec = 0, m_act_test_dura_sec = 0;
     int m_expt_test_dura_sec = 0, m_expt_test_remain_dura_sec = 0;
     QTimer m_time_stat_timer; //this is a periodical timer.
-    void refresh_time_stat_display();
+    void refresh_time_stat_display(bool total_dura = false, bool start_test = false);
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
@@ -110,5 +110,6 @@ signals:
 
     /*internal used signal*/
     void auto_reconnect_sig();
+    void refresh_time_stat_display_sig(bool total_dura = false, bool start_test = false);
 };
 #endif // DIALOG_H
