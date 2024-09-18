@@ -30,11 +30,12 @@ static const char* gs_tester_op_name_list[] =
 {
     TESTER_OP_LIST
 };
+
 #define GET_TESTER_OP_NAME_STR(op) \
     (((TEST_OP_NULL <= (op)) && ((op) <= TEST_OP_READ_DISTANCE)) ?\
         gs_tester_op_name_list[(op)] :  gs_str_unknown_tester_op)
 
-#define ALL_OPERATION_COMPLETE(op, proc) \
+#define LAST_OP_IN_WHOLE_TEST(op, proc) \
     ((hv_test_params->other_param_block.read_dist \
                && (TEST_OP_READ_DISTANCE == (op)) \
                && (TESTER_LAST_ONE == (proc))) \
@@ -53,6 +54,11 @@ static const char* gs_tester_op_name_list[] =
                    hv_test_params->expo_param_block.expo_cool_dura_ms : \
                    hv_test_params->expo_param_block.expo_cool_dura_factor * (dura_ms)) \
     + g_sys_configs_block.extra_cool_time_ms)
+
+#define LAST_ROUND_DURA_MS \
+    (hv_test_params->expo_param_block.cust ? \
+     hv_test_params->expo_param_block.expo_params.cust_params_arr.last().dura_ms :\
+     hv_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_end)
 
 HVTester::HVTester(QObject *parent)
     : QObject{parent},
@@ -146,80 +152,99 @@ bool HVTester::init(test_params_struct_t *test_params, QModbusClient * modbus_de
     return true;
 }
 
-bool HVTester::is_the_last_one_test()
+void HVTester::init_for_time_stat(test_params_struct_t *test_params)
+{
+    reset_internal_state();
+    hv_test_params = test_params;
+}
+
+bool HVTester::is_the_last_one_test(test_params_struct_t * ctrl_struct,
+                                                expo_param_triple_struct_t &curr_triple,
+                                                int &idx_in_loop, int &idx_in_round)
 {
     bool ret;
-    if(hv_test_params->expo_param_block.cust)
+
+    if(!ctrl_struct || !ctrl_struct->valid)
     {
-        int arr_cnt =  hv_test_params->expo_param_block.expo_params.cust_params_arr.count();
-        ret = ((hv_test_idx_in_round + 1) >= arr_cnt)
-              &&  ((hv_test_idx_in_loop + 1) >= hv_test_params->expo_param_block.expo_cnt);
+        DIY_LOG(LOG_ERROR, "tester not init!!!");
+        return false;
+    }
+
+    if(ctrl_struct->expo_param_block.cust)
+    {
+        int arr_cnt =  ctrl_struct->expo_param_block.expo_params.cust_params_arr.count();
+        ret = ((idx_in_round + 1) >= arr_cnt)
+              &&  ((idx_in_loop + 1) >= ctrl_struct->expo_param_block.expo_cnt);
     }
     else
     {
-        ret = ((hv_test_idx_in_loop + 1 >= hv_test_params->expo_param_block.expo_cnt)
-        && (hv_curr_expo_param_triple.cube_volt_kv ==
-              hv_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_end)
-        && (hv_curr_expo_param_triple.cube_current_ma ==
-              hv_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_end)
-        && (hv_curr_expo_param_triple.dura_ms ==
-              hv_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_end));
+        ret = ((idx_in_loop + 1 >= ctrl_struct->expo_param_block.expo_cnt)
+        && (curr_triple.cube_volt_kv ==
+              ctrl_struct->expo_param_block.expo_params.regular_parms.cube_volt_kv_end)
+        && (curr_triple.cube_current_ma ==
+              ctrl_struct->expo_param_block.expo_params.regular_parms.cube_current_ma_end)
+        && (curr_triple.dura_ms ==
+              ctrl_struct->expo_param_block.expo_params.regular_parms.expo_dura_ms_end));
     }
     return ret;
 }
 
-void HVTester::update_tester_state()
+HVTester::tester_procedure_enum_t HVTester::update_tester_state(test_params_struct_t * ctrl_struct,
+                                                expo_param_triple_struct_t &curr_triple,
+                                                int &idx_in_loop, int &idx_in_round)
 {
-    if(!hv_test_params || !hv_test_params->valid)
+    HVTester::tester_procedure_enum_t proc;
+
+    if(!ctrl_struct || !ctrl_struct->valid)
     {
-        hv_tester_proc = TESTER_IDLE;
-        return;
+        DIY_LOG(LOG_ERROR, "tester not init!!!");
+        proc = TESTER_IDLE;
+        return proc;
     }
 
-    ++hv_test_idx_in_round;
-    if(hv_test_params->expo_param_block.cust)
+    ++idx_in_round;
+    if(ctrl_struct->expo_param_block.cust)
     {
-        int arr_cnt =  hv_test_params->expo_param_block.expo_params.cust_params_arr.count();
-        if(hv_test_idx_in_round >= arr_cnt)
+        int arr_cnt = ctrl_struct->expo_param_block.expo_params.cust_params_arr.count();
+        if(idx_in_round >= arr_cnt)
         {
-            ++hv_test_idx_in_loop;
-            if(hv_test_idx_in_loop >= hv_test_params->expo_param_block.expo_cnt)
+            ++idx_in_loop;
+            if(idx_in_loop >= ctrl_struct->expo_param_block.expo_cnt)
             {
-                hv_tester_proc = TESTER_COMPLETE;
-                return;
+                proc = TESTER_COMPLETE;
+                return proc;
             }
 
-            hv_test_idx_in_round = 0;
+            idx_in_round = 0;
         }
-        hv_curr_expo_param_triple =
-            hv_test_params->expo_param_block.expo_params.cust_params_arr.at(hv_test_idx_in_round);
-        if(is_the_last_one_test())
+        curr_triple = ctrl_struct->expo_param_block.expo_params.cust_params_arr.at(idx_in_round);
+        if(is_the_last_one_test(ctrl_struct, curr_triple, idx_in_loop, idx_in_round))
         {
-             hv_tester_proc = TESTER_LAST_ONE;
+            proc = TESTER_LAST_ONE;
         }
         else
         {
-            hv_tester_proc = ((0 == hv_test_idx_in_round) ? TESTER_A_NEW_ROUND : TESTER_WORKING);
+            proc = ((0 == idx_in_round) ? TESTER_A_NEW_ROUND : TESTER_WORKING);
         }
     }
     else
     {
-        if(0 == hv_test_idx_in_round)
+        if(0 == idx_in_round)
         {
-            hv_curr_expo_param_triple.cube_volt_kv =
-                  hv_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_start;
-            hv_curr_expo_param_triple.cube_current_ma =
-                  hv_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_start;
-            hv_curr_expo_param_triple.dura_ms =
-                  hv_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_start;
+            curr_triple.cube_volt_kv =
+                  ctrl_struct->expo_param_block.expo_params.regular_parms.cube_volt_kv_start;
+            curr_triple.cube_current_ma =
+                  ctrl_struct->expo_param_block.expo_params.regular_parms.cube_current_ma_start;
+            curr_triple.dura_ms =
+                  ctrl_struct->expo_param_block.expo_params.regular_parms.expo_dura_ms_start;
 
-            if(is_the_last_one_test())
+            if(is_the_last_one_test(ctrl_struct, curr_triple, idx_in_loop, idx_in_round))
             {
-                hv_tester_proc = TESTER_LAST_ONE;
+                proc = TESTER_LAST_ONE;
             }
             else
             {
-                hv_tester_proc = TESTER_A_NEW_ROUND;
+                proc = TESTER_A_NEW_ROUND;
             }
         }
         else while(true)
@@ -234,62 +259,64 @@ void HVTester::update_tester_state()
     else\
     {\
         (curr) += (step);\
-        if((step) >= 0) {if((curr) >= (up_e)) (curr) = (up_e);}\
+        if((step) >= 0) {if((curr) > (up_e)) (curr) = (up_e);}\
         else if((curr) < (up_e)) (curr) = (up_e);\
     }\
     if((curr) == (low_e)) roundup = true;\
 }
             MOVE_A_STEP(
-                hv_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_start,
-                hv_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_end,
-                hv_test_params->expo_param_block.expo_params.regular_parms.expo_dura_ms_step,
-                hv_curr_expo_param_triple.dura_ms);
+                ctrl_struct->expo_param_block.expo_params.regular_parms.expo_dura_ms_start,
+                ctrl_struct->expo_param_block.expo_params.regular_parms.expo_dura_ms_end,
+                ctrl_struct->expo_param_block.expo_params.regular_parms.expo_dura_ms_step,
+                curr_triple.dura_ms);
             if(!roundup)
             {
-                hv_tester_proc = is_the_last_one_test() ? TESTER_LAST_ONE : TESTER_WORKING;
+                proc = is_the_last_one_test(ctrl_struct, curr_triple, idx_in_loop, idx_in_round) ?
+                                            TESTER_LAST_ONE : TESTER_WORKING;
                 break;
             }
 
             roundup = false;
             MOVE_A_STEP(
-                hv_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_start,
-                hv_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_end,
-                hv_test_params->expo_param_block.expo_params.regular_parms.cube_current_ma_step,
-                hv_curr_expo_param_triple.cube_current_ma);
+                ctrl_struct->expo_param_block.expo_params.regular_parms.cube_current_ma_start,
+                ctrl_struct->expo_param_block.expo_params.regular_parms.cube_current_ma_end,
+                ctrl_struct->expo_param_block.expo_params.regular_parms.cube_current_ma_step,
+                curr_triple.cube_current_ma);
             if(!roundup)
             {
-                hv_tester_proc = is_the_last_one_test() ? TESTER_LAST_ONE : TESTER_WORKING;
+                proc = is_the_last_one_test(ctrl_struct, curr_triple, idx_in_loop, idx_in_round) ?
+                                            TESTER_LAST_ONE : TESTER_WORKING;
                 break;
             }
 
             roundup = false;
             MOVE_A_STEP(
-                hv_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_start,
-                hv_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_end,
-                hv_test_params->expo_param_block.expo_params.regular_parms.cube_volt_kv_step,
-                hv_curr_expo_param_triple.cube_volt_kv);
+                ctrl_struct->expo_param_block.expo_params.regular_parms.cube_volt_kv_start,
+                ctrl_struct->expo_param_block.expo_params.regular_parms.cube_volt_kv_end,
+                ctrl_struct->expo_param_block.expo_params.regular_parms.cube_volt_kv_step,
+                curr_triple.cube_volt_kv);
             if(!roundup)
             {
-                hv_tester_proc = is_the_last_one_test() ? TESTER_LAST_ONE : TESTER_WORKING;
+                proc = is_the_last_one_test(ctrl_struct, curr_triple, idx_in_loop, idx_in_round) ?
+                                            TESTER_LAST_ONE : TESTER_WORKING;
                 break;
             }
-            ++hv_test_idx_in_loop;
-            if(hv_test_idx_in_loop >= hv_test_params->expo_param_block.expo_cnt)
+            ++idx_in_loop;
+            if(idx_in_loop >= ctrl_struct->expo_param_block.expo_cnt)
             {
-                hv_tester_proc = TESTER_COMPLETE;
-                return;
+                proc = TESTER_COMPLETE;
+                return proc;
             }
-            hv_test_idx_in_round = 0;
-            hv_tester_proc = is_the_last_one_test() ? TESTER_LAST_ONE : TESTER_A_NEW_ROUND;
+            idx_in_round = 0;
+            proc = is_the_last_one_test(ctrl_struct, curr_triple, idx_in_loop, idx_in_round) ?
+                                            TESTER_LAST_ONE : TESTER_A_NEW_ROUND;
 
             break;
 #undef MOVE_A_STEP
         }
     }
-    hv_curr_triple_mb_unit_str = QString("%1,%2,%3").arg(
-                   QString::number((quint16)(hv_curr_expo_param_triple.cube_volt_kv)),
-                   QString::number((quint16)(1000 * hv_curr_expo_param_triple.cube_current_ma)),
-                   QString::number((quint16)(hv_curr_expo_param_triple.dura_ms)));
+
+    return proc;
 }
 
 int HVTester::calc_cool_dura_ms(qint64 time_elapsed_since_cool_start)
@@ -434,7 +461,7 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
 
             if(goon && (TESTER_IDLE != hv_tester_proc))
             {
-                if(ALL_OPERATION_COMPLETE(op, hv_tester_proc))
+                if(LAST_OP_IN_WHOLE_TEST(op, hv_tester_proc))
                 {
                     //for the last one, no need to set timer again, and let go_test to end
                     //the loop.
@@ -489,7 +516,16 @@ void HVTester::go_test_sig_handler()
         end_test_due_to_exception(gs_str_not_init);
         return;
     }
-    update_tester_state();
+    hv_tester_proc = update_tester_state(hv_test_params, hv_curr_expo_param_triple,
+                        hv_test_idx_in_loop, hv_test_idx_in_round);
+
+    if(hv_tester_proc != TESTER_IDLE && hv_tester_proc != TESTER_COMPLETE)
+    {
+        hv_curr_triple_mb_unit_str = QString("%1,%2,%3").arg(
+                       QString::number((quint16)(hv_curr_expo_param_triple.cube_volt_kv)),
+                       QString::number((quint16)(1000 * hv_curr_expo_param_triple.cube_current_ma)),
+                       QString::number((quint16)(hv_curr_expo_param_triple.dura_ms)));
+    }
     switch(hv_tester_proc)
     {
     case TESTER_IDLE:
@@ -774,7 +810,7 @@ qMax<float>(g_sys_configs_block.consec_rw_wait_ms, \
 - (hv_test_params->other_param_block.read_dist ? 1 : 0) * g_sys_configs_block.consec_rw_wait_ms \
 - qMax<float>(g_sys_configs_block.consec_rw_wait_ms - EXPO_PREP_AND_WORK_DURA(expo_dura), 0))
 
-float HVTester::expt_remaining_test_dura_ms(bool total)
+float HVTester::expect_remaining_test_dura_ms(bool total)
 {
     int one_cmd_round_time_ms = g_sys_configs_block.mb_one_cmd_round_time_ms;
     float remain_dura_ms = 0;
@@ -808,88 +844,95 @@ float HVTester::expt_remaining_test_dura_ms(bool total)
                 + g_sys_configs_block.consec_rw_wait_ms;
     }
 
-    int start_loop_idx = 0, start_round_idx = 0;
-    if(!total)
+    int start_round_idx = 0, start_loop_idx = 0;
+    if(total)
     {
-        start_round_idx = (hv_test_idx_in_round < 0) ? 0: hv_test_idx_in_round ;
-        start_loop_idx = ((hv_test_idx_in_loop >= hv_test_params->expo_param_block.expo_cnt) ?
-                    hv_test_params->expo_param_block.expo_cnt - 1 : hv_test_idx_in_loop);
+        start_loop_idx = 0;
+        start_round_idx = -1;
+    }
+    else
+    {
+        start_loop_idx = hv_test_idx_in_loop;
+        start_round_idx = hv_test_idx_in_round;
     }
 
-    int round_cnt;
+    test_params_struct_t ctrl_struct = (*hv_test_params);
+    expo_param_triple_struct_t curr_triple;
+    tester_procedure_enum_t proc;
+
     int loop_cnt = hv_test_params->expo_param_block.expo_cnt;
     float one_round_dura = 0;
     float upper_part_loop_dura = 0, lower_part_loop_dura = 0, one_loop_dura = 0;
-    float curr_expo_dura;
+    float curr_expo_dura, start_idx_round_dura = 0;
 
-    if(hv_test_params->expo_param_block.cust)
+    int loop_idx = 0, round_idx = -1;
+    proc = update_tester_state(&ctrl_struct, curr_triple, loop_idx, round_idx);
+    while(proc != TESTER_COMPLETE && proc != TESTER_IDLE)
     {
-        round_cnt = hv_test_params->expo_param_block.expo_params.cust_params_arr.count();
-        if(start_round_idx >= round_cnt) start_round_idx = round_cnt - 1;
-        for(int idx = 0; idx < round_cnt; ++idx)
+        curr_expo_dura = curr_triple.dura_ms;
+        one_round_dura = GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(curr_expo_dura)
+                            + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(curr_expo_dura)
+                            + fixed_dura_in_one_round_ms;
+
+        if(round_idx <= start_round_idx)
         {
-            curr_expo_dura =
-                hv_test_params->expo_param_block.expo_params.cust_params_arr.at(idx).dura_ms;
-            one_round_dura = GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(curr_expo_dura)
-                                + qMax<float>(FULL_COOL_DURA_MS(curr_expo_dura),
-                                              g_sys_configs_block.consec_rw_wait_ms)
-                                + fixed_dura_in_one_round_ms;
-            if(idx <= start_round_idx)
+            upper_part_loop_dura += one_round_dura;
+        }
+        else
+        {
+            lower_part_loop_dura += one_round_dura;
+        }
+
+        if(round_idx == start_round_idx)
+        {
+            start_idx_round_dura = curr_expo_dura;
+        }
+
+        proc = update_tester_state(&ctrl_struct, curr_triple, loop_idx, round_idx);
+    }
+    one_loop_dura = upper_part_loop_dura+ lower_part_loop_dura;
+    remain_dura_ms = lower_part_loop_dura + (loop_cnt - start_loop_idx - 1) * one_loop_dura;
+
+    /*now count the partial round dura. this part is not accurate, because we do not
+      know if current operation (mb cmd) is completed or not. so we just consider
+      the op has not start, and the counted time may be LONGer than actual.
+    */
+    float part_round_dura = 0;
+    curr_expo_dura = start_idx_round_dura;
+    switch(hv_curr_op)
+    {
+        case TEST_OP_READ_DISTANCE:
+            part_round_dura += one_cmd_round_time_ms
+                            + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(curr_expo_dura);
+        case TEST_OP_READ_REGS:
+            if(hv_test_params->other_param_block.read_dist)
             {
-                upper_part_loop_dura += one_round_dura;
+                part_round_dura += one_cmd_round_time_ms
+                                    + g_sys_configs_block.consec_rw_wait_ms;
             }
             else
             {
-                lower_part_loop_dura += one_round_dura;
+                part_round_dura += one_cmd_round_time_ms
+                            + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(curr_expo_dura);
             }
-        }
-        one_loop_dura = upper_part_loop_dura+ lower_part_loop_dura;
-        remain_dura_ms = lower_part_loop_dura + (loop_cnt - start_loop_idx - 1) * one_loop_dura;
-
-        /*now count the partial round dura. this part is not accurate, because we do not
-          know if current operation (mb cmd) is completed or not, and we just consider
-          the op has not start. so the counted time may be LONGer than actual.
-        */
-        float part_round_dura = 0;
-        curr_expo_dura =
-            hv_test_params->expo_param_block.expo_params.cust_params_arr.at(start_round_idx).dura_ms;
-        switch(hv_curr_op)
-        {
-            case TEST_OP_READ_DISTANCE:
-                part_round_dura += one_cmd_round_time_ms
-                                    + qMax<float>(FULL_COOL_DURA_MS(curr_expo_dura),
-                                              g_sys_configs_block.consec_rw_wait_ms);
-            case TEST_OP_READ_REGS:
-                if(hv_test_params->other_param_block.read_dist)
-                {
-                    part_round_dura += one_cmd_round_time_ms
-                                        + g_sys_configs_block.consec_rw_wait_ms;
-                }
-                else
-                {
-                    part_round_dura += one_cmd_round_time_ms
-                                        + qMax<float>(FULL_COOL_DURA_MS(curr_expo_dura),
-                                                  g_sys_configs_block.consec_rw_wait_ms);
-                }
-            case TEST_OP_START_EXPO:
-                part_round_dura += one_cmd_round_time_ms
-                                    + GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(curr_expo_dura);
-            case TEST_OP_SET_EXPO_TRIPLE:
-            default:
-                part_round_dura += one_cmd_round_time_ms
-                                    + g_sys_configs_block.consec_rw_wait_ms;
-                break;
-        }
-        remain_dura_ms += part_round_dura;
-
-        /*for the last round in the whole test period, no cool waiting is needed.
-         *  so substract it.*/
-        float last_round_dura
-            = hv_test_params->expo_param_block.expo_params.cust_params_arr.at(round_cnt - 1).dura_ms;
-        remain_dura_ms -= EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(last_round_dura);
+        case TEST_OP_START_EXPO:
+            part_round_dura += one_cmd_round_time_ms
+                                + GAP_BETWEEN_EXPO_FINISH_AND_READ_REG_START(curr_expo_dura);
+        case TEST_OP_SET_EXPO_TRIPLE:
+        default:
+            part_round_dura += one_cmd_round_time_ms
+                                + g_sys_configs_block.consec_rw_wait_ms;
+            break;
     }
-    else
-    {}
+    remain_dura_ms += part_round_dura;
+
+    /*for the last round in the whole test period, no cool waiting is needed. so substract it.*/
+    float last_round_dura = LAST_ROUND_DURA_MS;
+    remain_dura_ms -= EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(last_round_dura);
+
+    DIY_LOG(LOG_INFO, QString("remain_dura_ms: %1 ms.").arg(remain_dura_ms));
+
+    if(remain_dura_ms < 0) remain_dura_ms = 0;
 
     return remain_dura_ms;
 }

@@ -83,14 +83,19 @@ private:
     tester_simple_handler_t m_curr_timer_handler = nullptr;
     QDateTime m_dt_checkpoint_for_pause;
 
-    bool is_the_last_one_test();
-    void update_tester_state();
+    bool is_the_last_one_test(test_params_struct_t * ctrl_struct,
+                                                expo_param_triple_struct_t &curr_triple,
+                                                int &idx_in_loop, int &idx_in_round);
+    tester_procedure_enum_t update_tester_state(test_params_struct_t * ctrl_struct,
+                                                expo_param_triple_struct_t &curr_triple,
+                                                int &idx_in_loop, int &idx_in_round);
     void end_test(tester_end_code_enum_t code);
     typedef void (HVTester::*mb_operation_handler_t)(tester_op_enum_t op);
 
 public:
     bool init(test_params_struct_t *test_params, QModbusClient * modbus_device, int srvr_addr);
-    float expt_remaining_test_dura_ms(bool total = false);
+    void init_for_time_stat(test_params_struct_t *test_params);
+    float expect_remaining_test_dura_ms(bool total = false);
 
 private:
     void reset_internal_state();

@@ -1,5 +1,6 @@
 ﻿#include <QMessageBox>
 #include <QColor>
+#include <QtMath>
 
 #include "logger/logger.h"
 #include "main_dialog.h"
@@ -46,6 +47,43 @@ const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
     State, ExposureStatus, BatteryLevel, BatteryVoltmeter, OilBoxTemperature,
     Workstatus, exposureCount,
 };
+
+/*
+ * The following vars MUST be defined in function using the following two macros.
+ *
+    int total_secs, hour, min, sec;
+    QString hhmmss_str;
+*/
+/*sec MUST be of integer type.*/
+#define SECS_TO_HHMMSS_STR(secs_var) \
+    total_secs = (secs_var);\
+    hour = (total_secs) / 3600; (total_secs) = (total_secs) % 3600; \
+    min = (total_secs) / 60; (total_secs) = (total_secs) % 60; \
+    sec = (total_secs);\
+    hhmmss_str = QString("%1:%2:%3").arg(hour, 2, 10, QLatin1Char('0'))\
+                                   .arg(min, 2, 10, QLatin1Char('0'))\
+                                   .arg(sec, 2, 10, QLatin1Char('0'));
+
+#define SECS_TO_HHMMSS_STR_DISP(secs_var, ctrl_op) \
+    SECS_TO_HHMMSS_STR(secs_var); \
+    ctrl_op(hhmmss_str);
+
+void Dialog::refresh_time_stat_display()
+{
+    int total_secs, hour, min, sec;
+    QString hhmmss_str;
+
+    SECS_TO_HHMMSS_STR_DISP(m_expt_test_remain_dura_sec,
+                            ui->exptRemainTestDuraDisplayLbl->setText);
+
+    SECS_TO_HHMMSS_STR_DISP(m_act_test_dura_sec,
+                            ui->actTestDuraDisplayLbl->setText);
+
+    SECS_TO_HHMMSS_STR_DISP(m_pause_dura_sec,
+                            ui->pauseDuraDisplayLbl->setText);
+
+    ui->pauseCntDisplayLbl->setText(QString::number(m_pause_cnt));
+}
 
 Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
@@ -139,11 +177,25 @@ Dialog::~Dialog()
 
 void Dialog::on_testParamSetBtn_clicked()
 {
+
     m_testParamSettingsDialog->exec();
 
     if(m_test_params.valid)
     {
         ui->testParamDisplayTxt->setText(m_test_params.info_str);
+
+        m_hv_tester.init_for_time_stat(&m_test_params);
+        m_expt_test_dura_sec = qCeil(m_hv_tester.expect_remaining_test_dura_ms(true) / 1000);
+        {
+            int total_secs, hour, min, sec;
+            QString hhmmss_str;
+
+            SECS_TO_HHMMSS_STR_DISP(m_expt_test_dura_sec,
+                                    ui->exptTotalTestDuraDisplayLbl->setText);
+        }
+
+        m_expt_test_remain_dura_sec = m_expt_test_dura_sec;
+        refresh_time_stat_display();
     }
 }
 
@@ -445,13 +497,26 @@ void Dialog::on_startTestBtn_clicked()
     refresh_butoons();
     emit go_test_sig();
 
+    m_test_start_time = QDateTime::currentDateTime();
+    QString dtstr = m_test_start_time.toString("yyyy-MM-dd hh:mm:ss");
+    ui->startTestTimeDisplayLbl->setText(dtstr);
+
+    m_expt_test_dura_sec = qCeil(m_hv_tester.expect_remaining_test_dura_ms(true) / 1000);
+    {
+        int total_secs, hour, min, sec;
+        QString hhmmss_str;
+
+        SECS_TO_HHMMSS_STR_DISP(m_expt_test_dura_sec,
+                                ui->exptTotalTestDuraDisplayLbl->setText);
+    }
+
+    m_expt_test_remain_dura_sec = m_expt_test_dura_sec;
     m_pause_cnt = 0;
     m_pause_dura_sec = 0;
     m_act_test_dura_sec = 0;
-    m_test_start_time = QDateTime::currentDateTime();
-    m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
-
     refresh_time_stat_display();
+
+    m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
 }
 
 void Dialog::on_stopTestBtn_clicked()
@@ -568,6 +633,7 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     {
         m_pause_dura_sec += m_pause_dura_check_point.secsTo(QDateTime::currentDateTime());
     }
+    m_act_test_dura_sec = m_test_start_time.secsTo(QDateTime::currentDateTime());
     refresh_time_stat_display();
 
     m_testing = false;
@@ -652,6 +718,8 @@ void Dialog::time_stat_timer_sig_handler()
 
     QDateTime curr_dt = QDateTime::currentDateTime();
 
+    m_expt_test_remain_dura_sec = qCeil(m_hv_tester.expect_remaining_test_dura_ms() / 1000);
+
     m_act_test_dura_sec = m_test_start_time.secsTo(curr_dt);
 
     if(m_test_paused)
@@ -691,35 +759,4 @@ void Dialog::on_pauseTestBtn_clicked()
 
     refresh_butoons();
     refresh_time_stat_display();
-}
-
-/*sec MUST be of integer type.*/
-#define SECS_TO_HHMMSS_STR(secs_var) \
-    total_secs = (secs_var);\
-    hour = (total_secs) / 3600; (total_secs) = (total_secs) % 3600; \
-    min = (total_secs) / 60; (total_secs) = (total_secs) % 60; \
-    sec = (total_secs);\
-    hhmmss_str = QString("%1:%2:%3").arg(hour, 2, 10, QLatin1Char('0'))\
-                                   .arg(min, 2, 10, QLatin1Char('0'))\
-                                   .arg(sec, 2, 10, QLatin1Char('0'));
-
-#define SECS_TO_HHMMSS_STR_DISP(secs_var, ctrl_op) \
-    SECS_TO_HHMMSS_STR(secs_var); \
-    ctrl_op(hhmmss_str);
-
-void Dialog::refresh_time_stat_display()
-{
-    int total_secs, hour, min, sec;
-    QString hhmmss_str;
-
-    SECS_TO_HHMMSS_STR_DISP(m_expt_test_remain_dura_sec,
-                            ui->exptRemainTestDuraDisplayLbl->setText);
-
-    SECS_TO_HHMMSS_STR_DISP(m_act_test_dura_sec,
-                            ui->actTestDuraDisplayLbl->setText);
-
-    SECS_TO_HHMMSS_STR_DISP(m_pause_dura_sec,
-                            ui->pauseDuraDisplayLbl->setText);
-
-    ui->pauseCntDisplayLbl->setText(QString::number(m_pause_cnt));
 }
