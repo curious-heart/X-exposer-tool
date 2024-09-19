@@ -43,6 +43,9 @@ static const char* gs_tester_op_name_list[] =
                && (TEST_OP_READ_REGS == (op)) \
                && (TESTER_LAST_ONE == (proc))))
 
+#define THIS_IS_A_NEW_ROUND(proc, round_idx) \
+    ((TESTER_A_NEW_ROUND == (proc)) || ((TESTER_LAST_ONE == (proc)) && (0 == (round_idx))))
+
 #define EXPO_PREP_AND_WORK_DURA(expo_dura) \
     (g_sys_configs_block.expo_prepare_time_ms + (expo_dura))
 
@@ -166,7 +169,7 @@ bool HVTester::is_the_last_one_test(test_params_struct_t * ctrl_struct,
 
     if(!ctrl_struct || !ctrl_struct->valid)
     {
-        DIY_LOG(LOG_ERROR, "tester not init!!!");
+        DIY_LOG(LOG_WARN, "tester not init!!!");
         return false;
     }
 
@@ -197,7 +200,7 @@ HVTester::tester_procedure_enum_t HVTester::update_tester_state(test_params_stru
 
     if(!ctrl_struct || !ctrl_struct->valid)
     {
-        DIY_LOG(LOG_ERROR, "tester not init!!!");
+        DIY_LOG(LOG_WARN, "tester not init!!!");
         proc = TESTER_IDLE;
         return proc;
     }
@@ -537,8 +540,11 @@ void HVTester::go_test_sig_handler()
         return;
 
     case TESTER_A_NEW_ROUND:
-        emit test_info_message_sig(LOG_INFO, gs_str_a_new_round);
     case TESTER_LAST_ONE:
+        if(THIS_IS_A_NEW_ROUND(hv_tester_proc, hv_test_idx_in_round))
+        {
+            emit test_info_message_sig(LOG_INFO, gs_str_a_new_round);
+        }
     case TESTER_WORKING:
     default:
         {
@@ -817,7 +823,7 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
 
     if(!hv_test_params)
     {
-        DIY_LOG(LOG_ERROR, "tester not init!!!");
+        DIY_LOG(LOG_WARN, "tester not init!!!");
         return -1;
     }
 
@@ -867,6 +873,7 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
 
     int loop_idx = 0, round_idx = -1;
     proc = update_tester_state(&ctrl_struct, curr_triple, loop_idx, round_idx);
+    DIY_LOG(LOG_INFO, QString("proc: %1").arg(QString::number(proc)));
     while(proc != TESTER_COMPLETE && proc != TESTER_IDLE)
     {
         curr_expo_dura = curr_triple.dura_ms;
@@ -888,12 +895,19 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
             start_idx_round_dura = curr_expo_dura;
         }
 
+        DIY_LOG(LOG_INFO, QString("round idx: %1, one_round_dura: %2 ms, "
+                                  "upper_part_loop_dura: %3 ms, lower_part_dura: %4 ms.")
+        .arg(round_idx).arg(one_round_dura).arg(upper_part_loop_dura).arg(lower_part_loop_dura));
+
         proc = update_tester_state(&ctrl_struct, curr_triple, loop_idx, round_idx);
-        if(TESTER_A_NEW_ROUND == proc || TESTER_COMPLETE == proc) break;
+        DIY_LOG(LOG_INFO, QString("proc: %1").arg(QString::number(proc)));
+        if(TESTER_COMPLETE == proc || THIS_IS_A_NEW_ROUND(proc, round_idx)) break;
     }
-    DIY_LOG(LOG_INFO, QString("lower_part_loop_dura: %1 ms, upper_part_loop_dura: %2 ms.")
-                            .arg(lower_part_loop_dura).arg(upper_part_loop_dura));
     one_loop_dura = upper_part_loop_dura+ lower_part_loop_dura;
+    DIY_LOG(LOG_INFO,
+            QString("lower_part_loop_dura: %1 ms, upper_part_loop_dura: %2 ms, "
+                    "one_loop_dura: %3 ms.")
+                    .arg(lower_part_loop_dura).arg(upper_part_loop_dura).arg(one_loop_dura));
     remain_dura_ms = lower_part_loop_dura + (loop_cnt - start_loop_idx - 1) * one_loop_dura;
     DIY_LOG(LOG_INFO, QString("complete loops dura: %1 ms.").arg(remain_dura_ms));
 

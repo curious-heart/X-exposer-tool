@@ -10,7 +10,7 @@
 
 LogSigEmitter *g_LogSigEmitter = nullptr;
 static Logger * g_LogWorker = nullptr;
-
+static LOG_LEVEL gs_log_display_levle = LOG_ERROR;
 Logger::Logger(QObject *parent) : QObject(parent)
 {
 
@@ -76,6 +76,12 @@ static const char* gs_log_level_strs[] =
 void Logger::receive_log(int level, QString loc_str, QString log_str)
 {
     QString level_str;
+
+    if(level < gs_log_display_levle)
+    {
+        return;
+    }
+
     if(!VALID_LOG_LVL(level))
     {
         level_str = QString("[%1]").arg("Unknown Level");
@@ -87,8 +93,10 @@ void Logger::receive_log(int level, QString loc_str, QString log_str)
     writeLog(level_str, loc_str, log_str);
 }
 
-bool start_log_thread(QThread &th)
+bool start_log_thread(QThread &th, LOG_LEVEL display_lvl)
 {
+    gs_log_display_levle = display_lvl;
+
     qRegisterMetaType<LOG_LEVEL>();
     g_LogSigEmitter = new LogSigEmitter;
     g_LogWorker = new Logger;

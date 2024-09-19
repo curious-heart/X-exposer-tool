@@ -3,6 +3,8 @@
 
 typedef struct
 {
+    int log_level;
+
     float cool_dura_factor;
     int extra_cool_time_ms;
     int expo_prepare_time_ms, consec_rw_wait_ms;

@@ -63,7 +63,7 @@ static bool exec_external_process(QString cmd, QString cmd_args, bool as_admin =
 
 #define SYSTEM_LIB_FUNC_RET_OK 0
 
-static QNetworkInterface::InterfaceType local_intf_type_to_qnintf_type(ip_intf_type_t l_t)
+QNetworkInterface::InterfaceType local_intf_type_to_qnintf_type(ip_intf_type_t l_t)
 {
     switch(l_t)
     {
@@ -707,13 +707,51 @@ void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
     if(modify_color) ctrl->setTextColor(curr_color);
 }
 
-int count_discrete_steps(double low_edge, double up_edge, double step)
+template<typename T> int count_discrete_steps_T(T low_edge, T up_edge, T step)
 {
     if(low_edge == up_edge) return 1;
     if(0 == step) return 0;
+    if((low_edge < up_edge && step < 0) || (low_edge > up_edge && step > 0)) return 0;
 
-    double tmp = (up_edge - low_edge) / step;
+    int cnt = 1;
+    T curr = low_edge;
+    while(true)
+    {
+        ++cnt;
+        curr += step;
+        if((step > 0 && curr >= up_edge) || (step < 0 && curr <= up_edge)) break;
+    }
+    return cnt;
+
+    /*
+     * we use template function instead of one function of double type parameter for the following reason:
+     * if use a single function of double type parameter, and a caller passes in float value, the result
+     * may be incorrect due to accurancy differency. e.g.:
+     *
+     * caller passes in the following parameters of float value:
+     * low_edge = 0.5, up_edge = 0.6, step = 0.1. we expect the result is 2.
+     * but, since 0.6 and 0.1 can't be accurate enough in float, they are something like 0.6000000238
+     * and 0.10000000149011612. when calculated in double, the small differences leads to the
+     * final result of 3.
+     *
+     * due to similiar reason, the following method may also give out incorrect result.
+    T tmp = (up_edge - low_edge) / step;
     if(tmp < 0) return 0;
-
     return qCeil(tmp) + 1;
+    */
+}
+
+int count_discrete_steps(double low_edge, double up_edge, double step)
+{
+    return count_discrete_steps_T<double>(low_edge, up_edge, step);
+}
+
+int count_discrete_steps(float low_edge, float up_edge, float step)
+{
+    return count_discrete_steps_T<float>(low_edge, up_edge, step);
+}
+
+int count_discrete_steps(int low_edge, int up_edge, int step)
+{
+    return count_discrete_steps_T<int>(low_edge, up_edge, step);
 }

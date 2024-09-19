@@ -73,8 +73,11 @@ const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
     ctrl_op(hhmmss_str);\
 }
 
-void Dialog::refresh_time_stat_display(bool total_dura, bool start_test)
+void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool from_timer)
 {
+    static float last_counted_test_remain_dura_ms = 0;
+    static float test_remain_dura_ms_for_display = 0;
+    float curr_counted_test_remain_dura_ms = 0;
     QDateTime curr_dt = QDateTime::currentDateTime();
 
     if(start_test)
@@ -82,10 +85,34 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test)
         m_test_start_time = curr_dt;
         QString dtstr = m_test_start_time.toString("yyyy-MM-dd hh:mm:ss");
         ui->startTestTimeDisplayLbl->setText(dtstr);
+
+        last_counted_test_remain_dura_ms = 0;
+        test_remain_dura_ms_for_display = 0;
     }
 
-    m_expt_test_remain_dura_sec
-            = qCeil(m_hv_tester.expect_remaining_test_dura_ms(total_dura) / 1000);
+    curr_counted_test_remain_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(total_dura);
+    if(from_timer)
+    {
+        DIY_LOG(LOG_WARN, QString("from timer. curr: %1 ms, last: %2 ms.")
+                .arg(curr_counted_test_remain_dura_ms).arg(last_counted_test_remain_dura_ms));
+        if((curr_counted_test_remain_dura_ms == last_counted_test_remain_dura_ms)
+                && !m_test_paused)
+        {
+            test_remain_dura_ms_for_display
+                    -= (g_sys_configs_block.test_time_stat_grain_sec * 1000);
+        }
+        else
+        {
+            test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
+        }
+    }
+    else
+    {
+        test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
+    }
+    last_counted_test_remain_dura_ms = curr_counted_test_remain_dura_ms;
+
+    m_expt_test_remain_dura_sec = qCeil(test_remain_dura_ms_for_display / 1000);
     SECS_TO_HHMMSS_STR_DISP(m_expt_test_remain_dura_sec,
                             ui->exptRemainTestDuraDisplayLbl->setText);
     if(total_dura)
@@ -723,7 +750,7 @@ void Dialog::time_stat_timer_sig_handler()
 {
     if(!m_testing) return;
 
-    emit refresh_time_stat_display_sig();
+    emit refresh_time_stat_display_sig(false, false, true);
 }
 
 void Dialog::on_Dialog_finished(int /*result*/)

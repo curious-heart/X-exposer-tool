@@ -68,7 +68,7 @@ void __emit_log_signal__(int level, QString loc_str, QString log);
  * program.
  *
 */
-bool start_log_thread(QThread &th);
+bool start_log_thread(QThread &th, LOG_LEVEL display_lvl = LOG_ERROR);
 void end_log_thread(QThread &th);
 
 /*

@@ -1,9 +1,14 @@
 ﻿#include <QSettings>
 
+#include "logger/logger.h"
 #include "common_tools/common_tool_func.h"
 #include "sysconfigs/sysconfigs.h"
 
 static const char* gs_sysconfigs_file_fpn = "configs/configs.ini";
+
+static const char* gs_ini_grp_sys_cfgs = "sys_cfgs";
+static const char* gs_ini_key_log_level = "log_level";
+
 static const char* gs_ini_grp_expo_ctrl = "expo_ctrl";
 static const char* gs_ini_key_cool_dura_factor = "cool_dura_factor";
 static const char* gs_ini_key_extra_cool_time_ms = "extra_cool_time_ms";
@@ -25,8 +30,12 @@ static RangeChecker gs_cfg_file_value_ge0_ranger(0, 0, "",
                                        RangeChecker::EDGE_INCLUDED, RangeChecker::EDGE_INFINITE);
 static RangeChecker gs_cfg_file_value_gt0_ranger(0, 0, "",
                                        RangeChecker::EDGE_EXCLUDED, RangeChecker::EDGE_INFINITE);
+static RangeChecker gs_cfg_file_log_level_ranger(LOG_DEBUG, LOG_ERROR, "",
+                                         RangeChecker::EDGE_INCLUDED, RangeChecker::EDGE_INCLUDED);
 
 sys_configs_struct_t g_sys_configs_block;
+
+static const int gs_def_log_level = LOG_ERROR;
 
 static const int gs_def_cube_volt_kv_min = 40;
 static const int gs_def_cube_volt_kv_max = 90;
@@ -42,7 +51,7 @@ static const int gs_def_mb_consec_rw_wait_ms = 500;
 static const int gs_def_mb_err_retry_wait_ms = 1000;
 static const int gs_def_mb_reconnect_wait_sep_ms = 1000;
 static const int gs_def_test_time_stat_grain_sec = 3;
-static const int gs_def_mb_one_cmd_round_time_ms = 300;
+static const int gs_def_mb_one_cmd_round_time_ms = 150;
 
 #define GET_INF_CFG_NUMBER_VAL(settings, key, type_func, var, def, checker)\
 {\
@@ -57,6 +66,14 @@ void fill_sys_configs()
 {
     QSettings settings(gs_sysconfigs_file_fpn, QSettings::IniFormat);
 
+    /*--------------------*/
+    settings.beginGroup(gs_ini_grp_sys_cfgs);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_log_level, toInt,
+                           g_sys_configs_block.log_level, gs_def_log_level,
+                               &gs_cfg_file_log_level_ranger);
+    settings.endGroup();
+
+    /*--------------------*/
     settings.beginGroup(gs_ini_grp_expo_ctrl);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_cube_volt_kv_min, toInt,
@@ -116,4 +133,6 @@ void fill_sys_configs()
                            &gs_cfg_file_value_ge0_ranger);
 
     settings.endGroup();
+
+
 }

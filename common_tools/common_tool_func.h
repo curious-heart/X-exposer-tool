@@ -92,4 +92,6 @@ void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
                              int new_font_weight = -1);
 
 int count_discrete_steps(double low_edge, double up_edge, double step);
+int count_discrete_steps(float low_edge, float up_edge, float step);
+int count_discrete_steps(int low_edge, int up_edge, int step);
 #endif // COMMON_TOOL_FUNC_H
