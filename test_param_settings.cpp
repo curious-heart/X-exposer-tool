@@ -2,20 +2,19 @@
 #include <QFile>
 #include <QTextStream>
 #include <QFileDialog>
+#include <QtMath>
 #include "common_tools/common_tool_func.h"
 #include "logger/logger.h"
 #include "test_param_settings.h"
 #include "ui_test_param_settings.h"
 #include "sysconfigs/sysconfigs.h"
 
-static RangeChecker gs_valid_cube_volt_kv_range;
-static RangeChecker gs_valid_cube_current_ma_range;
-static RangeChecker gs_valid_expo_dura_ms_range;
-static RangeChecker gs_valid_expo_cnt_range(1, 0, "",
-                                            RangeChecker::EDGE_INCLUDED,
-                                            RangeChecker::EDGE_INFINITE);
-static RangeChecker gs_valid_cool_dura_range;
-static RangeChecker gs_valid_cool_dura_factor;
+static RangeChecker<int> gs_valid_cube_volt_kv_range;
+static RangeChecker<float> gs_valid_cube_current_ma_range;
+static RangeChecker<float> gs_valid_expo_dura_ms_range;
+static RangeChecker<int> gs_valid_expo_cnt_range(1, 0, "", EDGE_INCLUDED, EDGE_INFINITE);
+static RangeChecker<float> gs_valid_cool_dura_range;
+static RangeChecker<float> gs_valid_cool_dura_factor;
 
 static const char* gs_str_test_mode = "测试模式";
 static const char* gs_str_cube_volt = "管电压";
@@ -182,12 +181,11 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
 
     gs_valid_cool_dura_range.set_min_max(g_sys_configs_block.dura_ms_max
                                           * g_sys_configs_block.cool_dura_factor /1000, 0);
-    gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
-                                      RangeChecker::EDGE_INFINITE);
+    gs_valid_cool_dura_range.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
     gs_valid_cool_dura_range.set_unit_str(gs_str_dura_unit_s);
 
     gs_valid_cool_dura_factor.set_min_max(g_sys_configs_block.cool_dura_factor, 0);
-    gs_valid_cool_dura_factor.set_edge(RangeChecker::EDGE_INCLUDED, RangeChecker::EDGE_INFINITE);
+    gs_valid_cool_dura_factor.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
 }
 
 #undef ARRANGE_CTRLS_ABILITY
@@ -200,9 +198,10 @@ testParamSettingsDialog::~testParamSettingsDialog()
     delete ui;
 }
 
+template <typename T>
 bool testParamSettingsDialog::
 get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, float factor,
-                   RangeChecker* range, void* val_ptr, QString &ret_str, QString new_unit_str )
+               RangeChecker<T>* range, void* val_ptr, QString &ret_str, QString new_unit_str )
 {
     QString ctrl_str, d_type_str;
     bool tr_ret, ret;
@@ -250,33 +249,33 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
 {
     float factor;
     m_expo_params_from_ui.valid_cube_volt_start =
-        get_one_expo_param(ui->cubeVoltStartEdit, INT_DATA, 1,
+        get_one_expo_param<int>(ui->cubeVoltStartEdit, INT_DATA, 1,
                            &gs_valid_cube_volt_kv_range,
                            &m_expo_params_from_ui.vals.cube_volt_kv_start,
                            m_expo_params_from_ui.err_msg_cube_volt_start);
     m_expo_params_from_ui.valid_cube_volt_end =
-        get_one_expo_param(ui->cubeVoltEndEdit, INT_DATA, 1,
+        get_one_expo_param<int>(ui->cubeVoltEndEdit, INT_DATA, 1,
                            &gs_valid_cube_volt_kv_range,
                            &m_expo_params_from_ui.vals.cube_volt_kv_end,
                            m_expo_params_from_ui.err_msg_cube_volt_end);
     m_expo_params_from_ui.valid_cube_volt_step =
-        get_one_expo_param(ui->cubeVoltStepEdit, INT_DATA, 1,
-                           nullptr,
+        get_one_expo_param<int>(ui->cubeVoltStepEdit, INT_DATA, 1,
+                            nullptr,
                            &m_expo_params_from_ui.vals.cube_volt_kv_step,
                            m_expo_params_from_ui.err_msg_cube_volt_step);
 
     m_expo_params_from_ui.valid_cube_current_start =
-        get_one_expo_param(ui->cubeCurrentStartEdit, FLOAT_DATA, 1,
+        get_one_expo_param<float>(ui->cubeCurrentStartEdit, FLOAT_DATA, 1,
                            &gs_valid_cube_current_ma_range,
                            &m_expo_params_from_ui.vals.cube_current_ma_start,
                            m_expo_params_from_ui.err_msg_cube_current_start);
     m_expo_params_from_ui.valid_cube_current_end =
-        get_one_expo_param(ui->cubeCurrentEndEdit, FLOAT_DATA, 1,
+        get_one_expo_param<float>(ui->cubeCurrentEndEdit, FLOAT_DATA, 1,
                            &gs_valid_cube_current_ma_range,
                            &m_expo_params_from_ui.vals.cube_current_ma_end,
                            m_expo_params_from_ui.err_msg_cube_current_end);
     m_expo_params_from_ui.valid_cube_current_step =
-        get_one_expo_param(ui->cubeCurrentStepEdit, FLOAT_DATA, 1,
+        get_one_expo_param<float>(ui->cubeCurrentStepEdit, FLOAT_DATA, 1,
                            nullptr,
                            &m_expo_params_from_ui.vals.cube_current_ma_step,
                            m_expo_params_from_ui.err_msg_cube_current_step);
@@ -292,23 +291,23 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
         factor = 1;
     }
     m_expo_params_from_ui.valid_expo_dura_start =
-        get_one_expo_param(ui->expoDuraStartEdit, FLOAT_DATA, factor,
+        get_one_expo_param<float>(ui->expoDuraStartEdit, FLOAT_DATA, factor,
                            &gs_valid_expo_dura_ms_range,
                            &m_expo_params_from_ui.vals.expo_dura_ms_start,
                            m_expo_params_from_ui.err_msg_expo_dura_start, new_unit_str);
     m_expo_params_from_ui.valid_expo_dura_end =
-        get_one_expo_param(ui->expoDuraEndEdit, FLOAT_DATA, factor,
+        get_one_expo_param<float>(ui->expoDuraEndEdit, FLOAT_DATA, factor,
                            &gs_valid_expo_dura_ms_range,
                            &m_expo_params_from_ui.vals.expo_dura_ms_end,
                            m_expo_params_from_ui.err_msg_expo_dura_end, new_unit_str);
     m_expo_params_from_ui.valid_expo_dura_step =
-        get_one_expo_param(ui->expoDuraStepEdit, FLOAT_DATA, factor,
+        get_one_expo_param<float>(ui->expoDuraStepEdit, FLOAT_DATA, factor,
                            nullptr,
                            &m_expo_params_from_ui.vals.expo_dura_ms_step,
                            m_expo_params_from_ui.err_msg_expo_dura_step);
 
     m_expo_params_from_ui.valid_expo_cnt =
-        get_one_expo_param(ui->repeatsNumEdit, INT_DATA, 1,
+        get_one_expo_param<int>(ui->repeatsNumEdit, INT_DATA, 1,
                            &gs_valid_expo_cnt_range,
                            &m_expo_params_from_ui.expo_cnt,
                            m_expo_params_from_ui.err_msg_expo_cnt);
@@ -323,17 +322,15 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
         if(m_expo_params_from_ui.limit_shortest_cool_dura)
         {
             gs_valid_cool_dura_factor.set_min_max(g_sys_configs_block.cool_dura_factor, 0);
-            gs_valid_cool_dura_factor.set_edge(RangeChecker::EDGE_INCLUDED,
-                                               RangeChecker::EDGE_INFINITE);
+            gs_valid_cool_dura_factor.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
         }
         else
         {
             gs_valid_cool_dura_factor.set_min_max(0, 0);
-            gs_valid_cool_dura_factor.set_edge(RangeChecker::EDGE_INCLUDED,
-                                               RangeChecker::EDGE_INFINITE);
+            gs_valid_cool_dura_factor.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
         }
         m_expo_params_from_ui.valid_cool_dura_factor =
-            get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1,
+            get_one_expo_param<float>(ui->coolDuraEdit, FLOAT_DATA, 1,
                                &gs_valid_cool_dura_factor,
                                &m_expo_params_from_ui.expo_cool_dura_factor,
                                m_expo_params_from_ui.err_msg_cool_dura_factor);
@@ -791,18 +788,16 @@ QString testParamSettingsDialog::collect_test_params()
                         gs_valid_cool_dura_range.set_min_max(
                                     max_expo_dura * g_sys_configs_block.cool_dura_factor,
                                      0);
-                        gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
-                                                           RangeChecker::EDGE_INFINITE);
+                        gs_valid_cool_dura_range.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
                     }
                     else
                     {
                         gs_valid_cool_dura_range.set_min_max(0, 0);
-                        gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
-                                                           RangeChecker::EDGE_INFINITE);
+                        gs_valid_cool_dura_range.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
 
                     }
                     m_expo_params_from_ui.valid_cool_dura =
-                        get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
+                        get_one_expo_param<float>(ui->coolDuraEdit, FLOAT_DATA, 1000,
                                            &gs_valid_cool_dura_range,
                                            &m_expo_params_from_ui.expo_cool_dura_ms,
                                            m_expo_params_from_ui.err_msg_cool_dura);
@@ -886,19 +881,17 @@ QString testParamSettingsDialog::collect_test_params()
                             set_min_max(m_expo_params_from_ui.vals.expo_dura_ms_start
                                         * g_sys_configs_block.cool_dura_factor, 0);
 
-                            gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
-                                                               RangeChecker::EDGE_INFINITE);
+                            gs_valid_cool_dura_range.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
                         }
                         else
                         {
                             gs_valid_cool_dura_range.set_min_max(0, 0);
-                            gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
-                                                               RangeChecker::EDGE_INFINITE);
+                            gs_valid_cool_dura_range.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
 
                         }
 
                         m_expo_params_from_ui.valid_cool_dura =
-                            get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
+                            get_one_expo_param<float>(ui->coolDuraEdit, FLOAT_DATA, 1000,
                                                &gs_valid_cool_dura_range,
                                                &m_expo_params_from_ui.expo_cool_dura_ms,
                                                m_expo_params_from_ui.err_msg_cool_dura);
@@ -1034,7 +1027,7 @@ QString testParamSettingsDialog::collect_test_params()
 
                 if(m_expo_params_from_ui.fixed_cool_dura)
                 {
-                    max_expo_dura = qMax(m_expo_params_from_ui.vals.expo_dura_ms_start,
+                    max_expo_dura = qMax<float>(m_expo_params_from_ui.vals.expo_dura_ms_start,
                                          m_expo_params_from_ui.vals.expo_dura_ms_end);
 
                     if(m_expo_params_from_ui.limit_shortest_cool_dura)
@@ -1042,19 +1035,17 @@ QString testParamSettingsDialog::collect_test_params()
                         gs_valid_cool_dura_range.set_min_max(
                                     max_expo_dura * g_sys_configs_block.cool_dura_factor,
                                      0);
-                        gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
-                                                           RangeChecker::EDGE_INFINITE);
+                        gs_valid_cool_dura_range.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
                     }
                     else
                     {
                         gs_valid_cool_dura_range.set_min_max(0, 0);
-                        gs_valid_cool_dura_range.set_edge(RangeChecker::EDGE_INCLUDED,
-                                                           RangeChecker::EDGE_INFINITE);
+                        gs_valid_cool_dura_range.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
 
                     }
 
                     m_expo_params_from_ui.valid_cool_dura =
-                        get_one_expo_param(ui->coolDuraEdit, FLOAT_DATA, 1000,
+                        get_one_expo_param<float>(ui->coolDuraEdit, FLOAT_DATA, 1000,
                                            &gs_valid_cool_dura_range,
                                            &m_expo_params_from_ui.expo_cool_dura_ms,
                                            m_expo_params_from_ui.err_msg_cool_dura);

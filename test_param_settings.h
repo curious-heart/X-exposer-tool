@@ -76,8 +76,9 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     test_params_struct_t * m_test_params;
     expo_params_from_ui_struct_t m_expo_params_from_ui;
 
+    template <typename T>
     bool get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, float factor,
-                             RangeChecker* range, void * val_ptr, QString &ret_str,
+                             RangeChecker<T>* range, void * val_ptr, QString &ret_str,
                              QString new_unit_str = "");
 
     void get_expo_param_vals_from_ui();

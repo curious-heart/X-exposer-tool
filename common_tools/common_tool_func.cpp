@@ -553,9 +553,10 @@ QString shutdown_system(QString reason_str,int wait_time)
     return s_c + " " + ps_a.join(QChar(' '));
 }
 
+/*begin of RangeChecker------------------------------*/
 #undef EDGE_ITEM
 #define EDGE_ITEM(a) #a
-const char* RangeChecker::range_edge_strs[] =
+template <typename T> const char* RangeChecker<T>::range_edge_strs[] =
 {
     EDGE_LIST
 };
@@ -564,20 +565,9 @@ static const char* gs_range_checker_err_msg_invalid_edge_p1 = "low/up edge shoul
 static const char* gs_range_checker_err_msg_invalid_edge_p2 = "and can't both be";
 static const char* gs_range_checker_err_msg_invalid_eval =
         "Invalid range: min must be less than or equal to max!";
-#define RANGE_PARAMS_CHECK(min, max, low_edge, up_edge) \
-{\
-    valid = ((min) <= (max));\
-    if(!valid || ((low_edge) > EDGE_INFINITE) || ((up_edge) > EDGE_INFINITE)\
-            || ((low_edge) < EDGE_INCLUDED) || ((up_edge) < EDGE_INCLUDED)\
-            || (EDGE_INFINITE == (low_edge) && EDGE_INFINITE == (up_edge))\
-            )\
-    {\
-        DIY_LOG(LOG_ERROR, gs_range_checker_err_msg_invalid);\
-        return;\
-    }\
-}
 
-RangeChecker::RangeChecker(double min, double max, const char* unit_str,
+template <typename T>
+RangeChecker<T>::RangeChecker(T min, T max, const char* unit_str,
                            range_edge_enum_t low_edge, range_edge_enum_t up_edge)
 {
     if((low_edge > EDGE_INFINITE) || (up_edge > EDGE_INFINITE)
@@ -604,15 +594,7 @@ RangeChecker::RangeChecker(double min, double max, const char* unit_str,
     }
 }
 
-#define RANGE_CHECKER(val, type) \
-{\
-    if(EDGE_INCLUDED == type##_low_edge) ret = (ret && ((type)(val) >= min_##type));\
-    else if(EDGE_EXCLUDED == type##_low_edge) ret = (ret && ((type)(val) > min_##type));\
-\
-    if(EDGE_INCLUDED == type##_up_edge) ret = (ret && ((type)(val) <= max_##type));\
-    else if(EDGE_EXCLUDED == type##_up_edge) ret = (ret && ((type)(val) < max_##type));\
-}
-bool RangeChecker::range_check(double val)
+template <typename T> bool RangeChecker<T>::range_check(T val)
 {
     bool ret = true;
     if(!valid)
@@ -628,26 +610,29 @@ bool RangeChecker::range_check(double val)
     else if(EDGE_EXCLUDED == up_edge) ret = (ret && (val < max));
     return ret;
 }
-#undef RANGE_PARAMS_CHECK
-#undef RANGE_CHECKER
 
-RangeChecker::range_edge_enum_t RangeChecker::range_low_edge()
+template <typename T> range_edge_enum_t RangeChecker<T>::range_low_edge()
 {
     return low_edge;
 }
-RangeChecker::range_edge_enum_t RangeChecker::range_up_edge()
+
+template <typename T> range_edge_enum_t RangeChecker<T>::range_up_edge()
 {
     return up_edge;
 }
-double RangeChecker::range_min()
+
+template <typename T> T RangeChecker<T>::range_min()
 {
     return min;
 }
-double RangeChecker::range_max()
+
+template <typename T> T RangeChecker<T>::range_max()
 {
     return max;
 }
-QString RangeChecker::range_str(common_data_type_enum_t d_type, double factor, QString new_unit_str )
+
+template <typename T> QString RangeChecker<T>::
+range_str(common_data_type_enum_t d_type, double factor, QString new_unit_str )
 {
     QString ret_str;
 
@@ -666,7 +651,7 @@ QString RangeChecker::range_str(common_data_type_enum_t d_type, double factor, Q
     return ret_str;
 }
 
-void RangeChecker::set_min_max(double min_v, double max_v)
+template <typename T> void RangeChecker<T>::set_min_max(T min_v, T max_v)
 {
     if(EDGE_INFINITE == low_edge || EDGE_INFINITE == up_edge || min_v <= max_v)
     {
@@ -674,15 +659,20 @@ void RangeChecker::set_min_max(double min_v, double max_v)
         max = max_v;
     }
 }
-void RangeChecker::set_edge(range_edge_enum_t low_e, range_edge_enum_t up_e)
+
+template <typename T> void RangeChecker<T>::set_edge(range_edge_enum_t low_e, range_edge_enum_t up_e)
 {
     low_edge = low_e; up_edge = up_e;
 }
 
-void RangeChecker::set_unit_str(const char* unit_s)
+template <typename T> void RangeChecker<T>::set_unit_str(const char* unit_s)
 {
     unit_str = unit_s;
 }
+
+template class RangeChecker<int>;
+template class RangeChecker<float>;
+/*end of RangeChecker------------------------------*/
 
 void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
                                       QColor new_color, int new_font_weight)
