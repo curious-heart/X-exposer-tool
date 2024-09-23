@@ -125,11 +125,12 @@ const testParamSettingsDialog::test_mode_espair_struct_t
 
 testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
                                                  test_params_struct_t *test_params_ptr,
-                                                 UiConfigRecorder * cfg_recorder) :
+                                                 UiConfigRecorder * cfg_recorder,
+                                                 TestResultJudge * test_judge_ptr) :
     QDialog(parent),
     ui(new Ui::testParamSettingsDialog),
     m_test_params(test_params_ptr),
-    m_cfg_recorder(cfg_recorder)
+    m_cfg_recorder(cfg_recorder), m_test_judge(test_judge_ptr)
 {
     if(!m_test_params)
     {

@@ -47,6 +47,8 @@ const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
     State, ExposureStatus, BatteryLevel, BatteryVoltmeter, OilBoxTemperature,
     Workstatus, exposureCount,
 };
+static const hv_mb_reg_e_t gs_judge_result_disp_reg[] =
+{VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter, EXT_MB_REG_DISTANCE, State};
 
 /*
  * The following vars MUST be defined in function using the following macros.
@@ -93,8 +95,6 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool fr
     curr_counted_test_remain_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(total_dura);
     if(from_timer)
     {
-        DIY_LOG(LOG_WARN, QString("from timer. curr: %1 ms, last: %2 ms.")
-                .arg(curr_counted_test_remain_dura_ms).arg(last_counted_test_remain_dura_ms));
         if((curr_counted_test_remain_dura_ms == last_counted_test_remain_dura_ms)
                 && !m_test_paused)
         {
@@ -149,7 +149,8 @@ Dialog::Dialog(QWidget *parent)
     fill_sys_configs();
 
     m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params,
-                                                            &m_cfg_recorder);
+                                                            &m_cfg_recorder,
+                                                            &m_test_judge);
     m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params, &m_cfg_recorder);
 
     if(!m_testParamSettingsDialog || !m_hvConnSettingsDialog)
@@ -216,6 +217,9 @@ Dialog::Dialog(QWidget *parent)
 
         refresh_time_stat_display(true);
     }
+
+    m_test_judge.add_result_disp_items(gs_judge_result_disp_reg,
+                                       ARRAY_COUNT(gs_judge_result_disp_reg));
 }
 
 Dialog::~Dialog()

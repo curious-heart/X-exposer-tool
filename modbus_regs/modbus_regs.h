@@ -1,6 +1,10 @@
 ﻿#ifndef MODBUS_REGS_H
 #define MODBUS_REGS_H
 
+#include <QObject>
+#include <QMap>
+#include <QList>
+
 #define MB_REG_ENUM \
 {\
     C(HSV = 0),                            /*软硬件版本*/\
@@ -71,5 +75,11 @@ typedef enum
 }mbreg_name_lang_enmu_t;
 const char* get_hv_mb_reg_str(hv_mb_reg_e_t reg_addr,
                               mbreg_name_lang_enmu_t lang = EN_REG_NAME_WITH_NO);
+
+typedef QMap<hv_mb_reg_e_t, quint16> mb_reg_val_map_t;
+Q_DECLARE_METATYPE(mb_reg_val_map_t)
+
+typedef QList<hv_mb_reg_e_t> mb_reg_addr_list_t;
+Q_DECLARE_METATYPE(mb_reg_addr_list_t)
 
 #endif // MODBUS_REGS_H

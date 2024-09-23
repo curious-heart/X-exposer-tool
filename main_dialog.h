@@ -13,6 +13,7 @@
 #include "hv_connsettings.h"
 #include "hv_tester/hvtester.h"
 #include "config_recorder/uiconfigrecorder.h"
+#include "test_result_judge/test_result_judge.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
@@ -72,6 +73,7 @@ private:
     void refresh_time_stat_display(bool total_dura = false, bool start_test = false,
                                    bool from_timer = false);
 
+    TestResultJudge m_test_judge;
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
     void modbus_state_changed_sig_handler(QModbusDevice::State state);

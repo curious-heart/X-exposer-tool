@@ -13,9 +13,6 @@
 #include "test_params_struct.h"
 #include "modbus_regs/modbus_regs.h"
 
-typedef QMap<hv_mb_reg_e_t, quint16> mb_reg_val_map_t;
-Q_DECLARE_METATYPE(mb_reg_val_map_t)
-
 #define TEST_OP_ITEM(op) op
 #define TESTER_OP_LIST \
     TEST_OP_ITEM(TEST_OP_NULL),\
