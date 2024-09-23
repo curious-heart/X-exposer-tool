@@ -166,6 +166,8 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
 
     TEST_PARAMS_CTRLS_ABT_TBL;
 
+    setup_judge_ctrls();
+
     refresh_controls_display();
 
     gs_valid_cube_volt_kv_range.set_min_max(g_sys_configs_block.cube_volt_kv_min,
@@ -196,6 +198,9 @@ testParamSettingsDialog::~testParamSettingsDialog()
 {
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.clear();
+
+    m_judge_ctrls.clear();
+
     delete ui;
 }
 
@@ -1116,6 +1121,31 @@ void testParamSettingsDialog::refresh_controls_display()
         ui->custExpoParamFileNoteEdit->clear();
         break;
     }
+
+    refresh_judge_ctrls_display();
+}
+
+void testParamSettingsDialog::refresh_judge_ctrls_display()
+{
+#define CHKBOX_EXIST_AND_CHECKED(ctrl) \
+    ((ctrl) && (ctrl)->isChecked())
+#define CHECK_AND_SET_ENABLED(ctrl, e) \
+    if(ctrl) (ctrl)->setEnabled((e));
+
+    bool ctrl_enabled = false, fixed_ref_enabled = false;
+    for(int idx = 0; idx < m_judge_ctrls.count(); ++idx)
+    {
+        ctrl_enabled = CHKBOX_EXIST_AND_CHECKED(m_judge_ctrls[idx].gui_ctrls.judge_or_not_chbox);
+        fixed_ref_enabled = CHKBOX_EXIST_AND_CHECKED(m_judge_ctrls[idx].gui_ctrls.is_fixed_ref_chbox);
+
+        CHECK_AND_SET_ENABLED(m_judge_ctrls[idx].gui_ctrls.low_e_pct_ledit, ctrl_enabled);
+        CHECK_AND_SET_ENABLED(m_judge_ctrls[idx].gui_ctrls.up_e_pct_ledit, ctrl_enabled);
+        CHECK_AND_SET_ENABLED(m_judge_ctrls[idx].gui_ctrls.low_e_err_val_ledit, ctrl_enabled);
+        CHECK_AND_SET_ENABLED(m_judge_ctrls[idx].gui_ctrls.up_e_err_val_ledit, ctrl_enabled);
+        CHECK_AND_SET_ENABLED(m_judge_ctrls[idx].gui_ctrls.is_fixed_ref_chbox, ctrl_enabled);
+        CHECK_AND_SET_ENABLED(m_judge_ctrls[idx].gui_ctrls.fixed_ref_val_ledit,
+                              ctrl_enabled && fixed_ref_enabled);
+    }
 }
 
 void testParamSettingsDialog::on_testModeComboBox_currentIndexChanged(int /*index*/)
@@ -1353,3 +1383,73 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
     info_str += ui->swVerStrLbl->text() + ":" + ui->swVerStrEdit->text() + "\n";
     info_str += ui->hwVerStrLbl->text() + ":" + ui->hwVerStrEdit->text();
 }
+
+void testParamSettingsDialog::setup_judge_ctrls()
+{
+    m_judge_ctrls.clear();
+
+    m_judge_ctrls.append(
+        {
+             VoltSet, Voltmeter,
+            {
+                 ui->voltKVChkbox,
+                 ui->voltKVLowEdgePctLEdit, ui->voltKVUpEdgePctLEdit,
+                 ui->voltKVLowEdgeErrValLEdit, ui->voltKVUpEdgeErrValLEdit,
+                 ui->voltKVIsFixedRefChkbox, ui->voltKVFixedRefValLEdit
+            }
+        }
+    );
+    m_judge_ctrls.append(
+        {
+             FilamentSet, Ammeter,
+            {
+                 ui->amtmAChkbox,
+                 ui->amtmALowEdgePctLEdit, ui->amtmAUpEdgePctLEdit,
+                 ui->amtmALowEdgeErrValLEdit, ui->amtmAUpEdgeErrValLEdit,
+                 ui->amtmAIsFixedRefChkbox, ui->amtmAFixedRefValLEdit
+            }
+        }
+    );
+    m_judge_ctrls.append(
+        {
+             MAX_HV_NORMAL_MB_REG_NUM /*not a valid reg addr*/, EXT_MB_REG_DISTANCE,
+            {
+                 ui->distmmChkbox,
+                 ui->distmmLowEdgePctLEdit, ui->distmmUpEdgePctLEdit,
+                 ui->distmmLowEdgeErrValLEdit, ui->distmmUpEdgeErrValLEdit,
+                 ui->distmmIsFixedRefChkbox, ui->distmmFixedRefValLEdit
+            }
+        }
+    );
+}
+
+void testParamSettingsDialog::on_voltKVChkbox_stateChanged(int arg1)
+{
+    refresh_judge_ctrls_display();
+}
+
+void testParamSettingsDialog::on_amtmAChkbox_stateChanged(int arg1)
+{
+    refresh_judge_ctrls_display();
+}
+
+void testParamSettingsDialog::on_distmmChkbox_stateChanged(int arg1)
+{
+    refresh_judge_ctrls_display();
+}
+
+void testParamSettingsDialog::on_voltKVIsFixedRefChkbox_stateChanged(int arg1)
+{
+    refresh_judge_ctrls_display();
+}
+
+void testParamSettingsDialog::on_amtmAIsFixedRefChkbox_stateChanged(int arg1)
+{
+    refresh_judge_ctrls_display();
+}
+
+void testParamSettingsDialog::on_distmmIsFixedRefChkbox_stateChanged(int arg1)
+{
+    refresh_judge_ctrls_display();
+}
+

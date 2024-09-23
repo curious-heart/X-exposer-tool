@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>614</width>
-    <height>470</height>
+    <height>567</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -934,7 +934,7 @@
          </layout>
         </item>
         <item row="1" column="6">
-         <widget class="QLineEdit" name="voltKVFixedRefVal">
+         <widget class="QLineEdit" name="voltKVFixedRefValLEdit">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
             <horstretch>0</horstretch>
@@ -1115,7 +1115,7 @@
          </layout>
         </item>
         <item row="3" column="6">
-         <widget class="QLineEdit" name="distmmFixedValLEdit"/>
+         <widget class="QLineEdit" name="distmmFixedRefValLEdit"/>
         </item>
        </layout>
       </item>

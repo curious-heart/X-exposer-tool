@@ -5,6 +5,7 @@
 #include <QString>
 #include <QButtonGroup>
 #include <QLineEdit>
+#include <QCheckBox>
 
 #include "common_tools/common_tool_func.h"
 #include "test_params_struct.h"
@@ -14,6 +15,19 @@
 namespace Ui {
 class testParamSettingsDialog;
 }
+
+typedef struct
+{
+    QCheckBox * judge_or_not_chbox;
+    QLineEdit * low_e_pct_ledit, *up_e_pct_ledit, *low_e_err_val_ledit, *up_e_err_val_ledit;
+    QCheckBox * is_fixed_ref_chbox;
+    QLineEdit * fixed_ref_val_ledit;
+}judge_gui_ctrls_s_t;
+typedef struct
+{
+    hv_mb_reg_e_t ref_reg_no, val_reg_no;
+    judge_gui_ctrls_s_t gui_ctrls;
+}judge_ctrls_s_t;
 
 class testParamSettingsDialog : public QDialog
 {
@@ -32,6 +46,18 @@ private slots:
     void on_custExpoParamFileSelBtn_clicked();
 
     void on_buttonBox_clicked(QAbstractButton *button);
+
+    void on_voltKVChkbox_stateChanged(int arg1);
+
+    void on_amtmAChkbox_stateChanged(int arg1);
+
+    void on_distmmChkbox_stateChanged(int arg1);
+
+    void on_voltKVIsFixedRefChkbox_stateChanged(int arg1);
+
+    void on_amtmAIsFixedRefChkbox_stateChanged(int arg1);
+
+    void on_distmmIsFixedRefChkbox_stateChanged(int arg1);
 
 private:
     typedef struct
@@ -101,6 +127,10 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
 
     TestResultJudge * m_test_judge;
+    QList<judge_ctrls_s_t> m_judge_ctrls;
+    void setup_judge_ctrls();
+    void refresh_judge_ctrls_display();
+
 public:
     QString collect_test_params();
 };
