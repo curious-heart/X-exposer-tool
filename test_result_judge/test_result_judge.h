@@ -17,13 +17,13 @@
  *
  * Say the value to be judged is V, and the referenced value is R, the judge rule is:
  *
- * low_edge_value = R * (1 + low_e_factor) + low_e_extra_val
- * up_edge_value = R * (1 + up_e_factor) + up_e_extra_val
+ * low_edge_value = R * (1 + low_e_pct) + low_e_extra_val
+ * up_edge_value = R * (1 + up_e_pct) + up_e_extra_val
  * judge_result = (low_edge_value <= V <= up_edge_value)
 */
 typedef struct
 {
-    float low_e_factor, up_e_factor; //e.g. -10% (-0.1), 5% (0.05)
+    float low_e_pct, up_e_pct; //e.g. -10% (-0.1), 5% (0.05)
     float low_e_extra_val, up_e_extra_val; //e.g. -1, 10
     bool is_fixed_ref;
     float fixed_ref_val;
@@ -43,6 +43,7 @@ typedef enum
     JUDGE_RESULT_OK = 0,
     JUDGE_RESULT_TOO_LOW,
     JUDGE_RESULT_TOO_HIGH,
+    JUDGE_RESULT_REF, //the data is ref data, no need to judge.
 }judge_result_e_t;
 typedef struct
 {

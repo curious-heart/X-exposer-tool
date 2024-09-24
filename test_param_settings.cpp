@@ -61,6 +61,8 @@ static const char* gs_str_no_valid_data_item = "无有效数据";
 static const char* gs_str_format_error = "格式错误";
 const char* gs_str_data_item_invalid = "数据无效";
 
+static const char* gs_str_should_be_le = "应小于或等于";
+
 static const char* gs_info_str_seperator = "--------------------";
 
 static const char* gs_str_cust1_notes =
@@ -80,6 +82,13 @@ const testParamSettingsDialog::test_mode_espair_struct_t
     {TEST_MODE_CUST1_TRIPLES, QString("自定义1:三元组列表")},
     {TEST_MODE_CUST2_DISCRETE, QString("自定义2:离散值")},
 };
+
+#define CHKBOX_EXIST_AND_CHECKED(ctrl) ((ctrl) && (ctrl)->isChecked())
+#define CHECK_AND_SET_ENABLED(ctrl, e)  if(ctrl) (ctrl)->setEnabled((e));
+#define JUDGE_CTRL_DESC_STR(ctrl) \
+        ctrl_desc = m_judge_ctrl_desc_map[(ctrl)].row_lbl->text() \
+                + m_judge_ctrl_desc_map[(ctrl)].col_lbl->text();
+
 /*
  * define which controls is enabled or disabled in every test mode.
  * the a_xx corresponds to the test modes in test_mode_list.
@@ -200,6 +209,7 @@ testParamSettingsDialog::~testParamSettingsDialog()
     m_rec_ui_cfg_fout.clear();
 
     m_judge_ctrls.clear();
+    m_judge_ctrl_desc_map.clear();
 
     delete ui;
 }
@@ -1090,6 +1100,19 @@ QString testParamSettingsDialog::collect_test_params()
     m_test_params->other_param_block.read_dist = m_expo_params_from_ui.read_dist;
 
     format_test_params_info_str(file_content);
+
+    {
+        QString err_str, info_str;
+        bool ret;
+
+        info_str += QString("%1%2%3").arg("\n", gs_info_str_seperator, "\n");
+        ret = construct_judge_params(err_str, info_str);
+        m_test_params->valid = m_test_params->valid && ret;
+
+        ret_str += err_str;
+        m_test_params->info_str += info_str;
+    }
+
     return ret_str;
 }
 
@@ -1127,11 +1150,6 @@ void testParamSettingsDialog::refresh_controls_display()
 
 void testParamSettingsDialog::refresh_judge_ctrls_display()
 {
-#define CHKBOX_EXIST_AND_CHECKED(ctrl) \
-    ((ctrl) && (ctrl)->isChecked())
-#define CHECK_AND_SET_ENABLED(ctrl, e) \
-    if(ctrl) (ctrl)->setEnabled((e));
-
     bool ctrl_enabled = false, fixed_ref_enabled = false;
     for(int idx = 0; idx < m_judge_ctrls.count(); ++idx)
     {
@@ -1421,34 +1439,150 @@ void testParamSettingsDialog::setup_judge_ctrls()
             }
         }
     );
+
+    /*
+                 , ui->voltKVUpEdgePctLEdit,
+                 ui->voltKVLowEdgeErrValLEdit, ui->voltKVUpEdgeErrValLEdit,
+                 ui->voltKVIsFixedRefChkbox, ui->voltKVFixedRefValLEdit
+                 */
+    m_judge_ctrl_desc_map.insert(ui->voltKVLowEdgePctLEdit, {ui->voltKVChkbox, ui->lowPctLbl});
+    m_judge_ctrl_desc_map.insert(ui->voltKVUpEdgePctLEdit, {ui->voltKVChkbox, ui->upPctLbl});
+    m_judge_ctrl_desc_map.insert(ui->voltKVLowEdgeErrValLEdit, {ui->voltKVChkbox, ui->lowErrValLbl});
+    m_judge_ctrl_desc_map.insert(ui->voltKVUpEdgeErrValLEdit, {ui->voltKVChkbox, ui->upErrValLbl});
+    m_judge_ctrl_desc_map.insert(ui->voltKVIsFixedRefChkbox, {ui->voltKVChkbox, ui->isFixedRefLbl});
+    m_judge_ctrl_desc_map.insert(ui->voltKVFixedRefValLEdit, {ui->voltKVChkbox, ui->fixedRefLbl});
+
+    m_judge_ctrl_desc_map.insert(ui->amtmALowEdgePctLEdit, {ui->amtmAChkbox, ui->lowPctLbl});
+    m_judge_ctrl_desc_map.insert(ui->amtmAUpEdgePctLEdit, {ui->amtmAChkbox, ui->upPctLbl});
+    m_judge_ctrl_desc_map.insert(ui->amtmALowEdgeErrValLEdit, {ui->amtmAChkbox, ui->lowErrValLbl});
+    m_judge_ctrl_desc_map.insert(ui->amtmAUpEdgeErrValLEdit, {ui->amtmAChkbox, ui->upErrValLbl});
+    m_judge_ctrl_desc_map.insert(ui->amtmAIsFixedRefChkbox, {ui->amtmAChkbox, ui->isFixedRefLbl});
+    m_judge_ctrl_desc_map.insert(ui->amtmAFixedRefValLEdit, {ui->amtmAChkbox, ui->fixedRefLbl});
+
+    m_judge_ctrl_desc_map.insert(ui->distmmLowEdgePctLEdit, {ui->distmmChkbox, ui->lowPctLbl});
+    m_judge_ctrl_desc_map.insert(ui->distmmUpEdgePctLEdit, {ui->distmmChkbox, ui->upPctLbl});
+    m_judge_ctrl_desc_map.insert(ui->distmmLowEdgeErrValLEdit, {ui->distmmChkbox, ui->lowErrValLbl});
+    m_judge_ctrl_desc_map.insert(ui->distmmUpEdgeErrValLEdit, {ui->distmmChkbox, ui->upErrValLbl});
+    m_judge_ctrl_desc_map.insert(ui->distmmIsFixedRefChkbox, {ui->distmmChkbox, ui->isFixedRefLbl});
+    m_judge_ctrl_desc_map.insert(ui->distmmFixedRefValLEdit, {ui->distmmChkbox, ui->fixedRefLbl});
 }
 
-void testParamSettingsDialog::on_voltKVChkbox_stateChanged(int arg1)
+#define GET_JUDGE_PARAM_FROM_CTRL(judge_ctrl, edit_ctrl, judge_param, param_var) \
+        if(!CHKBOX_EXIST_AND_CHECKED((judge_ctrl).gui_ctrls.judge_or_not_chbox)) continue;\
+        if(!(((judge_ctrl).gui_ctrls).edit_ctrl))\
+        {\
+            DIY_LOG(LOG_ERROR, "judge ctrl is NULL.");\
+            ret = false;\
+            func_ret = func_ret && ret;\
+            continue;\
+        }\
+        ctrl_desc = JUDGE_CTRL_DESC_STR(((judge_ctrl).gui_ctrls).edit_ctrl);\
+        val_str = ((judge_ctrl).gui_ctrls).edit_ctrl->text();\
+        (judge_param).param_var = val_str.toFloat(&tr_ret);\
+        if(!tr_ret)\
+        {\
+            err_str += ctrl_desc + " " + gs_str_should_be_number + "\n";\
+            ret = false;\
+        }\
+        else\
+        {\
+            info_str += ctrl_desc + ":" + val_str + "\n";\
+        }
+bool testParamSettingsDialog::construct_judge_params(QString &err_str, QString &info_str)
+{
+    bool ret = true, func_ret = true;
+    QString ctrl_desc, val_str;
+    judge_params_s_t judge_param;
+    bool tr_ret;
+
+    if(!m_test_judge)
+    {
+        err_str = "m_test_judge ptr 为空，未正常初始化.";
+        DIY_LOG(LOG_ERROR, err_str);
+        ret = false;
+        return ret;
+    }
+
+    for(int idx = 0; idx < m_judge_ctrls.count(); ++idx)
+    {
+        ret = true;
+
+        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], low_e_pct_ledit, judge_param, low_e_pct);
+        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], up_e_pct_ledit, judge_param, up_e_pct);
+        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], low_e_err_val_ledit, judge_param, low_e_extra_val);
+        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], up_e_err_val_ledit, judge_param, up_e_extra_val);
+
+        if(CHKBOX_EXIST_AND_CHECKED(m_judge_ctrls[idx].gui_ctrls.is_fixed_ref_chbox))
+        {
+            GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], fixed_ref_val_ledit,
+                                      judge_param, fixed_ref_val);
+        }
+
+        if(ret)
+        {
+            QString low_desc_str, up_desc_str;
+            if(judge_param.low_e_pct > judge_param.up_e_pct)
+            {
+                low_desc_str = m_judge_ctrl_desc_map[m_judge_ctrls[idx].gui_ctrls.low_e_pct_ledit].row_lbl->text()
+                        + m_judge_ctrl_desc_map[m_judge_ctrls[idx].gui_ctrls.low_e_pct_ledit].col_lbl->text();
+                up_desc_str = m_judge_ctrl_desc_map[m_judge_ctrls[idx].gui_ctrls.up_e_pct_ledit].row_lbl->text()
+                        + m_judge_ctrl_desc_map[m_judge_ctrls[idx].gui_ctrls.up_e_pct_ledit].col_lbl->text();
+
+                err_str += low_desc_str + " " + gs_str_should_be_le + " " + up_desc_str;
+                ret = false;
+
+            }
+            if(judge_param.low_e_extra_val > judge_param.up_e_extra_val)
+            {
+                low_desc_str = m_judge_ctrl_desc_map[m_judge_ctrls[idx].gui_ctrls.low_e_err_val_ledit].row_lbl->text()
+                        + m_judge_ctrl_desc_map[m_judge_ctrls[idx].gui_ctrls.low_e_err_val_ledit].col_lbl->text();
+                up_desc_str = m_judge_ctrl_desc_map[m_judge_ctrls[idx].gui_ctrls.up_e_err_val_ledit].row_lbl->text()
+                        + m_judge_ctrl_desc_map[m_judge_ctrls[idx].gui_ctrls.up_e_err_val_ledit].col_lbl->text();
+
+                err_str += low_desc_str + " " + gs_str_should_be_le + " " + up_desc_str;
+                ret = false;
+
+            }
+
+            if(ret)
+            {
+               m_test_judge->add_judge_params(m_judge_ctrls[idx].ref_reg_no,
+                                              m_judge_ctrls[idx].val_reg_no, judge_param);
+            }
+        }
+
+        func_ret = func_ret && ret;
+    }
+
+    return func_ret;
+}
+
+void testParamSettingsDialog::on_voltKVChkbox_stateChanged(int /*arg1*/)
 {
     refresh_judge_ctrls_display();
 }
 
-void testParamSettingsDialog::on_amtmAChkbox_stateChanged(int arg1)
+void testParamSettingsDialog::on_amtmAChkbox_stateChanged(int /*arg1*/)
 {
     refresh_judge_ctrls_display();
 }
 
-void testParamSettingsDialog::on_distmmChkbox_stateChanged(int arg1)
+void testParamSettingsDialog::on_distmmChkbox_stateChanged(int /*arg1*/)
 {
     refresh_judge_ctrls_display();
 }
 
-void testParamSettingsDialog::on_voltKVIsFixedRefChkbox_stateChanged(int arg1)
+void testParamSettingsDialog::on_voltKVIsFixedRefChkbox_stateChanged(int /*arg1*/)
 {
     refresh_judge_ctrls_display();
 }
 
-void testParamSettingsDialog::on_amtmAIsFixedRefChkbox_stateChanged(int arg1)
+void testParamSettingsDialog::on_amtmAIsFixedRefChkbox_stateChanged(int /*arg1*/)
 {
     refresh_judge_ctrls_display();
 }
 
-void testParamSettingsDialog::on_distmmIsFixedRefChkbox_stateChanged(int arg1)
+void testParamSettingsDialog::on_distmmIsFixedRefChkbox_stateChanged(int /*arg1*/)
 {
     refresh_judge_ctrls_display();
 }

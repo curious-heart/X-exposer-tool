@@ -103,9 +103,9 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
                   m_judge_list[idx].judge_params.fixed_ref_val :
                   reg_val_map[m_judge_list[idx].ref_reg_no];
 
-        low_limit = ref_val * (1 + m_judge_list[idx].judge_params.low_e_factor)
+        low_limit = ref_val * (1 + m_judge_list[idx].judge_params.low_e_pct)
                             + m_judge_list[idx].judge_params.low_e_extra_val;
-        up_limit = ref_val * (1 + m_judge_list[idx].judge_params.up_e_factor)
+        up_limit = ref_val * (1 + m_judge_list[idx].judge_params.up_e_pct)
                             + m_judge_list[idx].judge_params.up_e_extra_val;
         reg_cn_name_str = get_hv_mb_reg_str(m_judge_list[idx].val_reg_no, CN_REG_NAME);
 

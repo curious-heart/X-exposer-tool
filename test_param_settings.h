@@ -6,6 +6,8 @@
 #include <QButtonGroup>
 #include <QLineEdit>
 #include <QCheckBox>
+#include <QLabel>
+#include <QMap>
 
 #include "common_tools/common_tool_func.h"
 #include "test_params_struct.h"
@@ -28,6 +30,13 @@ typedef struct
     hv_mb_reg_e_t ref_reg_no, val_reg_no;
     judge_gui_ctrls_s_t gui_ctrls;
 }judge_ctrls_s_t;
+
+typedef struct
+{
+    QCheckBox * row_lbl;
+    QLabel * col_lbl;
+}judge_ctrl_labels_s_t;
+typedef QMap<QWidget*, judge_ctrl_labels_s_t> judge_ctrl_desc_map_t;
 
 class testParamSettingsDialog : public QDialog
 {
@@ -128,8 +137,10 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
 
     TestResultJudge * m_test_judge;
     QList<judge_ctrls_s_t> m_judge_ctrls;
+    judge_ctrl_desc_map_t m_judge_ctrl_desc_map;
     void setup_judge_ctrls();
     void refresh_judge_ctrls_display();
+    bool construct_judge_params(QString &err_str, QString &info_str);
 
 public:
     QString collect_test_params();

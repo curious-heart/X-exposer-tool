@@ -774,14 +774,14 @@
          <number>2</number>
         </property>
         <item row="0" column="1">
-         <widget class="QLabel" name="lowEdgePctLbl">
+         <widget class="QLabel" name="lowPctLbl">
           <property name="text">
            <string>下限百分比</string>
           </property>
          </widget>
         </item>
         <item row="0" column="2">
-         <widget class="QLabel" name="upEdgePctLbl">
+         <widget class="QLabel" name="upPctLbl">
           <property name="text">
            <string>上限百分比</string>
           </property>
@@ -804,7 +804,7 @@
         <item row="0" column="5">
          <widget class="QLabel" name="isFixedRefLbl">
           <property name="text">
-           <string>固定参考值</string>
+           <string>是否固定参考值</string>
           </property>
          </widget>
         </item>
