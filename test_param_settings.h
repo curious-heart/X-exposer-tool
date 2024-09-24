@@ -66,8 +66,6 @@ private slots:
 
     void on_amtmAIsFixedRefChkbox_stateChanged(int arg1);
 
-    void on_distmmIsFixedRefChkbox_stateChanged(int arg1);
-
 private:
     typedef struct
     {

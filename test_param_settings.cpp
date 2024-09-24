@@ -1151,6 +1151,8 @@ void testParamSettingsDialog::refresh_controls_display()
 void testParamSettingsDialog::refresh_judge_ctrls_display()
 {
     bool ctrl_enabled = false, fixed_ref_enabled = false;
+
+    ui->distmmIsFixedRefChkbox->setChecked(true);
     for(int idx = 0; idx < m_judge_ctrls.count(); ++idx)
     {
         ctrl_enabled = CHKBOX_EXIST_AND_CHECKED(m_judge_ctrls[idx].gui_ctrls.judge_or_not_chbox);
@@ -1164,6 +1166,7 @@ void testParamSettingsDialog::refresh_judge_ctrls_display()
         CHECK_AND_SET_ENABLED(m_judge_ctrls[idx].gui_ctrls.fixed_ref_val_ledit,
                               ctrl_enabled && fixed_ref_enabled);
     }
+    ui->distmmIsFixedRefChkbox->setEnabled(false);
 }
 
 void testParamSettingsDialog::on_testModeComboBox_currentIndexChanged(int /*index*/)
@@ -1578,11 +1581,6 @@ void testParamSettingsDialog::on_voltKVIsFixedRefChkbox_stateChanged(int /*arg1*
 }
 
 void testParamSettingsDialog::on_amtmAIsFixedRefChkbox_stateChanged(int /*arg1*/)
-{
-    refresh_judge_ctrls_display();
-}
-
-void testParamSettingsDialog::on_distmmIsFixedRefChkbox_stateChanged(int /*arg1*/)
 {
     refresh_judge_ctrls_display();
 }
