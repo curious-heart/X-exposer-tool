@@ -74,6 +74,11 @@ private:
                                    bool from_timer = false);
 
     TestResultJudge m_test_judge;
+    mb_reg_judge_result_map_t m_judge_reg_ret_map;
+    void reset_judge_reg_ret_map();
+    void map_judge_result_to_style(judge_result_e_t judge_result, str_with_style_s_t &style_str);
+    void rec_judge_resut();
+
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
     void modbus_state_changed_sig_handler(QModbusDevice::State state);

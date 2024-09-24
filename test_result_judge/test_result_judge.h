@@ -51,6 +51,7 @@ typedef struct
     judge_result_e_t judge_result;
 }mb_reg_judge_result_s_t;
 typedef QList<mb_reg_judge_result_s_t> mb_reg_judge_result_list_t;
+typedef QMap<hv_mb_reg_e_t, judge_result_e_t> mb_reg_judge_result_map_t;
 
 class TestResultJudge : public QObject
 {
@@ -71,12 +72,14 @@ public:
     void judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
                    mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str);
 
-    const QList<QString> & get_judge_result_strs();
+    const QStringList & get_judge_result_strs();
+    void get_result_disp_header_str(QString &header_str);
+    void clear_judge_resut_strs();
 
 private:
     mb_regs_judge_params_list_t m_judge_list;
     mb_reg_addr_list_t m_result_display_items;
-    QList<QString> m_judge_result_strs;
+    QStringList m_judge_result_strs;
 };
 
 #endif // TESTRESULTJUDGE_H

@@ -87,11 +87,20 @@ public:
     QString range_str(common_data_type_enum_t d_type, double factor = 1, QString new_unit_str = "");
 };
 
-void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
-                             QColor new_color = QColor(),
-                             int new_font_weight = -1);
-
 int count_discrete_steps(double low_edge, double up_edge, double step);
 int count_discrete_steps(float low_edge, float up_edge, float step);
 int count_discrete_steps(int low_edge, int up_edge, int step);
+
+void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
+                             QColor new_color = QColor(),
+                             int new_font_weight = -1);
+typedef struct
+{
+    QString str;
+    QColor color;
+    int weight;
+}str_with_style_s_t;
+typedef QList<str_with_style_s_t> str_line_with_styles_t;
+void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line);
+
 #endif // COMMON_TOOL_FUNC_H

@@ -149,7 +149,7 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
     /*construct the report string.*/
     QString ret_line_str;
     QString disp_str;
-    ret_line_str += result_disp_prefix_str + ",";
+    ret_line_str += result_disp_prefix_str;
     for(int d_idx = 0; d_idx < m_result_display_items.count(); ++d_idx)
     {
         if(!reg_val_map.contains(m_result_display_items[d_idx]))
@@ -171,7 +171,21 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
     m_judge_result_strs.append(ret_line_str);
 }
 
-const QList<QString> & TestResultJudge::get_judge_result_strs()
+const QStringList & TestResultJudge::get_judge_result_strs()
 {
     return m_judge_result_strs;
+}
+
+void TestResultJudge::clear_judge_resut_strs()
+{
+    m_judge_result_strs.clear();
+}
+
+void TestResultJudge::get_result_disp_header_str(QString &header_str)
+{
+    for(int idx = 0; idx < m_result_display_items.count(); ++idx)
+    {
+        header_str +=  get_hv_mb_reg_str(m_result_display_items[idx], CN_REG_NAME);
+        header_str += ",";
+    }
 }

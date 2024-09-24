@@ -36,6 +36,9 @@ static const char* gs_str_no = "序号";
 static const char* gs_str_pause = "暂停";
 static const char* gs_str_resume = "恢复";
 
+static const char* gs_str_test_judge_result = "测试结果判定";
+static const char* gs_str_test_pass = "测试通过";
+
 extern const char* g_str_loop;
 extern const char* g_str_time_ci;
 extern const char* g_str_the_line_pron;
@@ -220,6 +223,8 @@ Dialog::Dialog(QWidget *parent)
 
     m_test_judge.add_result_disp_items(gs_judge_result_disp_reg,
                                        ARRAY_COUNT(gs_judge_result_disp_reg));
+
+    reset_judge_reg_ret_map();
 }
 
 Dialog::~Dialog()
@@ -238,7 +243,16 @@ Dialog::~Dialog()
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.clear();
 
+    m_judge_reg_ret_map.clear();
     delete ui;
+}
+
+void Dialog::reset_judge_reg_ret_map()
+{
+    for(int idx = 0; idx < ARRAY_COUNT(m_mbregs_to_record); ++idx)
+    {
+        m_judge_reg_ret_map.insert(m_mbregs_to_record[idx], JUDGE_RESULT_OK);
+    }
 }
 
 void Dialog::on_testParamSetBtn_clicked()
@@ -552,6 +566,7 @@ void Dialog::on_startTestBtn_clicked()
     m_self_reconnecting = false;
     m_asked_for_reconnecting = false;
     refresh_butoons();
+    m_test_judge.clear_judge_resut_strs();
     emit go_test_sig();
 
     m_pause_cnt = 0;
@@ -601,16 +616,51 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, line, text_color, text_font_w);
 }
 
+void Dialog::map_judge_result_to_style(judge_result_e_t judge_result, str_with_style_s_t &style_str)
+{
+    switch(judge_result)
+    {
+        case JUDGE_RESULT_UNKNOWN:
+            style_str.color = Qt::darkGray;
+            style_str.weight = QFont::DemiBold;
+        break;
+
+        case JUDGE_RESULT_TOO_LOW:
+            style_str.color = QColor(255, 128, 0); //orange
+            style_str.weight = QFont::Bold;
+        break;
+
+        case JUDGE_RESULT_TOO_HIGH:
+            style_str.color = Qt::red;
+            style_str.weight = QFont::Bold;
+        break;
+
+        break;
+
+        case JUDGE_RESULT_OK:
+        case JUDGE_RESULT_REF:
+        default:
+            style_str.color = m_txt_def_color;
+            style_str.weight = m_txt_def_font.weight();
+        break;
+    }
+}
+
 void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                                  int loop_idx, int round_idx)
 {
     int idx = 0, base = 10;
     hv_mb_reg_e_t reg_no;
-    QString line(common_tool_get_curr_date_str() + ","
+    QString disp_prefix_str(common_tool_get_curr_date_str() + ","
                  + common_tool_get_curr_time_str() + ",");
-    line += QString("%1%2%3%4%5%6,").
+    disp_prefix_str += QString("%1%2%3%4%5%6,").
             arg(g_str_the_line_pron, QString::number(loop_idx), g_str_loop,
                 g_str_the_line_pron, QString::number(round_idx), g_str_time_ci);
+
+    QString line;
+
+    line += disp_prefix_str;
+
     if(TEST_OP_SET_EXPO_TRIPLE == op)
     {
         idx = 0;
@@ -628,17 +678,89 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
 
         return;
     }
+
+    mb_reg_judge_result_list_t judge_result;
+    m_test_judge.judge_mb_regs(reg_val_map, judge_result, disp_prefix_str);
+    reset_judge_reg_ret_map();
+    for(int idx = 0; idx < judge_result.count(); ++idx)
+    {
+        m_judge_reg_ret_map[judge_result[idx].reg_no] = judge_result[idx].judge_result;
+    }
+
+    QString val_str;
+    str_line_with_styles_t style_line;
+    str_with_style_s_t style_str, last_style = {",", m_txt_def_color, m_txt_def_font.weight()};
+    str_with_style_s_t style_comma = {",", m_txt_def_color, m_txt_def_font.weight()};
     idx = 0;
     while(idx < ARRAY_COUNT(m_mbregs_to_record))
     {
         reg_no = m_mbregs_to_record[idx];
         base = (State == reg_no) ? 2 : 10;
-        line += QString::number(reg_val_map.value(reg_no), base) + ",";
+        val_str = QString::number(reg_val_map.value(reg_no), base);
+        line += val_str + ",";
         ++idx;
+
+        style_str.str = val_str;
+        map_judge_result_to_style(m_judge_reg_ret_map[reg_no], style_str);
+        if(style_line.isEmpty())
+        {
+            style_line.append(style_str);
+            last_style.color = style_str.color; last_style.weight = style_str.weight;
+            continue;
+        }
+        if(last_style.color == style_str.color && last_style.weight == style_str.weight)
+        {
+            if(last_style.color == style_comma.color && last_style.weight == style_comma.weight)
+            {
+                style_line.last().str += "," + style_str.str;
+            }
+            else
+            {
+                style_line.append(style_comma);
+                style_line.append(style_str);
+            }
+        }
+        else
+        {
+            style_line.append(style_comma);
+            style_line.append(style_str);
+            last_style.color = style_str.color; last_style.weight = style_str.weight;
+        }
     }
     m_curr_txt_stream << line << "\n\n";
+    append_line_with_styles(ui->testInfoDisplayTxt, style_line);
+    style_line.clear();
+    /*
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, line + "\n",
                                      m_txt_def_color, m_txt_def_font.weight());
+     */
+}
+
+void Dialog::rec_judge_resut()
+{
+    QString header_str, title_str;
+    const QStringList& judge_result_strs = m_test_judge.get_judge_result_strs();
+
+    title_str = QString(gs_str_test_judge_result) + ":";
+    m_curr_txt_stream << "\n" << title_str << "\n";
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, QString("\n%1").arg(title_str));
+
+    if(judge_result_strs.isEmpty())
+    {
+        m_curr_txt_stream << gs_str_test_pass;
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, gs_str_test_pass, Qt::green);
+        return;
+    }
+
+    m_test_judge.get_result_disp_header_str(header_str);
+    header_str.prepend(",,"); //date-time and number
+    m_curr_txt_stream << header_str << "\n";
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, header_str);
+    for(int idx = 0; idx < judge_result_strs.count(); ++idx)
+    {
+        m_curr_txt_stream << judge_result_strs[idx] << "\n";
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt,judge_result_strs[idx]);
+    }
 }
 
 void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
@@ -680,6 +802,7 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     m_asked_for_reconnecting = false;
     refresh_butoons();
 
+    rec_judge_resut();
     if(m_curr_rec_file.isOpen())
     {
         m_curr_txt_stream.flush();

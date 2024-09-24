@@ -697,6 +697,27 @@ void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
     if(modify_color) ctrl->setTextColor(curr_color);
 }
 
+void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line)
+{
+    if(!ctrl) return;
+
+    QColor ori_color = ctrl->textColor();
+    QFont ori_font = ctrl->currentFont(), curr_font = ori_font;
+
+    for(int idx = 0; idx < style_line.count(); ++idx)
+    {
+        ctrl->moveCursor(QTextCursor::End);
+        ctrl->setTextColor(style_line[idx].color);
+        curr_font.setWeight(style_line[idx].weight);
+        ctrl->setCurrentFont(curr_font);
+        ctrl->insertPlainText(style_line[idx].str);
+    }
+    ctrl->insertPlainText("\n");
+
+    ctrl->setTextColor(ori_color);
+    ctrl->setCurrentFont(ori_font);
+}
+
 template<typename T> int count_discrete_steps_T(T low_edge, T up_edge, T step)
 {
     if(low_edge == up_edge) return 1;
