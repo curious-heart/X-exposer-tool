@@ -77,7 +77,7 @@ private:
     mb_reg_judge_result_map_t m_judge_reg_ret_map;
     void reset_judge_reg_ret_map();
     void map_judge_result_to_style(judge_result_e_t judge_result, str_with_style_s_t &style_str);
-    void rec_judge_resut();
+    void rec_judge_resut(tester_end_code_enum_t code);
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);

@@ -543,7 +543,7 @@ void HVTester::go_test_sig_handler()
     case TESTER_LAST_ONE:
         if(THIS_IS_A_NEW_ROUND(hv_tester_proc, hv_test_idx_in_round))
         {
-            emit test_info_message_sig(LOG_INFO, gs_str_a_new_round);
+            //emit test_info_message_sig(LOG_INFO, gs_str_a_new_round);
         }
     case TESTER_WORKING:
     default:
@@ -707,8 +707,8 @@ void HVTester::hv_test_op_timer_handler()
 
 void HVTester::stop_test_sig_handler(tester_end_code_enum_t code)
 {
-    emit test_complete_sig(code);
     reset_internal_state();
+    emit test_complete_sig(code);
 }
 
 void HVTester::end_test(tester_end_code_enum_t code)

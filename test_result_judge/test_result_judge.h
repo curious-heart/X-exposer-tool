@@ -47,7 +47,7 @@ typedef enum
 }judge_result_e_t;
 typedef struct
 {
-    hv_mb_reg_e_t reg_no;
+    hv_mb_reg_e_t ref_reg, val_reg;
     judge_result_e_t judge_result;
 }mb_reg_judge_result_s_t;
 typedef QList<mb_reg_judge_result_s_t> mb_reg_judge_result_list_t;

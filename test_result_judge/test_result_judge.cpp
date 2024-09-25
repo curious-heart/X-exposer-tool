@@ -134,14 +134,14 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
         }
         else if(val < low_limit)
         {
-            bad_str += QString("%1%2(<%3),").arg(reg_cn_name_str,gs_str_too_low
-                                            ,QString::number(low_limit));
+            bad_str += QString("%1%2%3(<%4),").arg(reg_cn_name_str, QString::number(val),
+                                                 gs_str_too_low ,QString::number(low_limit));
             e_result = JUDGE_RESULT_TOO_LOW;
         }
         else if(val > up_limit)
         {
-            bad_str += QString("%1%2(>%3),").arg(reg_cn_name_str, gs_str_too_high
-                                            ,QString::number(up_limit));
+            bad_str += QString("%1%2%3(>%4),").arg(reg_cn_name_str, QString::number(val),
+                                       gs_str_too_high, QString::number(up_limit));
             e_result = JUDGE_RESULT_TOO_HIGH;
         }
         else
@@ -151,7 +151,7 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
         }
 
         /*record the bad value reg no.*/
-        bad_val_list.append({m_judge_list[idx].val_reg_no, e_result});
+        bad_val_list.append({m_judge_list[idx].ref_reg_no, m_judge_list[idx].val_reg_no, e_result});
     }
 
     if(bad_str.isEmpty())

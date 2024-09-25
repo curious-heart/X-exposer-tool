@@ -823,6 +823,9 @@
           <property name="text">
            <string>读出管电压(kV)</string>
           </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item row="1" column="1">
@@ -834,6 +837,9 @@
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+            <property name="text">
+             <string>-8</string>
             </property>
            </widget>
           </item>
@@ -856,6 +862,9 @@
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="text">
+             <string>8</string>
+            </property>
            </widget>
           </item>
           <item>
@@ -875,6 +884,9 @@
             <verstretch>0</verstretch>
            </sizepolicy>
           </property>
+          <property name="text">
+           <string>0</string>
+          </property>
          </widget>
         </item>
         <item row="1" column="4">
@@ -884,6 +896,9 @@
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
+          </property>
+          <property name="text">
+           <string>0</string>
           </property>
          </widget>
         </item>
@@ -951,12 +966,19 @@
           <property name="text">
            <string>读出管电流(mA)</string>
           </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
          </widget>
         </item>
         <item row="2" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_18">
           <item>
-           <widget class="QLineEdit" name="amtmALowEdgePctLEdit"/>
+           <widget class="QLineEdit" name="amtmALowEdgePctLEdit">
+            <property name="text">
+             <string>-20</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_10">
@@ -970,7 +992,11 @@
         <item row="2" column="2">
          <layout class="QHBoxLayout" name="horizontalLayout_17">
           <item>
-           <widget class="QLineEdit" name="amtmAUpEdgePctLEdit"/>
+           <widget class="QLineEdit" name="amtmAUpEdgePctLEdit">
+            <property name="text">
+             <string>-20</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_9">
@@ -982,10 +1008,18 @@
          </layout>
         </item>
         <item row="2" column="3">
-         <widget class="QLineEdit" name="amtmALowEdgeErrValLEdit"/>
+         <widget class="QLineEdit" name="amtmALowEdgeErrValLEdit">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
         </item>
         <item row="2" column="4">
-         <widget class="QLineEdit" name="amtmAUpEdgeErrValLEdit"/>
+         <widget class="QLineEdit" name="amtmAUpEdgeErrValLEdit">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
         </item>
         <item row="2" column="5">
          <layout class="QHBoxLayout" name="horizontalLayout_22">
@@ -1043,7 +1077,11 @@
         <item row="3" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_20">
           <item>
-           <widget class="QLineEdit" name="distmmLowEdgePctLEdit"/>
+           <widget class="QLineEdit" name="distmmLowEdgePctLEdit">
+            <property name="text">
+             <string>-5</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_12">
@@ -1057,7 +1095,11 @@
         <item row="3" column="2">
          <layout class="QHBoxLayout" name="horizontalLayout_19">
           <item>
-           <widget class="QLineEdit" name="distmmUpEdgePctLEdit"/>
+           <widget class="QLineEdit" name="distmmUpEdgePctLEdit">
+            <property name="text">
+             <string>5</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QLabel" name="label_11">
@@ -1069,10 +1111,18 @@
          </layout>
         </item>
         <item row="3" column="3">
-         <widget class="QLineEdit" name="distmmLowEdgeErrValLEdit"/>
+         <widget class="QLineEdit" name="distmmLowEdgeErrValLEdit">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
         </item>
         <item row="3" column="4">
-         <widget class="QLineEdit" name="distmmUpEdgeErrValLEdit"/>
+         <widget class="QLineEdit" name="distmmUpEdgeErrValLEdit">
+          <property name="text">
+           <string>0</string>
+          </property>
+         </widget>
         </item>
         <item row="3" column="5">
          <layout class="QHBoxLayout" name="horizontalLayout_23">

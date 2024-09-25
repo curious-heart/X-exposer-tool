@@ -704,6 +704,8 @@ void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line
     QColor ori_color = ctrl->textColor();
     QFont ori_font = ctrl->currentFont(), curr_font = ori_font;
 
+    ctrl->moveCursor(QTextCursor::End);
+    ctrl->insertPlainText("\n");
     for(int idx = 0; idx < style_line.count(); ++idx)
     {
         ctrl->moveCursor(QTextCursor::End);
@@ -712,7 +714,6 @@ void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line
         ctrl->setCurrentFont(curr_font);
         ctrl->insertPlainText(style_line[idx].str);
     }
-    ctrl->insertPlainText("\n");
 
     ctrl->setTextColor(ori_color);
     ctrl->setCurrentFont(ori_font);
