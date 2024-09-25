@@ -51,7 +51,7 @@ const char* get_hv_mb_reg_str(hv_mb_reg_e_t reg_addr, mbreg_name_lang_enmu_t lan
     }
     else
     {
-        DIY_LOG(LOG_ERROR, "register address %d is invalid.");
+        DIY_LOG(LOG_ERROR, QString("register address %1 is invalid.").arg(reg_addr));
         return nullptr;
     }
 }

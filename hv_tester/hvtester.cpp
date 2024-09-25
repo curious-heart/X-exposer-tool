@@ -824,7 +824,7 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
     if(!hv_test_params)
     {
         DIY_LOG(LOG_WARN, "tester not init!!!");
-        return -1;
+        return 0;
     }
 
     float fixed_dura_in_one_round_ms;

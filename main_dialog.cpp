@@ -98,25 +98,33 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool fr
         test_remain_dura_ms_for_display = 0;
     }
 
-    curr_counted_test_remain_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(total_dura);
-    if(from_timer)
+    if(!m_testing)
     {
-        if((curr_counted_test_remain_dura_ms == last_counted_test_remain_dura_ms)
-                && !m_test_paused)
+        test_remain_dura_ms_for_display = 0;
+        last_counted_test_remain_dura_ms = 0;
+    }
+    else
+    {
+        curr_counted_test_remain_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(total_dura);
+        if(from_timer)
         {
-            test_remain_dura_ms_for_display
-                    -= (g_sys_configs_block.test_time_stat_grain_sec * 1000);
+            if((curr_counted_test_remain_dura_ms == last_counted_test_remain_dura_ms)
+                    && !m_test_paused)
+            {
+                test_remain_dura_ms_for_display
+                        -= (g_sys_configs_block.test_time_stat_grain_sec * 1000);
+            }
+            else
+            {
+                test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
+            }
         }
         else
         {
             test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
         }
+        last_counted_test_remain_dura_ms = curr_counted_test_remain_dura_ms;
     }
-    else
-    {
-        test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
-    }
-    last_counted_test_remain_dura_ms = curr_counted_test_remain_dura_ms;
 
     m_expt_test_remain_dura_sec = qCeil(test_remain_dura_ms_for_display / 1000);
     SECS_TO_HHMMSS_STR_DISP(m_expt_test_remain_dura_sec,
@@ -516,8 +524,7 @@ void Dialog::record_header()
         hdr += get_hv_mb_reg_str(m_mbregs_to_record[idx], CN_REG_NAME);
         hdr += ",";
     }
-    hdr += "\n";
-    REC_INFO_IN_FILE(hdr);
+    REC_INFO_IN_FILE(hdr << "\n");
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, hdr,
                                      m_txt_def_color, m_txt_def_font.weight());
 }
@@ -568,17 +575,13 @@ void Dialog::on_startTestBtn_clicked()
     m_curr_txt_stream.setDevice(&m_curr_rec_file);
     record_header();
 
+    reset_internal_flags();
     m_testing = true;
-    m_test_paused = false;
-    m_self_reconnecting = false;
-    m_asked_for_reconnecting = false;
     refresh_butoons();
+
     m_test_judge.clear_judge_resut_strs();
     emit go_test_sig();
 
-    m_pause_cnt = 0;
-    m_pause_dura_sec = 0;
-    m_act_test_dura_sec = 0;
     refresh_time_stat_display(true, true);
 
     m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
@@ -596,6 +599,13 @@ void Dialog::on_stopTestBtn_clicked()
 void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
                                        bool always_rec, QColor set_color, int set_font_w )
 {
+    if(!m_testing)
+    {
+        DIY_LOG(LOG_WARN, QString("not in test, so the received msg is not displayed: %1")
+                .arg(msg));
+        return;
+    }
+
     static QColor log_lvl_fonts_arr[] =
     {
         Qt::gray, //DEBUG, gray
@@ -756,14 +766,20 @@ void Dialog::rec_judge_resut(tester_end_code_enum_t code)
     QString header_str, title_str;
     const QStringList& judge_result_strs = m_test_judge.get_judge_result_strs();
 
+    if(judge_result_strs.isEmpty() && (TEST_END_NORMAL != code))
+    {
+        DIY_LOG(LOG_INFO,
+                QString("test result is empty, and end with abnormal code %1").arg(code));
+        return;
+    }
+
     title_str = QString(gs_str_test_judge_result) + ":";
     REC_INFO_IN_FILE("\n" << title_str << "\n");
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, QString("\n%1").arg(title_str),
                                      m_txt_def_color, QFont::Bold);
-
-    if((TEST_END_NORMAL == code) && judge_result_strs.isEmpty())
+    if(judge_result_strs.isEmpty() && (TEST_END_NORMAL == code))
     {
-        REC_INFO_IN_FILE(gs_str_test_pass << "\n");
+        REC_INFO_IN_FILE(QString(gs_str_test_pass) << "\n");
         append_str_with_color_and_weight(ui->testInfoDisplayTxt,
                                          QString(gs_str_test_pass) + "\n", Qt::green);
         return;
@@ -778,12 +794,30 @@ void Dialog::rec_judge_resut(tester_end_code_enum_t code)
         REC_INFO_IN_FILE(judge_result_strs[idx] << "\n");
         append_str_with_color_and_weight(ui->testInfoDisplayTxt,judge_result_strs[idx]);
     }
-    REC_INFO_IN_FILE("\n");
     ui->testInfoDisplayTxt->append("");
+}
+
+void Dialog::reset_internal_flags()
+{
+    m_testing = false;
+    m_test_paused = false;
+    m_self_reconnecting = false;
+    m_asked_for_reconnecting = false;
+
+    m_pause_cnt = 0;
+    m_pause_dura_sec = 0;
+    m_act_test_dura_sec = 0;
 }
 
 void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 {
+    if(!m_testing)
+    {
+        DIY_LOG(LOG_WARN,
+                QString("not in test, but receive complete sig with code %1.").arg(code));
+        return;
+    }
+
     QString complete_str;
     Qt::GlobalColor color;
     QFont::Weight weight = QFont::Bold;
@@ -817,21 +851,15 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     REC_INFO_IN_FILE("\n");
     test_info_message_sig_handler(LOG_INFO, QString(gs_str_sep_line) + "\n", true);
 
-    m_testing = false;
-    m_test_paused = false;
-    m_self_reconnecting = false;
-    m_asked_for_reconnecting = false;
-    refresh_butoons();
-
     if(m_curr_rec_file.isOpen())
     {
         m_curr_txt_stream.flush();
         m_curr_rec_file.close();
     }
 
-    m_pause_cnt = 0;
-    m_pause_dura_sec = 0;
-    m_act_test_dura_sec = 0;
+    reset_internal_flags();
+    refresh_butoons();
+    refresh_time_stat_display();
 }
 
 void Dialog::mb_op_err_req_reconnect_sig_handler()

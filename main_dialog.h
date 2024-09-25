@@ -38,6 +38,8 @@ private:
     testParamSettingsDialog * m_testParamSettingsDialog = nullptr;
     hvConnSettings * m_hvConnSettingsDialog = nullptr;
 
+    void reset_internal_flags();
+
     test_params_struct_t m_test_params;
     modbus_conn_parameters_struct_t m_hv_conn_params;
     QModbusDevice::State m_modbus_state = QModbusDevice::UnconnectedState;
