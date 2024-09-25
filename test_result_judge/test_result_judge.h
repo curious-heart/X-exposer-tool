@@ -75,6 +75,9 @@ public:
     const QStringList & get_judge_result_strs();
     void get_result_disp_header_str(QString &header_str);
     void clear_judge_resut_strs();
+    void clear_judge_params();
+    void clear_judge_result_disp_items();
+    const mb_regs_judge_params_list_t & get_judge_param_list();
 
 private:
     mb_regs_judge_params_list_t m_judge_list;

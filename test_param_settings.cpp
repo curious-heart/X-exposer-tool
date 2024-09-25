@@ -62,6 +62,8 @@ static const char* gs_str_format_error = "格式错误";
 const char* gs_str_data_item_invalid = "数据无效";
 
 static const char* gs_str_should_be_le = "应小于或等于";
+static const char* gs_str_invalid_mb_reg_no = "无效寄存器编号";
+static const char* gs_str_cons_judge_param_err1 = "参考值不固定时，必须指定有效的参考寄存器编号";
 
 static const char* gs_info_str_seperator = "--------------------";
 
@@ -1433,7 +1435,7 @@ void testParamSettingsDialog::setup_judge_ctrls()
     );
     m_judge_ctrls.append(
         {
-             MAX_HV_NORMAL_MB_REG_NUM /*not a valid reg addr*/, EXT_MB_REG_DISTANCE,
+             EXT_MB_REG_DISTANCE/*use fixed value. ref-reg is not used*/, EXT_MB_REG_DISTANCE,
             {
                  ui->distmmChkbox,
                  ui->distmmLowEdgePctLEdit, ui->distmmUpEdgePctLEdit,
@@ -1443,11 +1445,6 @@ void testParamSettingsDialog::setup_judge_ctrls()
         }
     );
 
-    /*
-                 , ui->voltKVUpEdgePctLEdit,
-                 ui->voltKVLowEdgeErrValLEdit, ui->voltKVUpEdgeErrValLEdit,
-                 ui->voltKVIsFixedRefChkbox, ui->voltKVFixedRefValLEdit
-                 */
     m_judge_ctrl_desc_map.insert(ui->voltKVLowEdgePctLEdit, {ui->voltKVChkbox, ui->lowPctLbl});
     m_judge_ctrl_desc_map.insert(ui->voltKVUpEdgePctLEdit, {ui->voltKVChkbox, ui->upPctLbl});
     m_judge_ctrl_desc_map.insert(ui->voltKVLowEdgeErrValLEdit, {ui->voltKVChkbox, ui->lowErrValLbl});
@@ -1470,8 +1467,12 @@ void testParamSettingsDialog::setup_judge_ctrls()
     m_judge_ctrl_desc_map.insert(ui->distmmFixedRefValLEdit, {ui->distmmChkbox, ui->fixedRefLbl});
 }
 
-#define GET_JUDGE_PARAM_FROM_CTRL(judge_ctrl, edit_ctrl, judge_param, param_var) \
-        if(!CHKBOX_EXIST_AND_CHECKED((judge_ctrl).gui_ctrls.judge_or_not_chbox)) continue;\
+#define GET_JUDGE_PARAM_FROM_CTRL(judge_ctrl, edit_ctrl, judge_param, param_var, val_fac, info_str_apx) \
+        if(!CHKBOX_EXIST_AND_CHECKED((judge_ctrl).gui_ctrls.judge_or_not_chbox)) \
+        {\
+            func_ret = func_ret && ret;\
+            continue;\
+        }\
         if(!(((judge_ctrl).gui_ctrls).edit_ctrl))\
         {\
             DIY_LOG(LOG_ERROR, "judge ctrl is NULL.");\
@@ -1481,7 +1482,7 @@ void testParamSettingsDialog::setup_judge_ctrls()
         }\
         ctrl_desc = JUDGE_CTRL_DESC_STR(((judge_ctrl).gui_ctrls).edit_ctrl);\
         val_str = ((judge_ctrl).gui_ctrls).edit_ctrl->text();\
-        (judge_param).param_var = val_str.toFloat(&tr_ret);\
+        (judge_param).param_var = val_str.toFloat(&tr_ret) * (val_fac);\
         if(!tr_ret)\
         {\
             err_str += ctrl_desc + " " + gs_str_should_be_number + "\n";\
@@ -1489,7 +1490,7 @@ void testParamSettingsDialog::setup_judge_ctrls()
         }\
         else\
         {\
-            info_str += ctrl_desc + ":" + val_str + "\n";\
+            info_str += ctrl_desc + ":" + val_str + (info_str_apx) + "\n";\
         }
 bool testParamSettingsDialog::construct_judge_params(QString &err_str, QString &info_str)
 {
@@ -1506,19 +1507,32 @@ bool testParamSettingsDialog::construct_judge_params(QString &err_str, QString &
         return ret;
     }
 
+    m_test_judge->clear_judge_params();
     for(int idx = 0; idx < m_judge_ctrls.count(); ++idx)
     {
         ret = true;
 
-        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], low_e_pct_ledit, judge_param, low_e_pct);
-        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], up_e_pct_ledit, judge_param, up_e_pct);
-        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], low_e_err_val_ledit, judge_param, low_e_extra_val);
-        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], up_e_err_val_ledit, judge_param, up_e_extra_val);
+        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], low_e_pct_ledit, judge_param, low_e_pct,
+                                      0.01, "%");
+        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], up_e_pct_ledit, judge_param, up_e_pct,
+                                      0.01, "%");
+        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], low_e_err_val_ledit, judge_param,
+                                      low_e_extra_val, 1, "");
+        GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], up_e_err_val_ledit, judge_param,
+                                      up_e_extra_val, 1, "");
 
+        judge_param.is_fixed_ref = false;
         if(CHKBOX_EXIST_AND_CHECKED(m_judge_ctrls[idx].gui_ctrls.is_fixed_ref_chbox))
         {
+            judge_param.is_fixed_ref = true;
             GET_JUDGE_PARAM_FROM_CTRL(m_judge_ctrls[idx], fixed_ref_val_ledit,
-                                      judge_param, fixed_ref_val);
+                                      judge_param, fixed_ref_val, 1, "");
+        }
+        else if(!VALID_MB_REG_ADDR(m_judge_ctrls[idx].ref_reg_no))
+        {
+            err_str += QString("%1:%2. %3"). arg(gs_str_invalid_mb_reg_no).
+                    arg(m_judge_ctrls[idx].ref_reg_no).arg(gs_str_cons_judge_param_err1);
+            ret = false;
         }
 
         if(ret)

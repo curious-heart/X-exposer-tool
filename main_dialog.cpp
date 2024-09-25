@@ -78,6 +78,9 @@ static const hv_mb_reg_e_t gs_judge_result_disp_reg[] =
     ctrl_op(hhmmss_str);\
 }
 
+#define REC_INFO_IN_FILE(op_str) \
+    if(m_curr_rec_file.isOpen()) {m_curr_txt_stream << op_str;}
+
 void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool from_timer)
 {
     static float last_counted_test_remain_dura_ms = 0;
@@ -249,9 +252,20 @@ Dialog::~Dialog()
 
 void Dialog::reset_judge_reg_ret_map()
 {
+    const mb_regs_judge_params_list_t & judge_param_list = m_test_judge.get_judge_param_list();
+
     for(int idx = 0; idx < ARRAY_COUNT(m_mbregs_to_record); ++idx)
     {
         m_judge_reg_ret_map.insert(m_mbregs_to_record[idx], JUDGE_RESULT_OK);
+    }
+
+    for(int idx = 0; idx < judge_param_list.count(); ++idx)
+    {
+        if(!judge_param_list[idx].judge_params.is_fixed_ref
+                && VALID_MB_REG_ADDR(judge_param_list[idx].ref_reg_no))
+        {
+            m_judge_reg_ret_map.insert(judge_param_list[idx].ref_reg_no, JUDGE_RESULT_REF);
+        }
     }
 }
 
@@ -498,9 +512,9 @@ void Dialog::on_hvDisconnBtn_clicked()
 void Dialog::record_header()
 {
     /*test info*/
-    m_curr_txt_stream << m_curr_rec_file.fileName() << "\n\n";
-    m_curr_txt_stream << m_hv_conn_params.info_str << "\n";
-    m_curr_txt_stream << m_test_params.info_str << "\n\n";
+    REC_INFO_IN_FILE(m_curr_rec_file.fileName() << "\n\n");
+    REC_INFO_IN_FILE(m_hv_conn_params.info_str << "\n");
+    REC_INFO_IN_FILE(m_test_params.info_str << "\n\n");
 
     /*table header*/
     QString hdr;
@@ -510,7 +524,8 @@ void Dialog::record_header()
         hdr += get_hv_mb_reg_str(m_mbregs_to_record[idx], CN_REG_NAME);
         hdr += ",";
     }
-    m_curr_txt_stream << hdr << "\n";
+    REC_INFO_IN_FILE(hdr << "\n");
+    ui->testInfoDisplayTxt->append("\n");
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, hdr,
                                      m_txt_def_color, m_txt_def_font.weight());
 }
@@ -600,13 +615,9 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
     line += ","; //number is null
     line += msg;
 
-    if(always_rec)
+    if(always_rec || (lvl >= LOG_WARN))
     {
-        m_curr_txt_stream << line << "\n";
-    }
-    else if(lvl >= LOG_WARN)
-    {
-        m_curr_txt_stream << line << "\n";
+        REC_INFO_IN_FILE(line << "\n");
     }
 
     lvl = VALID_LOG_LVL(lvl) ? lvl : LOG_ERROR;
@@ -635,10 +646,12 @@ void Dialog::map_judge_result_to_style(judge_result_e_t judge_result, str_with_s
             style_str.weight = QFont::Bold;
         break;
 
+        case JUDGE_RESULT_REF:
+            style_str.color = m_txt_def_color;
+            style_str.weight = QFont::Bold;
         break;
 
         case JUDGE_RESULT_OK:
-        case JUDGE_RESULT_REF:
         default:
             style_str.color = m_txt_def_color;
             style_str.weight = m_txt_def_font.weight();
@@ -672,7 +685,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         line += QString::number(reg_val_map.value(VoltSet)) + ",";
         line += QString::number(reg_val_map.value(FilamentSet)) + ",";
         line += QString::number(reg_val_map.value(ExposureTime)) + ",";
-        m_curr_txt_stream << line << "\n";
+        REC_INFO_IN_FILE(line << "\n");
         append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
                                          m_txt_def_color, m_txt_def_font.weight());
 
@@ -689,8 +702,10 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
 
     QString val_str;
     str_line_with_styles_t style_line;
-    str_with_style_s_t style_str, last_style = {",", m_txt_def_color, m_txt_def_font.weight()};
+    str_with_style_s_t style_str,
+            last_style = {disp_prefix_str, m_txt_def_color, m_txt_def_font.weight()};
     str_with_style_s_t style_comma = {",", m_txt_def_color, m_txt_def_font.weight()};
+    style_line.append(last_style);
     idx = 0;
     while(idx < ARRAY_COUNT(m_mbregs_to_record))
     {
@@ -702,12 +717,6 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
 
         style_str.str = val_str;
         map_judge_result_to_style(m_judge_reg_ret_map[reg_no], style_str);
-        if(style_line.isEmpty())
-        {
-            style_line.append(style_str);
-            last_style.color = style_str.color; last_style.weight = style_str.weight;
-            continue;
-        }
         if(last_style.color == style_str.color && last_style.weight == style_str.weight)
         {
             if(last_style.color == style_comma.color && last_style.weight == style_comma.weight)
@@ -727,7 +736,8 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
             last_style.color = style_str.color; last_style.weight = style_str.weight;
         }
     }
-    m_curr_txt_stream << line << "\n\n";
+    REC_INFO_IN_FILE(line << "\n\n");
+    ui->testInfoDisplayTxt->append("");
     append_line_with_styles(ui->testInfoDisplayTxt, style_line);
     style_line.clear();
     /*
@@ -742,23 +752,23 @@ void Dialog::rec_judge_resut()
     const QStringList& judge_result_strs = m_test_judge.get_judge_result_strs();
 
     title_str = QString(gs_str_test_judge_result) + ":";
-    m_curr_txt_stream << "\n" << title_str << "\n";
+    REC_INFO_IN_FILE("\n" << title_str << "\n");
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, QString("\n%1").arg(title_str));
 
     if(judge_result_strs.isEmpty())
     {
-        m_curr_txt_stream << gs_str_test_pass;
+        REC_INFO_IN_FILE(gs_str_test_pass);
         append_str_with_color_and_weight(ui->testInfoDisplayTxt, gs_str_test_pass, Qt::green);
         return;
     }
 
     m_test_judge.get_result_disp_header_str(header_str);
-    header_str.prepend(",,"); //date-time and number
-    m_curr_txt_stream << header_str << "\n";
+    header_str.prepend(",,,"); //date,time and number
+    REC_INFO_IN_FILE(header_str << "\n");
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, header_str);
     for(int idx = 0; idx < judge_result_strs.count(); ++idx)
     {
-        m_curr_txt_stream << judge_result_strs[idx] << "\n";
+        REC_INFO_IN_FILE(judge_result_strs[idx] << "\n");
         append_str_with_color_and_weight(ui->testInfoDisplayTxt,judge_result_strs[idx]);
     }
 }
@@ -791,7 +801,8 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
         break;
     }
 
-    test_info_message_sig_handler(LOG_INFO, complete_str, true, color, weight);
+    test_info_message_sig_handler(LOG_INFO, complete_str + "\n", true, color, weight);
+    rec_judge_resut();
     test_info_message_sig_handler(LOG_INFO, QString(gs_str_sep_line) + "\n\n", true);
 
     refresh_time_stat_display();
@@ -802,7 +813,7 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     m_asked_for_reconnecting = false;
     refresh_butoons();
 
-    rec_judge_resut();
+
     if(m_curr_rec_file.isOpen())
     {
         m_curr_txt_stream.flush();

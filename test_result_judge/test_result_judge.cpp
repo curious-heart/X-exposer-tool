@@ -38,6 +38,16 @@ bool TestResultJudge::add_judge_params(hv_mb_reg_e_t ref_reg_no, hv_mb_reg_e_t v
     return true;
 }
 
+const mb_regs_judge_params_list_t & TestResultJudge::get_judge_param_list()
+{
+    return m_judge_list;
+}
+
+void TestResultJudge::clear_judge_params()
+{
+    m_judge_list.clear();
+}
+
 bool TestResultJudge::add_result_disp_items(hv_mb_reg_e_t reg_no)
 {
     RETURN_ON_INVALID_REG(reg_no, "reg_no %1 for result_disp is invalid!");
@@ -67,6 +77,11 @@ bool TestResultJudge::add_result_disp_items(const mb_reg_addr_list_t &arr_list)
 
     m_result_display_items.append(arr_list);
     return true;
+}
+
+void TestResultJudge::clear_judge_result_disp_items()
+{
+    m_result_display_items.clear();
 }
 
 void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
@@ -132,7 +147,6 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
         else
         {
             /*this is a good value. check the next.*/
-            bad_str += ",";
             continue;
         }
 
