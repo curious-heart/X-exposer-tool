@@ -106,6 +106,9 @@ private:
     void tester_send_mb_cmd(tester_op_enum_t op, tester_op_resume_type_e_t r_t = NORMAL_OP);
     int calc_cool_dura_ms(qint64 time_elapsed_since_cool_start);
     void end_test_due_to_exception(QString err_str);
+    void post_test_info_message(LOG_LEVEL lvl, QString msg,
+                               bool always_rec = false,
+                               QColor set_color = QColor(), int set_font_w = -1);
 
 public slots:
     /*user signal handler.*/

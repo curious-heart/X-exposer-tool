@@ -580,6 +580,7 @@ void Dialog::on_startTestBtn_clicked()
     refresh_butoons();
 
     m_test_judge.clear_judge_resut_strs();
+
     emit go_test_sig();
 
     refresh_time_stat_display(true, true);
@@ -599,13 +600,6 @@ void Dialog::on_stopTestBtn_clicked()
 void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
                                        bool always_rec, QColor set_color, int set_font_w )
 {
-    if(!m_testing)
-    {
-        DIY_LOG(LOG_WARN, QString("not in test, so the received msg is not displayed: %1")
-                .arg(msg));
-        return;
-    }
-
     static QColor log_lvl_fonts_arr[] =
     {
         Qt::gray, //DEBUG, gray
@@ -668,6 +662,12 @@ void Dialog::map_judge_result_to_style(judge_result_e_t judge_result, str_with_s
 void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                                  int loop_idx, int round_idx)
 {
+    if(!m_testing)
+    {
+        DIY_LOG(LOG_WARN, QString("not in test, but still receive reported regs with"
+                                  "option %1.").arg(op));
+    }
+
     int idx = 0, base = 10;
     hv_mb_reg_e_t reg_no;
     QString disp_prefix_str(common_tool_get_curr_date_str() + ","
@@ -761,7 +761,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
      */
 }
 
-void Dialog::rec_judge_resut(tester_end_code_enum_t code)
+void Dialog::rec_judge_result(tester_end_code_enum_t code)
 {
     QString header_str, title_str;
     const QStringList& judge_result_strs = m_test_judge.get_judge_result_strs();
@@ -847,7 +847,7 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     REC_INFO_IN_FILE("\n");
     test_info_message_sig_handler(LOG_INFO, complete_str, true, color, weight);
 
-    rec_judge_resut(code);
+    rec_judge_result(code);
     REC_INFO_IN_FILE("\n");
     test_info_message_sig_handler(LOG_INFO, QString(gs_str_sep_line) + "\n", true);
 

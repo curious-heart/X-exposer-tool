@@ -402,7 +402,6 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
 
     if(!goon)
     {
-        emit test_info_message_sig(LOG_ERROR, err_str);
         end_test_due_to_exception(err_str);
         return;
     }
@@ -411,7 +410,7 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
     {
         /*mb_reply is null, no further err sig. so wait some time and retry.*/
         err_str += QString(" .") + gs_str_wait_some_time_then_retry;
-        emit test_info_message_sig(LOG_ERROR, err_str);
+        post_test_info_message(LOG_ERROR, err_str);
 
         err_str += QString(". ") + GET_TESTER_OP_NAME_STR(op) + ", mb_reply is NULL!!!";
         DIY_LOG(LOG_ERROR, err_str);
@@ -436,7 +435,7 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
                     QString err_str = (TEST_OP_READ_REGS == op) ? gs_str_mb_read_regs_invalid
                                                                 : gs_str_mb_read_distance_invalid;
                     err_str += QString(". ") + gs_str_wait_some_time_then_retry;
-                    emit test_info_message_sig(LOG_ERROR, err_str);
+                    post_test_info_message(LOG_ERROR, err_str);
                     DIY_LOG(LOG_ERROR, err_str);
 
                     check_pause_to_start_timer(&hv_test_err_retry_timer,
@@ -481,7 +480,7 @@ void HVTester::mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
         else if(sync || err_notify) // if((QModbusDevice::NoError != err) && (sync || err_notify))
         {
             err_str += gs_str_wait_some_time_then_retry;
-            emit test_info_message_sig(LOG_ERROR, err_str);
+            post_test_info_message(LOG_ERROR, err_str);
             DIY_LOG(LOG_ERROR, err_str);
             check_pause_to_start_timer(&hv_test_err_retry_timer,
                                        &HVTester::hv_test_err_retry_timer_handler,
@@ -507,7 +506,7 @@ void HVTester::end_test_due_to_exception(QString err_str)
 {
     DIY_LOG(LOG_ERROR, err_str);
 
-    emit test_info_message_sig(LOG_ERROR, err_str);
+    post_test_info_message(LOG_ERROR, err_str);
     end_test(TEST_END_EXCEPTION);
     return;
 }
@@ -543,7 +542,7 @@ void HVTester::go_test_sig_handler()
     case TESTER_LAST_ONE:
         if(THIS_IS_A_NEW_ROUND(hv_tester_proc, hv_test_idx_in_round))
         {
-            //emit test_info_message_sig(LOG_INFO, gs_str_a_new_round);
+            //post_test_info_message(LOG_INFO, gs_str_a_new_round);
         }
     case TESTER_WORKING:
     default:
@@ -607,7 +606,7 @@ void HVTester::tester_send_mb_cmd(tester_op_enum_t op, tester_op_resume_type_e_t
 
     if(hv_test_paused)
     {
-        DIY_LOG(LOG_INFO, gs_str_test_paused);
+        DIY_LOG(LOG_INFO, QString(gs_str_test_paused));
         return;
     }
 
@@ -733,7 +732,7 @@ void HVTester::pause_resume_test_sig_handler(bool pause)
     if((TESTER_IDLE == hv_tester_proc) || (TESTER_COMPLETE == hv_tester_proc))
     {
         log_str = ((TESTER_IDLE == hv_tester_proc) ? gs_str_uninit_or_end : gs_str_completed);
-        emit test_info_message_sig(LOG_INFO, log_str);
+        post_test_info_message(LOG_INFO, log_str);
         DIY_LOG(LOG_INFO, log_str);
         return;
     }
@@ -773,13 +772,13 @@ void HVTester::pause_resume_test_sig_handler(bool pause)
         hv_test_op_timer.stop();
         hv_test_err_retry_timer.stop();
 
-        emit test_info_message_sig(LOG_INFO, gs_str_test_paused, true);
+        post_test_info_message(LOG_INFO, gs_str_test_paused, true);
 
         log_str = "tester receives pause instruction.";
     }
     else
     {
-        emit test_info_message_sig(LOG_INFO, gs_str_test_resumed, true);
+        post_test_info_message(LOG_INFO, gs_str_test_resumed, true);
         if(m_curr_timer)
         {
             QDateTime curr_datetime = QDateTime::currentDateTime();
@@ -963,4 +962,20 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
     if(remain_dura_ms < 0) remain_dura_ms = 0;
 
     return remain_dura_ms;
+}
+
+void HVTester::post_test_info_message(LOG_LEVEL lvl, QString msg, bool always_rec,
+                               QColor set_color, int set_font_w1)
+{
+    /*proc being idle means tester is already ended, so the internal is not
+      necessary to posted for display.
+    */
+    if(TESTER_IDLE != hv_tester_proc)
+    {
+        emit test_info_message_sig(lvl, msg, always_rec, set_color, set_font_w1);
+    }
+    else
+    {
+        DIY_LOG(LOG_WARN, QString("tester is idle, so the msg is not posted: %1").arg(msg));
+    }
 }

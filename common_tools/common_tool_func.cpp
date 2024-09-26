@@ -679,10 +679,12 @@ void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
 {
     if(!ctrl) return;
 
+    ctrl->moveCursor(QTextCursor::End);
+
     QColor curr_color = ctrl->textColor();
     QFont curr_font = ctrl->currentFont(), new_font = curr_font;
     bool modify_color = (new_color.isValid() && (new_color != curr_color)),
-         modify_font_weight = !(new_font_weight < 0 || new_font_weight == curr_font.weight());
+     modify_font_weight = ((new_font_weight >= 0) && (new_font_weight != curr_font.weight()));
 
     if(modify_color) ctrl->setTextColor(new_color);
     if(modify_font_weight)
@@ -701,18 +703,19 @@ void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line
 {
     if(!ctrl) return;
 
+    ctrl->moveCursor(QTextCursor::End);
+
     QColor ori_color = ctrl->textColor();
     QFont ori_font = ctrl->currentFont(), curr_font = ori_font;
 
-    ctrl->moveCursor(QTextCursor::End);
     ctrl->insertPlainText("\n");
     for(int idx = 0; idx < style_line.count(); ++idx)
     {
-        ctrl->moveCursor(QTextCursor::End);
         ctrl->setTextColor(style_line[idx].color);
         curr_font.setWeight(style_line[idx].weight);
         ctrl->setCurrentFont(curr_font);
         ctrl->insertPlainText(style_line[idx].str);
+        ctrl->moveCursor(QTextCursor::End);
     }
 
     ctrl->setTextColor(ori_color);
