@@ -1000,7 +1000,7 @@
           <item>
            <widget class="QLineEdit" name="amtmAUpEdgePctLEdit">
             <property name="text">
-             <string>-20</string>
+             <string>20</string>
             </property>
            </widget>
           </item>
