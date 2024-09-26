@@ -872,7 +872,6 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
 
     int loop_idx = 0, round_idx = -1;
     proc = update_tester_state(&ctrl_struct, curr_triple, loop_idx, round_idx);
-    DIY_LOG(LOG_INFO, QString("proc: %1").arg(QString::number(proc)));
     while(proc != TESTER_COMPLETE && proc != TESTER_IDLE)
     {
         curr_expo_dura = curr_triple.dura_ms;
@@ -899,7 +898,6 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
         .arg(round_idx).arg(one_round_dura).arg(upper_part_loop_dura).arg(lower_part_loop_dura));
 
         proc = update_tester_state(&ctrl_struct, curr_triple, loop_idx, round_idx);
-        DIY_LOG(LOG_INFO, QString("proc: %1").arg(QString::number(proc)));
         if(TESTER_COMPLETE == proc || THIS_IS_A_NEW_ROUND(proc, round_idx)) break;
     }
     one_loop_dura = upper_part_loop_dura+ lower_part_loop_dura;

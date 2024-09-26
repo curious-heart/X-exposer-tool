@@ -674,6 +674,27 @@ template class RangeChecker<int>;
 template class RangeChecker<float>;
 /*end of RangeChecker------------------------------*/
 
+const char* g_prop_name_def_color = "def_color";
+const char* g_prop_name_def_font = "def_font";
+/*the following two macros MUST be used as a pair.*/
+#define SAVE_DEF_COLOR_FONT(ctrl) \
+{\
+    QColor def_color;\
+    QFont def_font;\
+    QVariant var_prop;\
+    var_prop = (ctrl)->property(g_prop_name_def_color);\
+    if(!(var_prop.isValid() && (def_color = var_prop.value<QColor>()).isValid()))\
+    {\
+        def_color = (ctrl)->textColor();\
+    }\
+    var_prop = (ctrl)->property(g_prop_name_def_font);\
+    def_font = var_prop.isValid() ? var_prop.value<QFont>() : (ctrl)->currentFont();
+
+#define RESTORE_DEF_COLOR_FONT(ctrl) \
+    (ctrl)->setTextColor(def_color);\
+    (ctrl)->setCurrentFont(def_font);\
+}
+
 void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
                                       QColor new_color, int new_font_weight)
 {
@@ -681,22 +702,19 @@ void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
 
     ctrl->moveCursor(QTextCursor::End);
 
-    QColor curr_color = ctrl->textColor();
-    QFont curr_font = ctrl->currentFont(), new_font = curr_font;
-    bool modify_color = (new_color.isValid() && (new_color != curr_color)),
-     modify_font_weight = ((new_font_weight >= 0) && (new_font_weight != curr_font.weight()));
+    SAVE_DEF_COLOR_FONT(ctrl);
 
-    if(modify_color) ctrl->setTextColor(new_color);
-    if(modify_font_weight)
-    {
-        new_font.setWeight(new_font_weight);
-        ctrl->setCurrentFont(new_font);
-    }
+    QFont new_font = def_font;
+    if(!new_color.isValid()) new_color = def_color;
+    if(new_font_weight > 0) new_font.setWeight(new_font_weight);
 
+    ctrl->setTextColor(new_color);
+    ctrl->setCurrentFont(new_font);
     ctrl->append(str);
 
-    if(modify_font_weight) ctrl->setCurrentFont(curr_font);
-    if(modify_color) ctrl->setTextColor(curr_color);
+    RESTORE_DEF_COLOR_FONT(ctrl);
+
+    ctrl->moveCursor(QTextCursor::End);
 }
 
 void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line)
@@ -705,21 +723,20 @@ void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line
 
     ctrl->moveCursor(QTextCursor::End);
 
-    QColor ori_color = ctrl->textColor();
-    QFont ori_font = ctrl->currentFont(), curr_font = ori_font;
+    SAVE_DEF_COLOR_FONT(ctrl);
 
+    QFont new_font = def_font;
     ctrl->insertPlainText("\n");
     for(int idx = 0; idx < style_line.count(); ++idx)
     {
         ctrl->setTextColor(style_line[idx].color);
-        curr_font.setWeight(style_line[idx].weight);
-        ctrl->setCurrentFont(curr_font);
+        new_font.setWeight(style_line[idx].weight);
+        ctrl->setCurrentFont(new_font);
         ctrl->insertPlainText(style_line[idx].str);
         ctrl->moveCursor(QTextCursor::End);
     }
 
-    ctrl->setTextColor(ori_color);
-    ctrl->setCurrentFont(ori_font);
+    RESTORE_DEF_COLOR_FONT(ctrl);
 }
 
 template<typename T> int count_discrete_steps_T(T low_edge, T up_edge, T step)

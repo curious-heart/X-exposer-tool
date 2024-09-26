@@ -38,6 +38,8 @@ static const char* gs_str_resume = "恢复";
 
 static const char* gs_str_test_judge_result = "测试结果判定";
 static const char* gs_str_test_pass = "测试通过";
+static const char* gs_str_test_begin = "测试开始";
+static const char* gs_str_test_end = "测试结束";
 
 extern const char* g_str_loop;
 extern const char* g_str_time_ci;
@@ -98,33 +100,25 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool fr
         test_remain_dura_ms_for_display = 0;
     }
 
-    if(!m_testing)
+    curr_counted_test_remain_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(total_dura);
+    if(from_timer)
     {
-        test_remain_dura_ms_for_display = 0;
-        last_counted_test_remain_dura_ms = 0;
-    }
-    else
-    {
-        curr_counted_test_remain_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(total_dura);
-        if(from_timer)
+        if((curr_counted_test_remain_dura_ms == last_counted_test_remain_dura_ms)
+                && !m_test_paused)
         {
-            if((curr_counted_test_remain_dura_ms == last_counted_test_remain_dura_ms)
-                    && !m_test_paused)
-            {
-                test_remain_dura_ms_for_display
-                        -= (g_sys_configs_block.test_time_stat_grain_sec * 1000);
-            }
-            else
-            {
-                test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
-            }
+            test_remain_dura_ms_for_display
+                    -= (g_sys_configs_block.test_time_stat_grain_sec * 1000);
         }
         else
         {
             test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
         }
-        last_counted_test_remain_dura_ms = curr_counted_test_remain_dura_ms;
     }
+    else
+    {
+        test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
+    }
+    last_counted_test_remain_dura_ms = curr_counted_test_remain_dura_ms;
 
     m_expt_test_remain_dura_sec = qCeil(test_remain_dura_ms_for_display / 1000);
     SECS_TO_HHMMSS_STR_DISP(m_expt_test_remain_dura_sec,
@@ -137,9 +131,12 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool fr
     }
 
     curr_dt = QDateTime::currentDateTime();
-    m_act_test_dura_sec = m_test_start_time.secsTo(curr_dt);
-    SECS_TO_HHMMSS_STR_DISP(m_act_test_dura_sec,
-                            ui->actTestDuraDisplayLbl->setText);
+    if(m_testing)
+    {
+        m_act_test_dura_sec = m_test_start_time.secsTo(curr_dt);
+        SECS_TO_HHMMSS_STR_DISP(m_act_test_dura_sec,
+                                ui->actTestDuraDisplayLbl->setText);
+    }
 
     if(m_test_paused)
     {
@@ -223,7 +220,9 @@ Dialog::Dialog(QWidget *parent)
             this, &Dialog::refresh_time_stat_display, Qt::QueuedConnection);
 
     m_txt_def_color = ui->testInfoDisplayTxt->textColor();
+    ui->testInfoDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
     m_txt_def_font = ui->testInfoDisplayTxt->currentFont();
+    ui->testInfoDisplayTxt->setProperty(g_prop_name_def_font, m_txt_def_font);
 
     if(m_test_params.valid)
     {
@@ -268,10 +267,9 @@ void Dialog::reset_judge_reg_ret_map()
 
 void Dialog::on_testParamSetBtn_clicked()
 {
+    int dialog_ret = m_testParamSettingsDialog->exec();
 
-    m_testParamSettingsDialog->exec();
-
-    if(m_test_params.valid)
+    if((QDialog::Accepted == dialog_ret) && m_test_params.valid)
     {
         ui->testParamDisplayTxt->setText(m_test_params.info_str);
 
@@ -283,13 +281,13 @@ void Dialog::on_testParamSetBtn_clicked()
 
 void Dialog::on_hvConnSetBtn_clicked()
 {
-    m_hvConnSettingsDialog->exec();
+    int dialog_ret = m_hvConnSettingsDialog->exec();
 
-    if(m_hv_conn_params.valid)
+    if((QDialog::Accepted == dialog_ret) && m_hv_conn_params.valid)
     {
         ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
+        select_modbus_device();
     }
-    select_modbus_device();
 }
 
 void Dialog::refresh_butoons()
@@ -514,7 +512,8 @@ void Dialog::record_header()
     REC_INFO_IN_FILE(m_test_params.info_str << "\n");
 
     ui->testInfoDisplayTxt->append("");
-    test_info_message_sig_handler(LOG_INFO, QString("%1\n").arg(gs_str_sep_line), true);
+    test_info_message_sig_handler(LOG_INFO, QString("%1%2\n")
+                                  .arg(gs_str_sep_line, gs_str_test_begin), true);
 
     /*table header*/
     QString hdr;
@@ -824,6 +823,7 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 
     m_reconn_wait_timer.stop();
     m_time_stat_timer.stop();
+    refresh_time_stat_display();
 
     switch(code)
     {
@@ -849,7 +849,9 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 
     rec_judge_result(code);
     REC_INFO_IN_FILE("\n");
-    test_info_message_sig_handler(LOG_INFO, QString(gs_str_sep_line) + "\n", true);
+    test_info_message_sig_handler(LOG_INFO, QString("%1%2\n")
+                                  .arg(gs_str_sep_line, gs_str_test_end), true,
+                                  m_txt_def_color, QFont::Bold);
 
     if(m_curr_rec_file.isOpen())
     {
@@ -859,7 +861,6 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 
     reset_internal_flags();
     refresh_butoons();
-    refresh_time_stat_display();
 }
 
 void Dialog::mb_op_err_req_reconnect_sig_handler()

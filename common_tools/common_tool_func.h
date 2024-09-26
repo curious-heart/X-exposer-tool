@@ -91,9 +91,10 @@ int count_discrete_steps(double low_edge, double up_edge, double step);
 int count_discrete_steps(float low_edge, float up_edge, float step);
 int count_discrete_steps(int low_edge, int up_edge, int step);
 
+extern const char* g_prop_name_def_color;
+extern const char* g_prop_name_def_font;
 void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
-                             QColor new_color = QColor(),
-                             int new_font_weight = -1);
+                             QColor new_color = QColor(), int new_font_weight = -1);
 typedef struct
 {
     QString str;
