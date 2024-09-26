@@ -510,6 +510,7 @@ void Dialog::record_header()
     REC_INFO_IN_FILE(m_curr_rec_file.fileName() << "\n\n");
     REC_INFO_IN_FILE(m_hv_conn_params.info_str << "\n");
     REC_INFO_IN_FILE(m_test_params.info_str << "\n");
+    REC_INFO_IN_FILE(ui->testPsnLbl->text() << ui->testPsnLEdit->text() << "\n\n");
 
     ui->testInfoDisplayTxt->append("");
     test_info_message_sig_handler(LOG_INFO, QString("%1%2\n")

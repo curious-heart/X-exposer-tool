@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>614</width>
-    <height>567</height>
+    <height>470</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -759,7 +759,7 @@
       </sizepolicy>
      </property>
      <property name="title">
-      <string>读出参数有效性判定</string>
+      <string>读出数据有效性判定</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_7">
       <property name="spacing">

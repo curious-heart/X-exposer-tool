@@ -1,5 +1,5 @@
 @echo off
-set usage_str=用法：deploy_release.bat 目标文件夹 版本号
+set usage_str=用法：deploy_release.bat 目标文件夹（必须为空） 版本号
 set count=0
 for %%i in (%*) do (
   set /a count+=1
