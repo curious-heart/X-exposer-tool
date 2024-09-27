@@ -74,6 +74,7 @@ static const char* gs_str_cust2_notes =
 "文件格式：共3行的文本文件，分别指定ASSCII逗号分开的电压、电流、时间值。每行第一个字段为表头；第三行表头指定s或ms";
 
 static const char* gs_str_cust2_err_msg_format = "第一项为表头，第二项开始为数据";
+static const char* gs_str_plz_check_first = "请先勾选";
 
 const testParamSettingsDialog::test_mode_espair_struct_t
       testParamSettingsDialog::test_mode_list[] =
@@ -1154,6 +1155,11 @@ void testParamSettingsDialog::refresh_judge_ctrls_display()
 {
     bool ctrl_enabled = false, fixed_ref_enabled = false;
 
+    if(ui->readDistChBox->checkState() == Qt::Unchecked)
+    {
+        ui->distmmChkbox->setCheckState(Qt::Unchecked);
+    }
+
     ui->distmmIsFixedRefChkbox->setChecked(true);
     for(int idx = 0; idx < m_judge_ctrls.count(); ++idx)
     {
@@ -1584,8 +1590,15 @@ void testParamSettingsDialog::on_amtmAChkbox_stateChanged(int /*arg1*/)
     refresh_judge_ctrls_display();
 }
 
-void testParamSettingsDialog::on_distmmChkbox_stateChanged(int /*arg1*/)
+void testParamSettingsDialog::on_distmmChkbox_stateChanged(int arg1)
 {
+    if((Qt::Checked == arg1) && ui->readDistChBox->checkState() == Qt::Unchecked)
+    {
+        ui->distmmChkbox->setCheckState(Qt::Unchecked);
+        QMessageBox::information(this, "Info", QString("%1\"%2\"")
+                                 .arg(gs_str_plz_check_first, ui->readDistChBox->text()));
+        return;
+    }
     refresh_judge_ctrls_display();
 }
 
@@ -1597,5 +1610,13 @@ void testParamSettingsDialog::on_voltKVIsFixedRefChkbox_stateChanged(int /*arg1*
 void testParamSettingsDialog::on_amtmAIsFixedRefChkbox_stateChanged(int /*arg1*/)
 {
     refresh_judge_ctrls_display();
+}
+
+void testParamSettingsDialog::on_readDistChBox_stateChanged(int arg1)
+{
+    if(Qt::Unchecked == arg1)
+    {
+        ui->distmmChkbox->setCheckState(Qt::Unchecked);
+    }
 }
 
