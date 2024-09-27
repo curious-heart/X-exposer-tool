@@ -69,7 +69,7 @@ private:
     QTimer m_reconn_wait_timer;
 
     QDateTime m_test_start_time, m_pause_dura_check_point;
-    int m_pause_cnt = 0, m_pause_dura_sec = 0, m_act_test_dura_sec = 0;
+    int m_pause_cnt = 0, m_pause_dura_sec = 0, m_act_test_dura_sec = 0, m_curr_pause_dura_sec = 0;
     int m_expt_test_dura_sec = 0, m_expt_test_remain_dura_sec = 0;
     QTimer m_time_stat_timer; //this is a periodical timer.
     void refresh_time_stat_display(bool total_dura = false, bool start_test = false,

@@ -41,6 +41,9 @@ static const char* gs_str_test_pass = "测试通过";
 static const char* gs_str_test_begin = "测试开始";
 static const char* gs_str_test_end = "测试结束";
 
+static const char* gs_str_start_test = "开始测试";
+static const char* gs_str_testing = "正在测试";
+
 extern const char* g_str_loop;
 extern const char* g_str_time_ci;
 extern const char* g_str_the_line_pron;
@@ -138,12 +141,13 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool fr
                                 ui->actTestDuraDisplayLbl->setText);
     }
 
+    curr_dt = QDateTime::currentDateTime();
     if(m_test_paused)
     {
-        m_pause_dura_sec += m_pause_dura_check_point.secsTo(curr_dt);
-        m_pause_dura_check_point = curr_dt;
+        m_curr_pause_dura_sec = m_pause_dura_check_point.secsTo(curr_dt);
     }
-    SECS_TO_HHMMSS_STR_DISP(m_pause_dura_sec,
+    SECS_TO_HHMMSS_STR_DISP(m_test_paused ? (m_pause_dura_sec + m_curr_pause_dura_sec)
+                                          : m_pause_dura_sec,
                             ui->pauseDuraDisplayLbl->setText);
 
     ui->pauseCntDisplayLbl->setText(QString::number(m_pause_cnt));
@@ -298,7 +302,12 @@ void Dialog::refresh_butoons()
     ui->dsoSetBtn->setEnabled(!m_dso_connected && !m_testing);
     ui->hvConnBtn->setEnabled((QModbusDevice::UnconnectedState == m_modbus_state) && !m_testing);
     ui->hvDisconnBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
+
     ui->startTestBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
+    QString stBtnstr = m_testing ? gs_str_testing : gs_str_start_test;
+    if(m_testing && m_test_paused) stBtnstr += QString("-%1").arg(gs_str_pause);
+    ui->startTestBtn->setText(stBtnstr);
+
     ui->stopTestBtn->setEnabled(m_testing);
 
     ui->pauseTestBtn->setEnabled(m_testing);
@@ -444,7 +453,7 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     {
         test_info_message_sig_handler(LOG_ERROR, curr_str);
 
-        if(m_testing)
+        if(m_testing && !m_test_paused)
         {
             if(m_asked_for_reconnecting)
             {
@@ -806,6 +815,7 @@ void Dialog::reset_internal_flags()
 
     m_pause_cnt = 0;
     m_pause_dura_sec = 0;
+    m_curr_pause_dura_sec = 0;
     m_act_test_dura_sec = 0;
 }
 
@@ -952,10 +962,19 @@ void Dialog::on_pauseTestBtn_clicked()
     {
         m_pause_dura_check_point = curr_dt;
         ++m_pause_cnt;
+        m_curr_pause_dura_sec = 0;
+
+        m_reconn_wait_timer.stop();
     }
     else
     {
-        m_pause_dura_sec += m_pause_dura_check_point.secsTo(curr_dt);
+        m_curr_pause_dura_sec = m_pause_dura_check_point.secsTo(curr_dt);
+        m_pause_dura_sec += m_curr_pause_dura_sec;
+
+        if(m_modbus_device && (QModbusDevice::ConnectedState != m_modbus_device->state()))
+        {
+            m_modbus_device->connectDevice();
+        }
     }
 
     refresh_butoons();
