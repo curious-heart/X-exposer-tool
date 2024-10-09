@@ -15,6 +15,7 @@ const hvConnSettings::combobox_item_struct_t hvConnSettings::hv_conn_type_list[]
 {
     {CONN_TYPE_SERIAL, "串口"},
     {CONN_TYPE_TCPIP, "TCPIP", true},
+    {CONN_TYPE_RTU_OVER_TCP, "RTU-Over-TCP"},
 };
 
 const hvConnSettings::combobox_item_struct_t hvConnSettings::baudrate_list[] =

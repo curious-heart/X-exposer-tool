@@ -6,6 +6,7 @@
 #include "main_dialog.h"
 #include "ui_main_dialog.h"
 #include "sysconfigs/sysconfigs.h"
+#include "mb_rtu_over_tcp/qmodbusrtuovertcpclient.h"
 
 static const char* gs_str_plz_set_valid_conn_params = "请首先设置有效的连接参数";
 static const char* gs_str_plz_set_valid_test_params = "请首先设置有效的测试参数";
@@ -354,9 +355,11 @@ void Dialog::select_modbus_device()
             if(m_modbus_device) delete m_modbus_device;
 
             m_curr_conn_type = m_hv_conn_params.type;
-            if(CONN_TYPE_TCPIP == m_curr_conn_type)
+            if(CONN_TYPE_TCPIP == m_curr_conn_type || CONN_TYPE_RTU_OVER_TCP == m_curr_conn_type )
             {
-                m_modbus_device  =  new QModbusTcpClient(this) ;
+                if(CONN_TYPE_TCPIP == m_curr_conn_type) m_modbus_device  =  new QModbusTcpClient(this) ;
+                else  m_modbus_device  =  new QModbusRtuOverTcpClient(this) ;
+
                 m_modbus_device->setConnectionParameter(QModbusDevice::NetworkAddressParameter,
                                                         m_hv_conn_params.tcpip_params.ip_addr);
                 m_modbus_device->setConnectionParameter(QModbusDevice::NetworkPortParameter,

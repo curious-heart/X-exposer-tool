@@ -17,6 +17,7 @@ typedef enum
     CONN_TYPE_NONE = -1,
     CONN_TYPE_SERIAL = 0,
     CONN_TYPE_TCPIP,
+    CONN_TYPE_RTU_OVER_TCP,
     CONN_TYPE_CNT,
 }hv_conn_type_enum_t;
 
