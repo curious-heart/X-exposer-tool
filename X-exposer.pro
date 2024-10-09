@@ -37,7 +37,6 @@ HEADERS += \
     hv_connsettings.h \
     hv_tester/hvtester.h \
     logger/logger.h \
-    mb_rtu_over_tcp/private/exposed_qmodbusadu_p.h \
     mb_rtu_over_tcp/private/qmodbusrtuovertcpclient_p.h \
     mb_rtu_over_tcp/qmodbusrtuovertcpclient.h \
     modbus_regs/modbus_regs.h \
