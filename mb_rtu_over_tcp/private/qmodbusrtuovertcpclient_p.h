@@ -70,24 +70,7 @@ class QModbusRtuOverTcpClientPrivate:public QModbusClientPrivate
     } m_state = Idle;
 
 public:
-    /*from qmodbusdevice_p.h*/
-    QModbusDevice::State state = QModbusDevice::UnconnectedState;
-    QModbusDevice::Error error = QModbusDevice::NoError;
-    QString errorString;
-
-    int m_networkPort = 502;
-    QString m_networkAddress = QStringLiteral("127.0.0.1");
-
-    QHash<int, QVariant> m_userConnectionParams; // ### Qt6: remove
-
-
     /*from qmodbusclient_p.h*/
-    QModbusReply *sendRequest(const QModbusRequest &request, int serverAddress,
-                              const QModbusDataUnit *const unit);
-    QModbusRequest createReadRequest(const QModbusDataUnit &data) const;
-    QModbusRequest createWriteRequest(const QModbusDataUnit &data) const;
-    QModbusRequest createRWRequest(const QModbusDataUnit &read, const QModbusDataUnit &write) const;
-
     bool processResponse(const QModbusResponse &response, QModbusDataUnit *data);
 
     bool processReadCoilsResponse(const QModbusResponse &response, QModbusDataUnit *data);
@@ -113,35 +96,6 @@ public:
     bool processReadWriteMultipleRegistersResponse(const QModbusResponse &response,
                                                   QModbusDataUnit *data);
 
-    int m_numberOfRetries = 3;
-    int m_responseTimeoutDuration = 1000;
-
-    struct QueueElement {
-        QueueElement() = default;
-        QueueElement(QModbusReply *r, const QModbusRequest &req, const QModbusDataUnit &u, int num,
-                int timeout = -1)
-            : reply(r), requestPdu(req), unit(u), numberOfRetries(num)
-        {
-            if (timeout >= 0) {
-                // always the case for TCP
-                timer = QSharedPointer<QTimer>::create();
-                timer->setSingleShot(true);
-                timer->setInterval(timeout);
-            }
-        }
-        bool operator==(const QueueElement &other) const {
-            return reply == other.reply;
-        }
-
-        QPointer<QModbusReply> reply;
-        QModbusRequest requestPdu;
-        QModbusDataUnit unit;
-        int numberOfRetries;
-        QSharedPointer<QTimer> timer;
-        QByteArray adu;
-        qint64 bytesWritten = 0;
-        qint32 m_timerId = INT_MIN;
-    };
     void processQueueElement(const QModbusResponse &pdu, const QueueElement &element);
 
     /*from qmodbustcpclient_p.h, modified.*/
@@ -190,26 +144,25 @@ public:
             DIY_LOG(LOG_DEBUG,QString("(Rtu over TCP client) Response buffer: %1")
                     .arg(QString(responseBuffer.toHex()), 0, QLatin1Char('0')));
 
-            while (!responseBuffer.isEmpty()) {
-                // can we read enough for Modbus ADU header?
-                if (responseBuffer.size() < m_min_adu_byte_num) {
-                    DIY_LOG(LOG_DEBUG, "(Rtu over TCP client) Modbus ADU not complete");
-                    return;
-                }
-
+            // can we read enough for Modbus ADU header?
+            if (responseBuffer.size() < m_min_adu_byte_num) {
+                DIY_LOG(LOG_DEBUG, "(Rtu over TCP client) Modbus ADU not complete");
+                return;
+            }
 
             const QModbusSerialAdu tmpAdu(QModbusSerialAdu::Rtu, responseBuffer);
             int pduSizeWithoutFcode = QModbusResponse::calculateDataSize(tmpAdu.pdu());
             if (pduSizeWithoutFcode < 0) {
                 // wait for more data
                 DIY_LOG(LOG_DEBUG,
-                        QString("(Rtu over TCP client) Cannot calculate PDU size for function code: %1"
-                                ", delaying pending frame").arg(tmpAdu.pdu().functionCode()));
+                        QString("(Rtu over TCP client) Cannot calculate PDU size for"
+                                "function code: %1, delaying pending frame")
+                                .arg(tmpAdu.pdu().functionCode()));
                 return;
             }
 
             // server address byte + function code byte + PDU size + 2 bytes CRC
-            int aduSize = 2 + pduSizeWithoutFcode + 2;
+            int aduSize = m_srv_addr_plus_fc_byte_num + pduSizeWithoutFcode + m_rtu_crc_byte_num;
             if (tmpAdu.rawSize() < aduSize) {
                 DIY_LOG(LOG_DEBUG, "(Rtu over TCP client) Incomplete ADU received, ignoring");
                 return;
@@ -230,7 +183,7 @@ public:
                     if (subCode == Diagnostics::ReturnQueryData) {
                         if (response.data() != current.requestPdu.data())
                             return; // echo does not match request yet
-                        aduSize = 2 + response.dataSize() + 2;
+                        aduSize =  m_srv_addr_plus_fc_byte_num + response.dataSize() + m_rtu_crc_byte_num;
                         if (tmpAdu.rawSize() < aduSize)
                             return; // echo matches, probably checksum missing
                     }
@@ -250,8 +203,8 @@ public:
             // check CRC
             if (!adu.matchingChecksum()) {
                 DIY_LOG(LOG_WARN,
-                        QString("(Rtu over TCP client) Discarding response with wrong CRC, received: %1"
-                                ", calculated CRC: %2")
+                        QString("(Rtu over TCP client) Discarding response with wrong CRC,"
+                                " received: %1, calculated CRC: %2")
                         .arg(adu.checksum<quint16>())
                         .arg(QModbusSerialAdu::calculateCRC(adu.data(), adu.size())));
                 return;
@@ -272,7 +225,6 @@ public:
             m_state = Idle;
 
             m_proc_req_sig_helper.send_signal();
-            }
         });
     }
 
@@ -364,8 +316,6 @@ public:
 public:
     void processQueue()
     {
-        responseBuffer.clear();
-
         if (Idle != m_state)
             return;
 
@@ -377,8 +327,9 @@ public:
         }
         if(m_queue.isEmpty()) return;
 
-        auto &current = m_queue.first();
+        m_state = WaitingForReplay;
 
+        auto &current = m_queue.first();
         current.numberOfRetries--;
         bool ret = writeToSocket(current.adu);
         current.m_timerId = m_responseTimer.start(m_responseTimeoutDuration);
@@ -399,7 +350,8 @@ public:
     }
 
 private:
-    static const int m_min_adu_byte_num = 2;
+    static const int m_srv_addr_plus_fc_byte_num = 2; //server address byte + function code byte
+    static const int m_min_adu_byte_num = m_srv_addr_plus_fc_byte_num;
     static const int m_rtu_crc_byte_num = 2;
     ProcessNextReq m_proc_req_sig_helper;
 };

@@ -355,37 +355,46 @@ void Dialog::select_modbus_device()
             if(m_modbus_device) delete m_modbus_device;
 
             m_curr_conn_type = m_hv_conn_params.type;
-            if(CONN_TYPE_TCPIP == m_curr_conn_type || CONN_TYPE_RTU_OVER_TCP == m_curr_conn_type )
+            if(CONN_TYPE_TCPIP == m_curr_conn_type)
             {
-                if(CONN_TYPE_TCPIP == m_curr_conn_type) m_modbus_device  =  new QModbusTcpClient(this) ;
-                else  m_modbus_device  =  new QModbusRtuOverTcpClient(this) ;
-
-                m_modbus_device->setConnectionParameter(QModbusDevice::NetworkAddressParameter,
-                                                        m_hv_conn_params.tcpip_params.ip_addr);
-                m_modbus_device->setConnectionParameter(QModbusDevice::NetworkPortParameter,
-                                                        m_hv_conn_params.tcpip_params.port_no);
+                m_modbus_device = new QModbusTcpClient(this);
+            }
+            else if(CONN_TYPE_RTU_OVER_TCP == m_curr_conn_type )
+            {
+                m_modbus_device = new QModbusRtuOverTcpClient(this) ;
             }
             else
             {
                 m_modbus_device = new QModbusRtuSerialMaster(this);
-                m_modbus_device->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
-                                                    m_hv_conn_params.serial_params.com_port_s);
-                m_modbus_device->setConnectionParameter(QModbusDevice::SerialBaudRateParameter,
-                                                        m_hv_conn_params.serial_params.boudrate);
-                m_modbus_device->setConnectionParameter(QModbusDevice::SerialDataBitsParameter,
-                                                        m_hv_conn_params.serial_params.data_bits);
-                m_modbus_device->setConnectionParameter(QModbusDevice::SerialParityParameter,
-                                                    m_hv_conn_params.serial_params.check_parity);
-                m_modbus_device->setConnectionParameter(QModbusDevice::SerialStopBitsParameter,
-                                                        m_hv_conn_params.serial_params.stop_bit);
             }
-            m_modbus_device->setTimeout(m_hv_conn_params.resp_wait_time_ms);
 
             connect(m_modbus_device, &QModbusClient::errorOccurred,
                     this, &Dialog::modbus_error_sig_handler, Qt::QueuedConnection);
             connect(m_modbus_device, &QModbusClient::stateChanged,
                     this, &Dialog::modbus_state_changed_sig_handler, Qt::QueuedConnection);
         }
+
+        if(CONN_TYPE_TCPIP == m_curr_conn_type || CONN_TYPE_RTU_OVER_TCP == m_curr_conn_type )
+        {
+            m_modbus_device->setConnectionParameter(QModbusDevice::NetworkAddressParameter,
+                                                    m_hv_conn_params.tcpip_params.ip_addr);
+            m_modbus_device->setConnectionParameter(QModbusDevice::NetworkPortParameter,
+                                                    m_hv_conn_params.tcpip_params.port_no);
+        }
+        else
+        {
+            m_modbus_device->setConnectionParameter(QModbusDevice::SerialPortNameParameter,
+                                                m_hv_conn_params.serial_params.com_port_s);
+            m_modbus_device->setConnectionParameter(QModbusDevice::SerialBaudRateParameter,
+                                                    m_hv_conn_params.serial_params.boudrate);
+            m_modbus_device->setConnectionParameter(QModbusDevice::SerialDataBitsParameter,
+                                                    m_hv_conn_params.serial_params.data_bits);
+            m_modbus_device->setConnectionParameter(QModbusDevice::SerialParityParameter,
+                                                m_hv_conn_params.serial_params.check_parity);
+            m_modbus_device->setConnectionParameter(QModbusDevice::SerialStopBitsParameter,
+                                                    m_hv_conn_params.serial_params.stop_bit);
+        }
+        m_modbus_device->setTimeout(m_hv_conn_params.resp_wait_time_ms);
     }
 }
 

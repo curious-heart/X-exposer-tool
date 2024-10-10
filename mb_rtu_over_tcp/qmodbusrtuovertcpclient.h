@@ -12,7 +12,7 @@ class QModbusRtuOverTcpClient : public QModbusClient
 
 public:
     explicit QModbusRtuOverTcpClient(QObject *parent = nullptr);
-    ~QModbusRtuOverTcpClient();
+    virtual ~QModbusRtuOverTcpClient();
 
 protected:
     QModbusRtuOverTcpClient(QModbusRtuOverTcpClientPrivate &dd, QObject *parent = nullptr);
