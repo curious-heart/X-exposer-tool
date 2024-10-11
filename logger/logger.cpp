@@ -42,7 +42,7 @@ Logger *Logger::instance()
  * @param loc_str 位置字符串，包括文件名和行号
  * @param log 日志内容
  */
-const char* log_dir_str = "./log", *log_file_str = "log.txt";
+const char* log_dir_str = "./log", *log_file_str = "log";
 void Logger::writeLog(QString level_str, QString loc_str, QString msg)
 {
     QFileInfo info(log_dir_str);

@@ -88,71 +88,59 @@ static const hv_mb_reg_e_t gs_judge_result_disp_reg[] =
 #define REC_INFO_IN_FILE(op_str) \
     if(m_curr_rec_file.isOpen()) {m_curr_txt_stream << op_str;}
 
-void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool from_timer)
+void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool pause_resumed)
 {
-    static float last_counted_test_remain_dura_ms = 0;
-    static float test_remain_dura_ms_for_display = 0;
-    float curr_counted_test_remain_dura_ms = 0;
-    QDateTime curr_dt = QDateTime::currentDateTime();
+    QDateTime curr_dt;
+    int curr_pause_dura_ms = 0, pause_dura_till_now_ms = 0, dura_from_resume_ms = 0;
+    static int last_calced_dura_ms = 0;
+    static QDateTime resume_point;
 
     if(start_test)
     {
-        m_test_start_time = curr_dt;
+        resume_point = m_test_start_time = QDateTime::currentDateTime();
         QString dtstr = m_test_start_time.toString("yyyy-MM-dd hh:mm:ss");
         ui->startTestTimeDisplayLbl->setText(dtstr);
-
-        last_counted_test_remain_dura_ms = 0;
-        test_remain_dura_ms_for_display = 0;
     }
 
-    curr_counted_test_remain_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(total_dura);
-    if(from_timer)
+    if(start_test || total_dura)
     {
-        if((curr_counted_test_remain_dura_ms == last_counted_test_remain_dura_ms)
-                && !m_test_paused)
-        {
-            test_remain_dura_ms_for_display
-                    -= (g_sys_configs_block.test_time_stat_grain_sec * 1000);
-        }
-        else
-        {
-            test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
-        }
-    }
-    else
-    {
-        test_remain_dura_ms_for_display = curr_counted_test_remain_dura_ms;
-    }
-    last_counted_test_remain_dura_ms = curr_counted_test_remain_dura_ms;
-
-    m_expt_test_remain_dura_sec = qCeil(test_remain_dura_ms_for_display / 1000);
-    SECS_TO_HHMMSS_STR_DISP(m_expt_test_remain_dura_sec,
-                            ui->exptRemainTestDuraDisplayLbl->setText);
-    if(total_dura)
-    {
-        m_expt_test_dura_sec = m_expt_test_remain_dura_sec ;
-        SECS_TO_HHMMSS_STR_DISP(m_expt_test_dura_sec,
+        m_expt_test_dura_ms = m_expt_test_remain_dura_ms
+                = m_hv_tester.expect_remaining_test_dura_ms(true);
+        SECS_TO_HHMMSS_STR_DISP(qCeil(m_expt_test_dura_ms) / 1000,
                                 ui->exptTotalTestDuraDisplayLbl->setText);
+
+        last_calced_dura_ms = m_expt_test_dura_ms;
     }
 
-    curr_dt = QDateTime::currentDateTime();
+    if(pause_resumed)
+    {
+        resume_point = QDateTime::currentDateTime();
+        last_calced_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(false);
+    }
+
     if(m_testing)
     {
-        m_act_test_dura_sec = m_test_start_time.secsTo(curr_dt);
-        SECS_TO_HHMMSS_STR_DISP(m_act_test_dura_sec,
-                                ui->actTestDuraDisplayLbl->setText);
+        curr_dt = QDateTime::currentDateTime();
+        curr_pause_dura_ms = m_test_paused ? m_pause_dura_check_point.msecsTo(curr_dt) : 0;
+        pause_dura_till_now_ms = m_pause_dura_ms + curr_pause_dura_ms;
+
+        if(!m_test_paused)
+        {
+            curr_dt = QDateTime::currentDateTime();
+            dura_from_resume_ms = resume_point.msecsTo(curr_dt);
+            m_expt_test_remain_dura_ms = last_calced_dura_ms - dura_from_resume_ms;
+            if(m_expt_test_remain_dura_ms < 0) m_expt_test_remain_dura_ms = 0;
+        }
+
+        curr_dt = QDateTime::currentDateTime();
+        m_act_test_dura_ms = m_test_start_time.msecsTo(curr_dt);
     }
 
-    curr_dt = QDateTime::currentDateTime();
-    if(m_test_paused)
-    {
-        m_curr_pause_dura_sec = m_pause_dura_check_point.secsTo(curr_dt);
-    }
-    SECS_TO_HHMMSS_STR_DISP(m_test_paused ? (m_pause_dura_sec + m_curr_pause_dura_sec)
-                                          : m_pause_dura_sec,
-                            ui->pauseDuraDisplayLbl->setText);
-
+    SECS_TO_HHMMSS_STR_DISP(qCeil(pause_dura_till_now_ms / 1000), ui->pauseDuraDisplayLbl->setText);
     ui->pauseCntDisplayLbl->setText(QString::number(m_pause_cnt));
+    SECS_TO_HHMMSS_STR_DISP(qCeil(m_expt_test_remain_dura_ms / 1000),
+                            ui->exptRemainTestDuraDisplayLbl->setText);
+    SECS_TO_HHMMSS_STR_DISP(qCeil(m_act_test_dura_ms / 1000), ui->actTestDuraDisplayLbl->setText);
 }
 
 Dialog::Dialog(QWidget *parent)
@@ -287,6 +275,7 @@ void Dialog::on_testParamSetBtn_clicked()
 
         m_hv_tester.init_for_time_stat(&m_test_params);
 
+        reset_time_stat_vars();
         refresh_time_stat_display(true);
     }
 }
@@ -825,6 +814,14 @@ void Dialog::rec_judge_result(tester_end_code_enum_t code)
     ui->testInfoDisplayTxt->append("");
 }
 
+void Dialog::reset_time_stat_vars()
+{
+    m_expt_test_dura_ms = 0; m_expt_test_remain_dura_ms = 0;
+    m_pause_cnt = 0;
+    m_pause_dura_ms = 0;
+    m_act_test_dura_ms = 0;
+}
+
 void Dialog::reset_internal_flags()
 {
     m_testing = false;
@@ -832,10 +829,7 @@ void Dialog::reset_internal_flags()
     m_self_reconnecting = false;
     m_asked_for_reconnecting = false;
 
-    m_pause_cnt = 0;
-    m_pause_dura_sec = 0;
-    m_curr_pause_dura_sec = 0;
-    m_act_test_dura_sec = 0;
+    reset_time_stat_vars();
 }
 
 void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
@@ -956,7 +950,7 @@ void Dialog::time_stat_timer_sig_handler()
 {
     if(!m_testing) return;
 
-    emit refresh_time_stat_display_sig(false, false, true);
+    emit refresh_time_stat_display_sig();
 }
 
 void Dialog::on_Dialog_finished(int /*result*/)
@@ -968,34 +962,38 @@ void Dialog::on_Dialog_finished(int /*result*/)
 
 void Dialog::on_pauseTestBtn_clicked()
 {
+    bool pause_st = !m_test_paused;
+
     if(m_curr_rec_file.isOpen())
     {
         m_curr_txt_stream.flush();
     }
 
-    m_test_paused = !m_test_paused;
-    emit pause_resume_test_sig(m_test_paused);
+    emit pause_resume_test_sig(pause_st);
 
     QDateTime curr_dt = QDateTime::currentDateTime();
-    if(m_test_paused)
+    if(pause_st)
     {
         m_pause_dura_check_point = curr_dt;
         ++m_pause_cnt;
-        m_curr_pause_dura_sec = 0;
 
         m_reconn_wait_timer.stop();
+
+        refresh_time_stat_display();
     }
     else
     {
-        m_curr_pause_dura_sec = m_pause_dura_check_point.secsTo(curr_dt);
-        m_pause_dura_sec += m_curr_pause_dura_sec;
+        int curr_pause_dura_ms = m_pause_dura_check_point.msecsTo(curr_dt);
+        m_pause_dura_ms += curr_pause_dura_ms;
 
         if(m_modbus_device && (QModbusDevice::ConnectedState != m_modbus_device->state()))
         {
             m_modbus_device->connectDevice();
         }
+
+        refresh_time_stat_display(false, false, true);
     }
 
+    m_test_paused = pause_st;
     refresh_butoons();
-    refresh_time_stat_display();
 }

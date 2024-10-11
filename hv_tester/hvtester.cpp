@@ -937,6 +937,7 @@ float HVTester::expect_remaining_test_dura_ms(bool total)
                 {
                     part_round_dura += one_cmd_round_time_ms
                                 + EXPECT_DURA_AFTER_LAST_CMD_IN_ROUND_MS(curr_expo_dura);
+                    break;
                 }
 
             case TEST_OP_READ_DISTANCE:
