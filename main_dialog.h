@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QDateTime>
 
+#include "common_tools/common_tool_func.h"
 #include "test_param_settings.h"
 #include "hv_connsettings.h"
 #include "hv_tester/hvtester.h"
@@ -80,6 +81,8 @@ private:
     void reset_judge_reg_ret_map();
     void map_judge_result_to_style(judge_result_e_t judge_result, str_with_style_s_t &style_str);
     void rec_judge_result(tester_end_code_enum_t code);
+
+    CToolKeyFilter m_key_filter;
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);

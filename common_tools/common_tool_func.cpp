@@ -787,3 +787,37 @@ int count_discrete_steps(int low_edge, int up_edge, int step)
 {
     return count_discrete_steps_T<int>(low_edge, up_edge, step);
 }
+
+CToolKeyFilter::CToolKeyFilter(QObject* obj, QObject * parent)
+    :QObject{parent}, m_cared_obj(obj)
+{}
+
+CToolKeyFilter::~CToolKeyFilter()
+{
+    m_keys_to_filter.clear();
+}
+
+void CToolKeyFilter::add_keys_to_filter(Qt::Key key)
+{
+    m_keys_to_filter.insert(key);
+}
+
+void CToolKeyFilter::add_keys_to_filter(const QSet<Qt::Key> & keys)
+{
+    m_keys_to_filter.unite(keys);
+}
+
+bool CToolKeyFilter::eventFilter(QObject * obj, QEvent * evt)
+{
+    if(!obj || !evt || obj != m_cared_obj) return false;
+
+    if(evt->type() == QEvent::KeyPress)
+    {
+        QKeyEvent * key_evt = static_cast<QKeyEvent *>(evt);
+        if(m_keys_to_filter.contains((Qt::Key)key_evt->key()))
+        {
+            return true;
+        }
+    }
+    return QObject::eventFilter(obj, evt);
+}

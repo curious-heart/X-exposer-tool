@@ -4,10 +4,6 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
 
-#INCLUDEPATH += "D:/01.Prog/Qt5.15/5.15.2/msvc2019_64/include/QtSerialBus/5.15.2/QtSerialBus" \
-#"D:/01.Prog/Qt5.15/5.15.2/msvc2019_64/include/QtCore/5.15.2/QtCore" \
-#"D:/01.Prog/Qt5.15/5.15.2/msvc2019_64/include/QtCore/5.15.2"
-
 INCLUDEPATH += "$$[QT_INSTALL_HEADERS]/QtSerialBus/$$[QT_VERSION]/QtSerialBus" \
 "$$[QT_INSTALL_HEADERS]/QtCore/$$[QT_VERSION]/QtCore" \
 "$$[QT_INSTALL_HEADERS]/QtCore/$$[QT_VERSION]"
@@ -24,6 +20,12 @@ SOURCES += \
     logger/logger.cpp \
     mb_rtu_over_tcp/qmodbusrtuovertcpclient.cpp \
     modbus_regs/modbus_regs.cpp \
+    qtsingleapplication/qtlocalpeer.cpp \
+    qtsingleapplication/qtlockedfile.cpp \
+    qtsingleapplication/qtlockedfile_unix.cpp \
+    qtsingleapplication/qtlockedfile_win.cpp \
+    qtsingleapplication/qtsingleapplication.cpp \
+    qtsingleapplication/qtsinglecoreapplication.cpp \
     sysconfigs/sysconfigs.cpp \
     test_param_settings.cpp \
     main.cpp \
@@ -40,6 +42,12 @@ HEADERS += \
     mb_rtu_over_tcp/private/qmodbusrtuovertcpclient_p.h \
     mb_rtu_over_tcp/qmodbusrtuovertcpclient.h \
     modbus_regs/modbus_regs.h \
+    qtsingleapplication/QtLockedFile \
+    qtsingleapplication/QtSingleApplication \
+    qtsingleapplication/qtlocalpeer.h \
+    qtsingleapplication/qtlockedfile.h \
+    qtsingleapplication/qtsingleapplication.h \
+    qtsingleapplication/qtsinglecoreapplication.h \
     sysconfigs/sysconfigs.h \
     test_param_settings.h \
     main_dialog.h \

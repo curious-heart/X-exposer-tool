@@ -5,6 +5,8 @@
 #include <QNetworkInterface>
 #include <QTextEdit>
 #include <QFont>
+#include <QSet>
+#include <QKeyEvent>
 
 typedef enum
 {
@@ -103,5 +105,23 @@ typedef struct
 }str_with_style_s_t;
 typedef QList<str_with_style_s_t> str_line_with_styles_t;
 void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line);
+
+class CToolKeyFilter : public QObject
+{
+    Q_OBJECT
+
+private:
+    QObject * m_cared_obj = nullptr;
+    QSet<Qt::Key> m_keys_to_filter;
+
+protected:
+    bool eventFilter(QObject * obj, QEvent * evt) override;
+
+public:
+    CToolKeyFilter(QObject* obj = nullptr, QObject * parent = nullptr);
+    ~CToolKeyFilter();
+    void add_keys_to_filter(Qt::Key key);
+    void add_keys_to_filter(const QSet<Qt::Key> & keys);
+};
 
 #endif // COMMON_TOOL_FUNC_H

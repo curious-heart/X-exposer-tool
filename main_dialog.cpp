@@ -1,6 +1,7 @@
 ﻿#include <QMessageBox>
 #include <QColor>
 #include <QtMath>
+#include "qtsingleapplication/qtsingleapplication.h"
 
 #include "logger/logger.h"
 #include "main_dialog.h"
@@ -158,7 +159,7 @@ Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
     , m_hv_tester(this)
-    , m_cfg_recorder(this)
+    , m_cfg_recorder(this), m_key_filter(this, this)
 {
     ui->setupUi(this);
 
@@ -240,6 +241,12 @@ Dialog::Dialog(QWidget *parent)
                                        ARRAY_COUNT(gs_judge_result_disp_reg));
 
     reset_judge_reg_ret_map();
+
+    connect((QtSingleApplication*)QCoreApplication::instance(), &QtSingleApplication::messageReceived,
+            this, [this](const QString & str){QMessageBox::information(this, "", str);});
+
+    m_key_filter.add_keys_to_filter(Qt::Key_Escape);
+    installEventFilter(&m_key_filter);
 }
 
 Dialog::~Dialog()

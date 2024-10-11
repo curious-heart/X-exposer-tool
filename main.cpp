@@ -3,15 +3,23 @@
 #include "version_def/version_def.h"
 #include "sysconfigs/sysconfigs.h"
 
-#include <QApplication>
 #include <QString>
+#include "qtsingleapplication/qtsingleapplication.h"
 
 int main(int argc, char *argv[])
 {
     if(QT_VERSION>=QT_VERSION_CHECK(5,6,0))
             QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-    QApplication a(argc, argv);
+    static const char* ls_app_id_str = "x-exposer(a small tool for automatic test and aging test)";
+    static const char* ls_hint_str = "程序已经启动";
+    QtSingleApplication a(QString(ls_app_id_str), argc, argv);
+
+    if(a.isRunning())
+    {
+        return !a.sendMessage(QString(ls_hint_str));
+    }
+
     Dialog w;
     QThread th;
     int ret;
@@ -22,6 +30,8 @@ int main(int argc, char *argv[])
     w.setWindowTitle(title_str);
 
     w.show();
+    a.setActivationWindow(&w);
+
     ret = a.exec();
 
     end_log_thread(th);
