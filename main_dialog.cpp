@@ -456,6 +456,11 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
             DIY_LOG(LOG_INFO, "user asks for reconnect, connected.");
             emit mb_reconnected_sig();
         }
+
+        if(m_testing)
+        {
+            refresh_time_stat_display(false, false, true);
+        }
     }
     else if(QModbusDevice::UnconnectedState == state)
     {
@@ -476,6 +481,11 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
 
             m_self_reconnecting = true;
             m_reconn_wait_timer.start(g_sys_configs_block.mb_reconnect_wait_ms);
+        }
+
+        if(m_testing)
+        {
+            refresh_time_stat_display(false, false, true);
         }
     }
     else
@@ -642,6 +652,11 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
     text_font_w = (set_font_w > 0) ? set_font_w : m_txt_def_font.weight();
 
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, line, text_color, text_font_w);
+
+    if(LOG_ERROR == lvl)
+    {
+        refresh_time_stat_display(false, false, true);
+    }
 }
 
 void Dialog::map_judge_result_to_style(judge_result_e_t judge_result, str_with_style_s_t &style_str)
