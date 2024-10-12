@@ -8,6 +8,7 @@
 #include "test_param_settings.h"
 #include "ui_test_param_settings.h"
 #include "sysconfigs/sysconfigs.h"
+#include "version_def/version_def.h"
 
 static RangeChecker<int> gs_valid_cube_volt_kv_range;
 static RangeChecker<float> gs_valid_cube_current_ma_range;
@@ -1410,7 +1411,9 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
     info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
     info_str += ui->hvCtrlBoardNoLbl->text() + ":" + ui->hvCtrlBoardNoEdit->text() + "\n";
     info_str += ui->swVerStrLbl->text() + ":" + ui->swVerStrEdit->text() + "\n";
-    info_str += ui->hwVerStrLbl->text() + ":" + ui->hwVerStrEdit->text();
+    info_str += ui->hwVerStrLbl->text() + ":" + ui->hwVerStrEdit->text() + "\n";
+
+    info_str += QCoreApplication::applicationName() + ":" + APP_VER_STR;
 }
 
 void testParamSettingsDialog::setup_judge_ctrls()
