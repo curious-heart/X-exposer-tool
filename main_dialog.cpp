@@ -58,7 +58,8 @@ const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
     Workstatus, exposureCount,
 };
 static const hv_mb_reg_e_t gs_judge_result_disp_reg[] =
-{VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter, EXT_MB_REG_DISTANCE, State};
+{VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter, EXT_MB_REG_DISTANCE, State,
+ ExposureStatus};
 
 /*
  * The following vars MUST be defined in function using the following macros.
