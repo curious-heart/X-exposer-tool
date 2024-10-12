@@ -1357,7 +1357,7 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
             }
             info_str += (g_sys_configs_block.extra_cool_time_ms > 0) ?
                         (QString("+(")
-                         + QString::number(g_sys_configs_block.extra_cool_time_ms / 1000)
+                         + QString::number(g_sys_configs_block.extra_cool_time_ms / 1000.0)
                          + gs_str_dura_unit_s + gs_str_extra_cool_dura + ")") : "";
             info_str += "\n";
 
@@ -1395,7 +1395,7 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
         }
         info_str += (g_sys_configs_block.extra_cool_time_ms > 0) ?
                     (QString("+(")
-                     + QString::number(g_sys_configs_block.extra_cool_time_ms / 1000)
+                     + QString::number((g_sys_configs_block.extra_cool_time_ms) / 1000.0)
                      + gs_str_dura_unit_s + gs_str_extra_cool_dura + ")") : "";
         info_str += "\n";
         info_str += QString(gs_info_str_seperator) + "\n";
