@@ -107,7 +107,8 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
 */
 
     Ui::testParamSettingsDialog *ui;
-    QButtonGroup *m_expoDuraUnitBtnGrp, *m_coolDuraModeBtnGrp;
+    QButtonGroup *m_expoDuraUnitBtnGrp, *m_coolDuraModeBtnGrp, *m_testContentBtnGrp,
+                 *m_cubeCurrentUnitBtnGrp;
     QVector<test_params_ctrls_ability_struct_t> m_test_params_ctrls_abilities;
 
     test_params_struct_t * m_test_params;

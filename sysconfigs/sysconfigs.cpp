@@ -26,7 +26,8 @@ static const char* gs_ini_key_dura_ms_max = "dura_ms_max";
 static const char* gs_ini_key_mb_reconnect_wait_sep_ms = "mb_reconnect_wait_sep_ms";
 static const char* gs_ini_key_test_time_stat_grain_sec = "test_time_stat_grain_sec";
 
-
+static const char* gs_ini_key_mb_cube_current_intf_unit = "mb_cube_current_intf_unit";
+static const char* gs_ini_key_mb_dura_intf_unit = "mb_dura_intf_unit";
 
 sys_configs_struct_t g_sys_configs_block;
 
@@ -48,6 +49,9 @@ static const int gs_def_mb_reconnect_wait_sep_ms = 1000;
 static const int gs_def_test_time_stat_grain_sec = 3;
 static const int gs_def_mb_one_cmd_round_time_ms = 150;
 
+static const mb_cube_current_intf_unit_e_t gs_def_mb_cube_current_intf_unit = MB_CUBE_CURRENT_INTF_UNIT_UA;
+static const mb_dura_intf_unit_e_t gs_def_mb_dura_intf_unit = MB_DURA_INTF_UNIT_MS;
+
 static RangeChecker<int> gs_cfg_file_log_level_ranger((int)LOG_DEBUG, (int)LOG_ERROR, "",
                      EDGE_INCLUDED, EDGE_INCLUDED);
 
@@ -63,13 +67,20 @@ static RangeChecker<int> gs_cfg_file_value_gt0_int_ranger(0, 0, "",
 static RangeChecker<float> gs_cfg_file_value_gt0_float_ranger(0, 0, "",
                        EDGE_EXCLUDED, EDGE_INFINITE);
 
-#define GET_INF_CFG_NUMBER_VAL(settings, key, type_func, var, def, checker)\
+/*the __VA_ARGS__ should be empty or a type converter like (cust_type).*/
+#define GET_INF_CFG_NUMBER_VAL(settings, key, type_func, var, def, checker, ...)\
 {\
-    (var) = (settings).value((key), (def)).type_func();\
+    (var) = __VA_ARGS__((settings).value((key), (def)).type_func());\
     if((checker) && !((checker)->range_check((var))))\
     {\
         (var) = (def);\
     }\
+}
+
+#define BEGIN_INT_RANGE_CHECK(low, up, low_inc, up_inc)\
+{\
+    RangeChecker<int> int_range_checker((low), (up), "", low_inc, up_inc);
+#define END_INT_RANGE_CHECK \
 }
 
 void fill_sys_configs()
@@ -142,6 +153,22 @@ void fill_sys_configs()
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_one_cmd_round_time_ms, toInt,
                    g_sys_configs_block.mb_one_cmd_round_time_ms, gs_def_mb_one_cmd_round_time_ms,
                            &gs_cfg_file_value_ge0_int_ranger);
+
+    BEGIN_INT_RANGE_CHECK(MB_CUBE_CURRENT_INTF_UNIT_UA, MB_CUBE_CURRENT_INTF_UNIT_MA,
+                          EDGE_INCLUDED, EDGE_INCLUDED)
+        GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_cube_current_intf_unit, toInt,
+                       g_sys_configs_block.mb_cube_current_intf_unit,
+                               gs_def_mb_cube_current_intf_unit,
+                               &int_range_checker, (mb_cube_current_intf_unit_e_t));
+    END_INT_RANGE_CHECK
+
+    BEGIN_INT_RANGE_CHECK(MB_DURA_INTF_UNIT_MS, MB_DURA_INTF_UNIT_SEC,
+                          EDGE_INCLUDED, EDGE_INCLUDED)
+        GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_dura_intf_unit, toInt,
+                       g_sys_configs_block.mb_dura_intf_unit,
+                               gs_def_mb_dura_intf_unit,
+                               &int_range_checker, (mb_dura_intf_unit_e_t));
+    END_INT_RANGE_CHECK
 
     settings.endGroup();
 }

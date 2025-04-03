@@ -77,6 +77,8 @@ private:
     void refresh_time_stat_display(bool total_dura = false, bool start_test = false,
                                    bool pause_resumed = false);
 
+    void set_man_test_grp_visible(test_mode_enum_t mode);
+
     TestResultJudge m_test_judge;
     mb_reg_judge_result_map_t m_judge_reg_ret_map;
     void reset_judge_reg_ret_map();

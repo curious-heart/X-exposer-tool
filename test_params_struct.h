@@ -15,6 +15,13 @@ typedef enum
     TEXT_MODE_CNT
 }test_mode_enum_t;
 
+typedef enum
+{
+    TEST_CONTENT_NORMAL = 0,
+    TEST_CONTENT_COOL_HV,
+    TEST_CONTENT_ONLY_COIL,
+}test_content_enum_t;
+
 typedef struct
 {
     int cube_volt_kv;
@@ -53,6 +60,8 @@ typedef struct
 typedef struct
 {
     bool valid;
+    test_mode_enum_t test_mode;
+    test_content_enum_t test_content;
     expo_params_struct_t expo_param_block;
     other_test_params_struct_t other_param_block;
     QString info_str;

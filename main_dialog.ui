@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>640</width>
+    <width>685</width>
     <height>536</height>
    </rect>
   </property>
@@ -121,7 +121,96 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="10,1,2">
+    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,10,1,2">
+     <item>
+      <widget class="QLabel" name="manTestcubeVoltLbl">
+       <property name="text">
+        <string>管电压</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="manTestcubeVoltSpin"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="manTestcubeVoltUnitLbl">
+       <property name="text">
+        <string>kV</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line_1">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="manTestcubeCurrentLbl">
+       <property name="text">
+        <string>管电流</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="manTestcubeCurrentDblspin"/>
+     </item>
+     <item>
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="manTestcubeCurrentUnitLbl">
+       <property name="text">
+        <string>uA</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="manTestexpoDuraLbl">
+       <property name="text">
+        <string>曝光时间</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDoubleSpinBox" name="manTestexpoDuraDblspin"/>
+     </item>
+     <item>
+      <widget class="QLabel" name="manTestexpoDuraUnitLbl">
+       <property name="text">
+        <string>s</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="manTestSettingBtn">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="text">
+        <string>设置</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line_3">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="Line" name="line_4">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QPushButton" name="startTestBtn">
        <property name="sizePolicy">

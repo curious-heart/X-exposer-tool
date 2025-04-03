@@ -80,7 +80,7 @@ static const char* gs_str_plz_check_first = "请先勾选";
 const testParamSettingsDialog::test_mode_espair_struct_t
       testParamSettingsDialog::test_mode_list[] =
 {
-    {TEST_MODE_SINGLE, QString("单次")},
+    {TEST_MODE_SINGLE, QString("手动")},
     {TEST_MODE_REPEAT, QString("重复")},
     {TEST_MODE_TRAVERSE, QString("遍历")},
     {TEST_MODE_CUST1_TRIPLES, QString("自定义1:三元组列表")},
@@ -160,17 +160,29 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     m_coolDuraModeBtnGrp->addButton(ui->fixedCoolDuraRButton);
     m_coolDuraModeBtnGrp->addButton(ui->timesCoolDuraRButton);
 
+    m_testContentBtnGrp =  new QButtonGroup(this);
+    m_testContentBtnGrp->addButton(ui->testContentNormalRButton);
+    m_testContentBtnGrp->addButton(ui->testContentCoolHVRButton);
+    m_testContentBtnGrp->addButton(ui->testContentOnlyCoilRButton);
+
+    m_cubeCurrentUnitBtnGrp = new QButtonGroup(this);
+    m_cubeCurrentUnitBtnGrp->addButton(ui->cubeCurrentUnituARButton);
+    m_cubeCurrentUnitBtnGrp->addButton(ui->cubeCurrentUnitmARButton);
+
     int idx;
     for(idx = 0; idx < ARRAY_COUNT(test_mode_list); ++idx)
     {
         ui->testModeComboBox->addItem(test_mode_list[idx].s, test_mode_list[idx].e);
     }
 
-    ui->expoDuraUnitmsRButton->setChecked(true);
+    ui->expoDuraUnitsecRButton->setChecked(true);
     ui->timesCoolDuraRButton->setChecked(true);
     ui->testModeComboBox->setCurrentIndex(0);
     ui->limitShortestCoolDuraChBox->setChecked(true);
     ui->readDistChBox->setChecked(true);
+
+    ui->testContentNormalRButton->setChecked(true);
+    ui->cubeCurrentUnituARButton->setChecked(true);
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.insert(ui->custExpoParamFileNoteEdit);
@@ -760,6 +772,7 @@ QString testParamSettingsDialog::collect_test_params()
         return ret_str;
     }
     m_test_params->valid = false;
+    m_test_params->test_mode = TEST_MODE_SINGLE;
     m_test_params->info_str.clear();
 
     get_expo_param_vals_from_ui();
@@ -1117,6 +1130,8 @@ QString testParamSettingsDialog::collect_test_params()
         m_test_params->info_str += info_str;
     }
 
+    m_test_params->test_mode
+            = (test_mode_enum_t)(ui->testModeComboBox->currentData().toInt());
     return ret_str;
 }
 

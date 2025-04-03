@@ -144,6 +144,29 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool pa
     SECS_TO_HHMMSS_STR_DISP(qCeil(m_act_test_dura_ms / 1000), ui->actTestDuraDisplayLbl->setText);
 }
 
+void Dialog::set_man_test_grp_visible(test_mode_enum_t mode)
+{
+    bool visible = (mode == TEST_MODE_SINGLE);
+
+    ui->manTestcubeVoltLbl->setVisible(visible);
+    ui->manTestcubeVoltSpin->setVisible(visible);
+    ui->manTestcubeVoltUnitLbl->setVisible(visible);
+    ui->line_1->setVisible(visible);
+
+    ui->manTestcubeCurrentLbl->setVisible(visible);
+    ui->manTestcubeCurrentDblspin->setVisible(visible);
+    ui->manTestcubeCurrentUnitLbl->setVisible(visible);
+    ui->line_2->setVisible(visible);
+
+    ui->manTestexpoDuraLbl->setVisible(visible);
+    ui->manTestexpoDuraDblspin->setVisible(visible);
+    ui->manTestexpoDuraUnitLbl->setVisible(visible);
+
+    ui->manTestSettingBtn->setVisible(visible);
+    ui->line_3->setVisible(visible);
+    ui->line_4->setVisible(visible);
+}
+
 Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
@@ -236,6 +259,8 @@ Dialog::Dialog(QWidget *parent)
 
     m_key_filter.add_keys_to_filter(Qt::Key_Escape);
     installEventFilter(&m_key_filter);
+
+    set_man_test_grp_visible(m_test_params.test_mode);
 }
 
 Dialog::~Dialog()
@@ -278,6 +303,8 @@ void Dialog::on_testParamSetBtn_clicked()
 
         reset_time_stat_vars();
         refresh_time_stat_display(true);
+
+        set_man_test_grp_visible(m_test_params.test_mode);
     }
 }
 
