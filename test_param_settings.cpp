@@ -37,6 +37,7 @@ static const char* gs_str_please_select_file = "请选择自定义曝光文件";
 static const char* gs_str_cust_file_sel_caption = "选择自定义曝光参数文件";
 static const char* gs_str_volt_unit_kv = "kV";
 static const char* gs_str_current_unit_ma = "mA";
+static const char* gs_str_dura_unit_min = "min";
 static const char* gs_str_dura_unit_s = "s";
 static const char* gs_str_dura_unit_ms = "ms";
 static const char* gs_str_cust_file = "自定义曝光参数文件";
@@ -313,7 +314,12 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
                            m_expo_params_from_ui.err_msg_cube_current_step);
 
     QString new_unit_str = "";
-    if(ui->expoDuraUnitsecRButton->isChecked())
+    if(ui->expoDuraUnitminRButton->isChecked())
+    {
+        factor = 60 * 1000;
+        new_unit_str = gs_str_dura_unit_min;
+    }
+    else if(ui->expoDuraUnitsecRButton->isChecked())
     {
         factor = 1000;
         new_unit_str = gs_str_dura_unit_s;

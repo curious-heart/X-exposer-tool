@@ -21,8 +21,8 @@ static const char* gs_ini_key_cube_volt_kv_min = "cube_volt_kv_min";
 static const char* gs_ini_key_cube_volt_kv_max = "cube_volt_kv_max";
 static const char* gs_ini_key_cube_current_ma_min = "cube_current_ma_min";
 static const char* gs_ini_key_cube_current_ma_max = "cube_current_ma_max";
-static const char* gs_ini_key_dura_ms_min = "dura_ms_min";
-static const char* gs_ini_key_dura_ms_max = "dura_ms_max";
+static const char* gs_ini_key_dura_sec_min = "dura_sec_min";
+static const char* gs_ini_key_dura_sec_max = "dura_sec_max";
 static const char* gs_ini_key_mb_reconnect_wait_sep_ms = "mb_reconnect_wait_sep_ms";
 static const char* gs_ini_key_test_time_stat_grain_sec = "test_time_stat_grain_sec";
 
@@ -37,8 +37,8 @@ static const int gs_def_cube_volt_kv_min = 40;
 static const int gs_def_cube_volt_kv_max = 90;
 static const float gs_def_cube_current_ma_min = 0.5;
 static const float gs_def_cube_current_ma_max = 5;
-static const float gs_def_dura_ms_min = 500;
-static const float gs_def_dura_ms_max = 1400;
+static const float gs_def_dura_sec_min = 0.5;
+static const float gs_def_dura_sec_max = 1.4;
 
 static const float gs_def_cool_dura_factor = 30;
 static const int gs_def_extra_cool_time_ms = 2000;
@@ -68,9 +68,9 @@ static RangeChecker<float> gs_cfg_file_value_gt0_float_ranger(0, 0, "",
                        EDGE_EXCLUDED, EDGE_INFINITE);
 
 /*the __VA_ARGS__ should be empty or a type converter like (cust_type).*/
-#define GET_INF_CFG_NUMBER_VAL(settings, key, type_func, var, def, checker, ...)\
+#define GET_INF_CFG_NUMBER_VAL(settings, key, type_func, var, def, factor, checker, ...)\
 {\
-    (var) = __VA_ARGS__((settings).value((key), (def)).type_func());\
+    (var) = __VA_ARGS__((factor) * ((settings).value((key), (def)).type_func()));\
     if((checker) && !((checker)->range_check((var))))\
     {\
         (var) = (def);\
@@ -92,7 +92,7 @@ void fill_sys_configs()
     settings.beginGroup(gs_ini_grp_sys_cfgs);
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_log_level, toInt,
                            g_sys_configs_block.log_level, gs_def_log_level,
-                               &gs_cfg_file_log_level_ranger);
+                           1, &gs_cfg_file_log_level_ranger);
     settings.endGroup();
 
     /*--------------------*/
@@ -100,66 +100,66 @@ void fill_sys_configs()
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_cube_volt_kv_min, toInt,
                            g_sys_configs_block.cube_volt_kv_min, gs_def_cube_volt_kv_min,
-                               &gs_cfg_file_value_gt0_int_ranger);
+                           1, &gs_cfg_file_value_gt0_int_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_cube_volt_kv_max, toInt,
                            g_sys_configs_block.cube_volt_kv_max, gs_def_cube_volt_kv_max,
-                               &gs_cfg_file_value_gt0_int_ranger);
+                           1, &gs_cfg_file_value_gt0_int_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_cube_current_ma_min, toFloat,
                            g_sys_configs_block.cube_current_ma_min, gs_def_cube_current_ma_min,
-                               &gs_cfg_file_value_gt0_float_ranger);
+                           1, &gs_cfg_file_value_gt0_float_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_cube_current_ma_max, toFloat,
                            g_sys_configs_block.cube_current_ma_max, gs_def_cube_current_ma_max,
-                               &gs_cfg_file_value_gt0_float_ranger);
+                           1, &gs_cfg_file_value_gt0_float_ranger);
 
-    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_dura_ms_min, toFloat,
-                           g_sys_configs_block.dura_ms_min, gs_def_dura_ms_min,
-                               &gs_cfg_file_value_gt0_float_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_dura_sec_min, toFloat,
+                           g_sys_configs_block.dura_ms_min, gs_def_dura_sec_min,
+                           1000, &gs_cfg_file_value_gt0_float_ranger);
 
-    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_dura_ms_max, toFloat,
-                           g_sys_configs_block.dura_ms_max, gs_def_dura_ms_max,
-                               &gs_cfg_file_value_gt0_float_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_dura_sec_max, toFloat,
+                           g_sys_configs_block.dura_ms_max, gs_def_dura_sec_max,
+                           1000, &gs_cfg_file_value_gt0_float_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_cool_dura_factor, toFloat,
-                               g_sys_configs_block.cool_dura_factor, gs_def_cool_dura_factor,
-                               &gs_cfg_file_value_ge0_float_ranger);
+                           g_sys_configs_block.cool_dura_factor, gs_def_cool_dura_factor,
+                           1, &gs_cfg_file_value_ge0_float_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_extra_cool_time_ms, toInt,
-                               g_sys_configs_block.extra_cool_time_ms, gs_def_extra_cool_time_ms,
-                               &gs_cfg_file_value_ge0_int_ranger);
+                           g_sys_configs_block.extra_cool_time_ms, gs_def_extra_cool_time_ms,
+                           1, &gs_cfg_file_value_ge0_int_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_expo_prepare_time_ms, toInt,
-                               g_sys_configs_block.expo_prepare_time_ms, gs_def_expo_prepare_time_ms,
-                               &gs_cfg_file_value_ge0_int_ranger);
+                           g_sys_configs_block.expo_prepare_time_ms, gs_def_expo_prepare_time_ms,
+                           1, &gs_cfg_file_value_ge0_int_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_consec_rw_wait_ms, toInt,
                            g_sys_configs_block.consec_rw_wait_ms, gs_def_mb_consec_rw_wait_ms,
-                           &gs_cfg_file_value_gt0_int_ranger);
+                           1, &gs_cfg_file_value_gt0_int_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_reconnect_wait_sep_ms, toInt,
                            g_sys_configs_block.mb_reconnect_wait_ms, gs_def_mb_reconnect_wait_sep_ms,
-                           &gs_cfg_file_value_ge0_int_ranger);
+                           1, &gs_cfg_file_value_ge0_int_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_err_retry_wait_ms, toInt,
                        g_sys_configs_block.mb_err_retry_wait_ms, gs_def_mb_err_retry_wait_ms,
-                           &gs_cfg_file_value_ge0_int_ranger);
+                           1, &gs_cfg_file_value_ge0_int_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_test_time_stat_grain_sec, toInt,
                    g_sys_configs_block.test_time_stat_grain_sec, gs_def_test_time_stat_grain_sec,
-                           &gs_cfg_file_value_ge0_int_ranger);
+                           1, &gs_cfg_file_value_ge0_int_ranger);
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_one_cmd_round_time_ms, toInt,
                    g_sys_configs_block.mb_one_cmd_round_time_ms, gs_def_mb_one_cmd_round_time_ms,
-                           &gs_cfg_file_value_ge0_int_ranger);
+                           1, &gs_cfg_file_value_ge0_int_ranger);
 
     BEGIN_INT_RANGE_CHECK(MB_CUBE_CURRENT_INTF_UNIT_UA, MB_CUBE_CURRENT_INTF_UNIT_MA,
                           EDGE_INCLUDED, EDGE_INCLUDED)
         GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_cube_current_intf_unit, toInt,
                        g_sys_configs_block.mb_cube_current_intf_unit,
                                gs_def_mb_cube_current_intf_unit,
-                               &int_range_checker, (mb_cube_current_intf_unit_e_t));
+                               1, &int_range_checker, (mb_cube_current_intf_unit_e_t));
     END_INT_RANGE_CHECK
 
     BEGIN_INT_RANGE_CHECK(MB_DURA_INTF_UNIT_MS, MB_DURA_INTF_UNIT_SEC,
@@ -167,7 +167,7 @@ void fill_sys_configs()
         GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_dura_intf_unit, toInt,
                        g_sys_configs_block.mb_dura_intf_unit,
                                gs_def_mb_dura_intf_unit,
-                               &int_range_checker, (mb_dura_intf_unit_e_t));
+                               1, &int_range_checker, (mb_dura_intf_unit_e_t));
     END_INT_RANGE_CHECK
 
     settings.endGroup();
