@@ -51,6 +51,7 @@ const char* g_str_time_bei = "倍";
 const char* g_str_no_bu = "不";
 
 static const char* gs_cust_expo_file_filter = "CSV File (*.csv)";
+static const char* gs_valid_header_line_min = "volt-kv,current-ma,dura-min";
 static const char* gs_valid_header_line_ms = "volt-kv,current-ma,dura-ms";
 static const char* gs_valid_header_line_s = "volt-kv,current-ma,dura-s";
 static const char* gs_cust_expo_file_item_sep_in_line = ",";
@@ -387,32 +388,26 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
 bool testParamSettingsDialog::judge_dura_factor_from_str(QString h_s, float *ret_factor)
 {
     QString qstr_s = QString(gs_str_dura_unit_s), qstr_ms = QString(gs_str_dura_unit_ms);
-    int s_len = qstr_s.length(), ms_len = qstr_ms.length();
-    int h_s_len = h_s.length();
+    QString qstr_min = QString(gs_str_dura_unit_min);
     float factor = 1;
     bool ret = false;
 
-    if(h_s_len >= ms_len)
+    if(h_s.endsWith(qstr_min))
     {
-        if(h_s.endsWith(qstr_ms))
-        {
-            ret = true;
-            factor = 1;
-        }
-        else if(h_s.endsWith(qstr_s))
-        {
-            ret = true;
-            factor = 1000;
-        }
+        ret = true;
+        factor = 60 * 1000;
     }
-    else if(h_s_len >= s_len)
+    else if(h_s.endsWith(qstr_ms))
     {
-        if(h_s.endsWith(qstr_s))
-        {
-            ret = true;
-            factor = 1000;
-        }
+        ret = true;
+        factor = 1;
     }
+    else if(h_s.endsWith(qstr_s))
+    {
+        ret = true;
+        factor = 1000;
+    }
+
     if(ret_factor) *ret_factor = factor;
     return ret;
 }
@@ -455,8 +450,9 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
     if(!valid_line)
     {
         DIY_LOG(LOG_ERROR,
-                QString("%1%2%3%4%5%6").
+                QString("%1%2%3%4%5%6%7%8%9").
                 arg(file_fpn, ":The 1st line should be as\n\t",
+                    gs_valid_header_line_min, "or\n\t",
                     gs_valid_header_line_ms, "or\n\t",
                     gs_valid_header_line_s,
                     "\nbut it is\n\t", line));
