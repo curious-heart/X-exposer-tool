@@ -27,6 +27,7 @@ class Dialog : public QDialog
 public:
     Dialog(QWidget *parent = nullptr);
     ~Dialog();
+    bool m_init_ok = false;
 
 private slots:
     void on_testParamSetBtn_clicked();

@@ -18,9 +18,9 @@ static RangeChecker<float> gs_valid_cool_dura_range;
 static RangeChecker<float> gs_valid_cool_dura_factor;
 
 static const char* gs_str_test_mode = "测试模式";
-static const char* gs_str_cube_volt = "管电压";
-static const char* gs_str_cube_current = "管电流";
-static const char* gs_str_expo_dura = "曝光时间";
+const char* g_str_cube_volt = "管电压";
+const char* g_str_cube_current = "管电流";
+const char* g_str_expo_dura = "曝光时间";
 static const char* gs_str_repeats_num = "重复次数";
 static const char* gs_str_cool_dura = "冷却时间";
 static const char* gs_str_extra_cool_dura = "额外的冷却时间";
@@ -35,11 +35,12 @@ static const char* gs_str_start_end_step_err2 = "组合无效";
 static const char* gs_str_read_file_fail = "读取文件失败";
 static const char* gs_str_please_select_file = "请选择自定义曝光文件";
 static const char* gs_str_cust_file_sel_caption = "选择自定义曝光参数文件";
-static const char* gs_str_volt_unit_kv = "kV";
-static const char* gs_str_current_unit_ma = "mA";
-static const char* gs_str_dura_unit_min = "min";
-static const char* gs_str_dura_unit_s = "s";
-static const char* gs_str_dura_unit_ms = "ms";
+const char* g_str_volt_unit_kv = "kV";
+const char* g_str_current_unit_ma = "mA";
+const char* g_str_current_unit_ua = "uA";
+const char* g_str_dura_unit_min = "min";
+const char* g_str_dura_unit_s = "s";
+const char* g_str_dura_unit_ms = "ms";
 static const char* gs_str_cust_file = "自定义曝光参数文件";
 static const char* gs_str_1st_line_should_be = "首行应为";
 static const char* gs_str_or = "或";
@@ -104,23 +105,23 @@ const testParamSettingsDialog::test_mode_espair_struct_t
 #define TEST_PARAMS_CTRLS_ABT_TBL \
 {\
     ARRANGE_CTRLS_ABILITY(ui->cubeVoltStartEdit, true, true, true, false, false)\
-    ui->cubeVoltStartEdit->setWhatsThis(QString("%1%2").arg(gs_str_cube_volt, gs_str_start_val));\
+    ui->cubeVoltStartEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_volt, gs_str_start_val));\
     ARRANGE_CTRLS_ABILITY(ui->cubeVoltEndEdit, false, false, true, false, false)\
-    ui->cubeVoltEndEdit->setWhatsThis(QString("%1%2").arg(gs_str_cube_volt, gs_str_end_val));\
+    ui->cubeVoltEndEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_volt, gs_str_end_val));\
     ARRANGE_CTRLS_ABILITY(ui->cubeVoltStepEdit, false, false, true, false, false)\
-    ui->cubeVoltStepEdit->setWhatsThis(QString("%1%2").arg(gs_str_cube_volt, gs_str_step));\
+    ui->cubeVoltStepEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_volt, gs_str_step));\
     ARRANGE_CTRLS_ABILITY(ui->cubeCurrentStartEdit, true, true, true, false, false)\
-    ui->cubeCurrentStartEdit->setWhatsThis(QString("%1%2").arg(gs_str_cube_current, gs_str_start_val));\
+    ui->cubeCurrentStartEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_current, gs_str_start_val));\
     ARRANGE_CTRLS_ABILITY(ui->cubeCurrentEndEdit, false, false, true, false, false)\
-    ui->cubeCurrentEndEdit->setWhatsThis(QString("%1%2").arg(gs_str_cube_current, gs_str_end_val));\
+    ui->cubeCurrentEndEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_current, gs_str_end_val));\
     ARRANGE_CTRLS_ABILITY(ui->cubeCurrentStepEdit, false, false, true, false, false)\
-    ui->cubeCurrentStepEdit->setWhatsThis(QString("%1%2").arg(gs_str_cube_current, gs_str_step));\
+    ui->cubeCurrentStepEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_current, gs_str_step));\
     ARRANGE_CTRLS_ABILITY(ui->expoDuraStartEdit, true, true, true, false, false)\
-    ui->expoDuraStartEdit->setWhatsThis(QString("%1%2").arg(gs_str_expo_dura, gs_str_start_val));\
+    ui->expoDuraStartEdit->setWhatsThis(QString("%1%2").arg(g_str_expo_dura, gs_str_start_val));\
     ARRANGE_CTRLS_ABILITY(ui->expoDuraEndEdit, false, false, true, false, false)\
-    ui->expoDuraEndEdit->setWhatsThis(QString("%1%2").arg(gs_str_expo_dura, gs_str_end_val));\
+    ui->expoDuraEndEdit->setWhatsThis(QString("%1%2").arg(g_str_expo_dura, gs_str_end_val));\
     ARRANGE_CTRLS_ABILITY(ui->expoDuraStepEdit, false, false, true, false, false)\
-    ui->expoDuraStepEdit->setWhatsThis(QString("%1%2").arg(gs_str_expo_dura, gs_str_step));\
+    ui->expoDuraStepEdit->setWhatsThis(QString("%1%2").arg(g_str_expo_dura, gs_str_step));\
     ARRANGE_CTRLS_ABILITY(ui->repeatsNumEdit, false, true, true, true, true)\
     ui->repeatsNumEdit->setWhatsThis(QString(gs_str_repeats_num));\
     ARRANGE_CTRLS_ABILITY(ui->coolDuraEdit, false, true, true, true, true)\
@@ -199,20 +200,20 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
 
     gs_valid_cube_volt_kv_range.set_min_max(g_sys_configs_block.cube_volt_kv_min,
                                             g_sys_configs_block.cube_volt_kv_max);
-    gs_valid_cube_volt_kv_range.set_unit_str(gs_str_volt_unit_kv);
+    gs_valid_cube_volt_kv_range.set_unit_str(g_str_volt_unit_kv);
 
     gs_valid_cube_current_ma_range.set_min_max(g_sys_configs_block.cube_current_ma_min,
                                                g_sys_configs_block.cube_current_ma_max);
-    gs_valid_cube_current_ma_range.set_unit_str(gs_str_current_unit_ma);
+    gs_valid_cube_current_ma_range.set_unit_str(g_str_current_unit_ma);
 
     gs_valid_expo_dura_ms_range.set_min_max(g_sys_configs_block.dura_ms_min,
                                             g_sys_configs_block.dura_ms_max);
-    gs_valid_expo_dura_ms_range.set_unit_str(gs_str_dura_unit_ms);
+    gs_valid_expo_dura_ms_range.set_unit_str(g_str_dura_unit_ms);
 
     gs_valid_cool_dura_range.set_min_max(g_sys_configs_block.dura_ms_max
                                           * g_sys_configs_block.cool_dura_factor /1000, 0);
     gs_valid_cool_dura_range.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
-    gs_valid_cool_dura_range.set_unit_str(gs_str_dura_unit_s);
+    gs_valid_cool_dura_range.set_unit_str(g_str_dura_unit_s);
 
     gs_valid_cool_dura_factor.set_min_max(g_sys_configs_block.cool_dura_factor, 0);
     gs_valid_cool_dura_factor.set_edge(EDGE_INCLUDED, EDGE_INFINITE);
@@ -318,12 +319,12 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
     if(ui->expoDuraUnitminRButton->isChecked())
     {
         factor = 60 * 1000;
-        new_unit_str = gs_str_dura_unit_min;
+        new_unit_str = g_str_dura_unit_min;
     }
     else if(ui->expoDuraUnitsecRButton->isChecked())
     {
         factor = 1000;
-        new_unit_str = gs_str_dura_unit_s;
+        new_unit_str = g_str_dura_unit_s;
     }
     else
     {
@@ -387,8 +388,8 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
 
 bool testParamSettingsDialog::judge_dura_factor_from_str(QString h_s, float *ret_factor)
 {
-    QString qstr_s = QString(gs_str_dura_unit_s), qstr_ms = QString(gs_str_dura_unit_ms);
-    QString qstr_min = QString(gs_str_dura_unit_min);
+    QString qstr_s = QString(g_str_dura_unit_s), qstr_ms = QString(g_str_dura_unit_ms);
+    QString qstr_min = QString(g_str_dura_unit_min);
     float factor = 1;
     bool ret = false;
 
@@ -488,7 +489,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                         ret_str = QString("%1%2%3%4%5:\n%6%7,%8%9").arg(gs_str_cust_file,
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
-                                  gs_str_cube_volt, item_str, gs_str_exceeds_valid_range,
+                                  g_str_cube_volt, item_str, gs_str_exceeds_valid_range,
                                   gs_valid_cube_volt_kv_range.range_str(INT_DATA));
                         DIY_LOG(LOG_ERROR, QString("%1%2%3%4%5").arg(file_fpn,
                                            ":the ", QString::number(line_no),
@@ -503,7 +504,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                     ret_str = QString("%1%2%3%4%5:\n%6%7,%8").arg(gs_str_cust_file,
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
-                                  gs_str_cube_volt, item_str, gs_str_should_be_int);
+                                  g_str_cube_volt, item_str, gs_str_should_be_int);
                     DIY_LOG(LOG_ERROR, QString("%1%2%3%4").arg(file_fpn, ":the ",
                                QString::number(line_no), " line, cube volt should be int."));
                     break;
@@ -520,7 +521,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                         ret_str = QString("%1%2%3%4%5\n:%6%7,%8%9").arg(gs_str_cust_file,
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
-                                  gs_str_cube_current, item_str, gs_str_exceeds_valid_range,
+                                  g_str_cube_current, item_str, gs_str_exceeds_valid_range,
                                   gs_valid_cube_current_ma_range.range_str(FLOAT_DATA));
                         DIY_LOG(LOG_ERROR, QString("%1%2%3%4%5").arg(file_fpn,
                                        ":the ", QString::number(line_no),
@@ -535,7 +536,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                     ret_str = QString("%1%2%3%4%5:\n%6%7,%8").arg(gs_str_cust_file,
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
-                                  gs_str_cube_current, item_str, gs_str_should_be_number);
+                                  g_str_cube_current, item_str, gs_str_should_be_number);
                     DIY_LOG(LOG_ERROR, QString("%1%2%3%4").arg(file_fpn, ":the ",
                            QString::number(line_no), " line, cube current should be number."));
                     break;
@@ -554,14 +555,14 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                         ret_str = QString("%1%2%3%4%5:\n%6%7,%8%9").arg(gs_str_cust_file,
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
-                                  gs_str_expo_dura, item_str, gs_str_exceeds_valid_range,
+                                  g_str_expo_dura, item_str, gs_str_exceeds_valid_range,
                                   gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA, 1/factor,
-                                                                        gs_str_dura_unit_s));
+                                                                        g_str_dura_unit_s));
                         DIY_LOG(LOG_ERROR, QString("%1%2%3%4%5").arg(file_fpn,
                                        ":the ", QString::number(line_no),
                                        "expo duration exceeds valid range:",
                                        gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA, 1/factor,
-                                                                             gs_str_dura_unit_s)));
+                                                                             g_str_dura_unit_s)));
                         break;
                     }
                 }
@@ -571,7 +572,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                     ret_str = QString("%1%2%3%4%5:\n%6%7,%8").arg(gs_str_cust_file,
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
-                                  gs_str_expo_dura, item_str, gs_str_should_be_number);
+                                  g_str_expo_dura, item_str, gs_str_should_be_number);
                     DIY_LOG(LOG_ERROR, QString("%1%2%3%4").arg(file_fpn, ":the ",
                            QString::number(line_no), " line, expo duration should be number."));
                     break;
@@ -729,7 +730,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
                                         + gs_str_exceeds_valid_range
                                         + gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA,
                                                                               1/factor,
-                                                                              gs_str_dura_unit_s));
+                                                                              g_str_dura_unit_s));
         ms = ms_or_s * factor;
         dura_ms_v.append(ms);
         if(ms > max_ms) max_ms = ms;
@@ -992,7 +993,7 @@ QString testParamSettingsDialog::collect_test_params()
                         (m_expo_params_from_ui.vals.cube_volt_kv_end
                              - m_expo_params_from_ui.vals.cube_volt_kv_start) < 0)
                 {
-                    ret_str += QString("%1%2、%3、%4、%5").arg(gs_str_cube_volt,
+                    ret_str += QString("%1%2、%3、%4、%5").arg(g_str_cube_volt,
                                            gs_str_start_val, gs_str_end_val, gs_str_step,
                                                     gs_str_start_end_step_err2);
                     break;
@@ -1019,7 +1020,7 @@ QString testParamSettingsDialog::collect_test_params()
                         (m_expo_params_from_ui.vals.cube_current_ma_end
                              - m_expo_params_from_ui.vals.cube_current_ma_start) < 0)
                 {
-                    ret_str += QString("%1%2、%3、%4、%5").arg(gs_str_cube_current,
+                    ret_str += QString("%1%2、%3、%4、%5").arg(g_str_cube_current,
                                            gs_str_start_val, gs_str_end_val, gs_str_step,
                                                     gs_str_start_end_step_err2);
                     break;
@@ -1045,7 +1046,7 @@ QString testParamSettingsDialog::collect_test_params()
                         (m_expo_params_from_ui.vals.expo_dura_ms_end
                              - m_expo_params_from_ui.vals.expo_dura_ms_start) < 0)
                 {
-                    ret_str += QString("%1%2、%3、%4、%5").arg(gs_str_expo_dura,
+                    ret_str += QString("%1%2、%3、%4、%5").arg(g_str_expo_dura,
                                            gs_str_start_val, gs_str_end_val, gs_str_step,
                                                     gs_str_start_end_step_err2);
                     break;
@@ -1242,12 +1243,12 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
     if(ui->expoDuraUnitmsRButton->isChecked())
     {
         factor = 1;
-        dura_unit_s = gs_str_dura_unit_ms;
+        dura_unit_s = g_str_dura_unit_ms;
     }
     else
     {
         factor = (float)(1.0/1000);
-        dura_unit_s = gs_str_dura_unit_s;
+        dura_unit_s = g_str_dura_unit_s;
     }
 
     info_str = QString("%1:").arg(gs_str_test_mode);
@@ -1259,22 +1260,22 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
     if((TEST_MODE_CUST1_TRIPLES != test_mode) && (TEST_MODE_CUST2_DISCRETE != test_mode))
     {
         info_str += QString("%1%2:%3%4\n").
-                    arg(gs_str_cube_volt, start_val_str,
+                    arg(g_str_cube_volt, start_val_str,
                         QString::number(m_test_params->expo_param_block.expo_params.
                                             regular_parms.cube_volt_kv_start),
-                        gs_str_volt_unit_kv);
+                        g_str_volt_unit_kv);
         if(TEST_MODE_TRAVERSE == test_mode)
         {
             info_str += QString("%1%2:%3%4\n").
-                        arg(gs_str_cube_volt, gs_str_end_val,
+                        arg(g_str_cube_volt, gs_str_end_val,
                             QString::number(m_test_params->expo_param_block.expo_params.
                                                 regular_parms.cube_volt_kv_end),
-                            gs_str_volt_unit_kv);
+                            g_str_volt_unit_kv);
             info_str += QString("%1%2:%3%4\n").
-                        arg(gs_str_cube_volt, gs_str_step,
+                        arg(g_str_cube_volt, gs_str_step,
                             QString::number(m_test_params->expo_param_block.expo_params.
                                                 regular_parms.cube_volt_kv_step),
-                            gs_str_volt_unit_kv);
+                            g_str_volt_unit_kv);
 
             times_in_one_loop *= count_discrete_steps(m_test_params->expo_param_block.expo_params.
                                                           regular_parms.cube_volt_kv_start,
@@ -1286,22 +1287,22 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
         info_str += QString(gs_info_str_seperator) + "\n";
 
         info_str += QString("%1%2:%3%4\n").
-                    arg(gs_str_cube_current, start_val_str,
+                    arg(g_str_cube_current, start_val_str,
                         QString::number(m_test_params->expo_param_block.
                                             expo_params.regular_parms.cube_current_ma_start),
-                        gs_str_current_unit_ma);
+                        g_str_current_unit_ma);
         if(TEST_MODE_TRAVERSE == test_mode)
         {
             info_str += QString("%1%2:%3%4\n").
-                        arg(gs_str_cube_current, gs_str_end_val,
+                        arg(g_str_cube_current, gs_str_end_val,
                             QString::number(m_test_params->expo_param_block.expo_params.
                                                 regular_parms.cube_current_ma_end),
-                            gs_str_current_unit_ma);
+                            g_str_current_unit_ma);
             info_str += QString("%1%2:%3%4\n").
-                        arg(gs_str_cube_current, gs_str_step,
+                        arg(g_str_cube_current, gs_str_step,
                             QString::number(m_test_params->expo_param_block.expo_params.
                                                 regular_parms.cube_current_ma_step),
-                            gs_str_current_unit_ma);
+                            g_str_current_unit_ma);
 
             times_in_one_loop *= count_discrete_steps(m_test_params->expo_param_block.expo_params.
                                                           regular_parms.cube_current_ma_start,
@@ -1313,19 +1314,19 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
         info_str += QString(gs_info_str_seperator) + "\n";
 
         info_str += QString("%1%2:%3%4\n").
-                    arg(gs_str_expo_dura, start_val_str,
+                    arg(g_str_expo_dura, start_val_str,
                         QString::number(m_test_params->expo_param_block.
                                             expo_params.regular_parms.expo_dura_ms_start * factor),
                         dura_unit_s);
         if(TEST_MODE_TRAVERSE == test_mode)
         {
             info_str += QString("%1%2:%3%4\n").
-                        arg(gs_str_expo_dura, gs_str_end_val,
+                        arg(g_str_expo_dura, gs_str_end_val,
                             QString::number(m_test_params->expo_param_block.
                                             expo_params.regular_parms.expo_dura_ms_end * factor),
                             dura_unit_s);
             info_str += QString("%1%2:%3%4\n").
-                        arg(gs_str_expo_dura, gs_str_step,
+                        arg(g_str_expo_dura, gs_str_step,
                             QString::number(m_test_params->expo_param_block.expo_params.
                                                 regular_parms.expo_dura_ms_step * factor),
                             dura_unit_s);
@@ -1362,7 +1363,7 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
                 info_str += QString("%1:%2%3").
                     arg(gs_str_cool_dura,
                     QString::number(m_test_params->expo_param_block.expo_cool_dura_ms / 1000),
-                    gs_str_dura_unit_s);
+                    g_str_dura_unit_s);
             }
             else
             {
@@ -1370,12 +1371,12 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
                     arg(gs_str_cool_dura,
                         QString::number(m_test_params->expo_param_block.expo_cool_dura_factor),
                         g_str_time_bei,
-                        gs_str_expo_dura);
+                        g_str_expo_dura);
             }
             info_str += (g_sys_configs_block.extra_cool_time_ms > 0) ?
                         (QString("+(")
                          + QString::number(g_sys_configs_block.extra_cool_time_ms / 1000.0)
-                         + gs_str_dura_unit_s + gs_str_extra_cool_dura + ")") : "";
+                         + g_str_dura_unit_s + gs_str_extra_cool_dura + ")") : "";
             info_str += "\n";
 
             info_str += QString(gs_info_str_seperator) + "\n";
@@ -1400,7 +1401,7 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
             info_str += QString("%1:%2%3").
                 arg(gs_str_cool_dura,
                     QString::number(m_test_params->expo_param_block.expo_cool_dura_ms / 1000),
-                    gs_str_dura_unit_s);
+                    g_str_dura_unit_s);
         }
         else
         {
@@ -1408,12 +1409,12 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
                 arg(gs_str_cool_dura,
                     QString::number(m_test_params->expo_param_block.expo_cool_dura_factor),
                     g_str_time_bei,
-                    gs_str_expo_dura);
+                    g_str_expo_dura);
         }
         info_str += (g_sys_configs_block.extra_cool_time_ms > 0) ?
                     (QString("+(")
                      + QString::number((g_sys_configs_block.extra_cool_time_ms) / 1000.0)
-                     + gs_str_dura_unit_s + gs_str_extra_cool_dura + ")") : "";
+                     + g_str_dura_unit_s + gs_str_extra_cool_dura + ")") : "";
         info_str += "\n";
         info_str += QString(gs_info_str_seperator) + "\n";
     }

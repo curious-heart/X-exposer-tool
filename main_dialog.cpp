@@ -181,9 +181,17 @@ Dialog::Dialog(QWidget *parent)
     , m_hv_tester(this)
     , m_cfg_recorder(this), m_key_filter(this, this)
 {
+    QString ret_str;
+    bool ret;
+
     ui->setupUi(this);
 
-    fill_sys_configs();
+    ret = fill_sys_configs(&ret_str);
+    if(!ret)
+    {
+        QMessageBox::critical(this, "", ret_str);
+        return;
+    }
 
     m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params,
                                                             &m_cfg_recorder,
@@ -285,6 +293,8 @@ Dialog::Dialog(QWidget *parent)
     installEventFilter(&m_key_filter);
 
     set_man_test_grp_visible(m_test_params.test_mode);
+
+    m_init_ok = true;
 }
 
 Dialog::~Dialog()

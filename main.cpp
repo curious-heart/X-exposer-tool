@@ -21,6 +21,8 @@ int main(int argc, char *argv[])
     }
 
     Dialog w;
+    if(!w.m_init_ok) return -1;
+
     QThread th;
     int ret;
 

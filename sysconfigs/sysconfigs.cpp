@@ -29,6 +29,16 @@ static const char* gs_ini_key_test_time_stat_grain_sec = "test_time_stat_grain_s
 static const char* gs_ini_key_mb_cube_current_intf_unit = "mb_cube_current_intf_unit";
 static const char* gs_ini_key_mb_dura_intf_unit = "mb_dura_intf_unit";
 
+extern const char* g_str_cube_volt;
+extern const char* g_str_cube_current;
+extern const char* g_str_expo_dura;
+extern const char* g_str_volt_unit_kv;
+extern const char* g_str_current_unit_ma;
+extern const char* g_str_current_unit_ua;
+extern const char* g_str_dura_unit_min;
+extern const char* g_str_dura_unit_s;
+extern const char* g_str_dura_unit_ms;
+
 sys_configs_struct_t g_sys_configs_block;
 
 static const int gs_def_log_level = LOG_ERROR;
@@ -48,6 +58,8 @@ static const int gs_def_mb_err_retry_wait_ms = 1000;
 static const int gs_def_mb_reconnect_wait_sep_ms = 1000;
 static const int gs_def_test_time_stat_grain_sec = 3;
 static const int gs_def_mb_one_cmd_round_time_ms = 150;
+
+static const char* gs_cfg_param_limit_error = "参数门限配置错误，请检查！";
 
 static const mb_cube_current_intf_unit_e_t gs_def_mb_cube_current_intf_unit = MB_CUBE_CURRENT_INTF_UNIT_UA;
 static const mb_dura_intf_unit_e_t gs_def_mb_dura_intf_unit = MB_DURA_INTF_UNIT_MS;
@@ -83,9 +95,10 @@ static RangeChecker<float> gs_cfg_file_value_gt0_float_ranger(0, 0, "",
 #define END_INT_RANGE_CHECK \
 }
 
-void fill_sys_configs()
+bool fill_sys_configs(QString * ret_str_ptr)
 {
-
+    bool ret = true;
+    QString ret_str;
     QSettings settings(gs_sysconfigs_file_fpn, QSettings::IniFormat);
 
     /*--------------------*/
@@ -171,4 +184,29 @@ void fill_sys_configs()
     END_INT_RANGE_CHECK
 
     settings.endGroup();
+
+    /*check the validation of config parameters.*/
+#define CHECK_LIMIT(l_name, min_l, max_l, unit_str) \
+    if(min_l > max_l)\
+    {\
+        ret = false;\
+        ret_str += QString("\n") + \
+                   l_name + " [" + QString::number(min_l) + ", " + QString::number(max_l) + "] " +\
+                   unit_str;\
+    }
+
+    ret_str = QString(gs_cfg_param_limit_error) + "\n";
+    CHECK_LIMIT(g_str_cube_volt,
+                g_sys_configs_block.cube_volt_kv_min, g_sys_configs_block.cube_volt_kv_max,
+                g_str_volt_unit_kv)
+    CHECK_LIMIT(g_str_cube_current,
+                g_sys_configs_block.cube_current_ma_min, g_sys_configs_block.cube_current_ma_max,
+                g_str_current_unit_ma)
+    CHECK_LIMIT(g_str_expo_dura,
+                (g_sys_configs_block.dura_ms_min/1000), (g_sys_configs_block.dura_ms_max/1000),
+                g_str_dura_unit_s)
+
+    if(ret_str_ptr) *ret_str_ptr = ret_str;
+    return ret;
+#undef CHECK_LIMIT
 }

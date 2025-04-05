@@ -1,6 +1,8 @@
 ﻿#ifndef SYSCONFIGS_H
 #define SYSCONFIGS_H
 
+#include <QString>
+
 typedef enum
 {
     MB_CUBE_CURRENT_INTF_UNIT_UA = 0,
@@ -38,6 +40,6 @@ typedef struct
 
 extern sys_configs_struct_t g_sys_configs_block;
 
-void fill_sys_configs();
+bool fill_sys_configs(QString *);
 
 #endif // SYSCONFIGS_H
