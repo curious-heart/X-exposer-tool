@@ -712,9 +712,9 @@ void append_str_with_color_and_weight(QTextEdit* ctrl, QString str,
     ctrl->setCurrentFont(new_font);
     ctrl->append(str);
 
-    RESTORE_DEF_COLOR_FONT(ctrl);
-
     ctrl->moveCursor(QTextCursor::End);
+
+    RESTORE_DEF_COLOR_FONT(ctrl);
 }
 
 void append_line_with_styles(QTextEdit* ctrl, str_line_with_styles_t &style_line)

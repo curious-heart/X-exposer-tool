@@ -61,6 +61,14 @@ static const hv_mb_reg_e_t gs_judge_result_disp_reg[] =
 {VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter, EXT_MB_REG_DISTANCE, State,
  ExposureStatus};
 
+static QColor gs_log_lvl_fonts_arr[] =
+{
+    Qt::gray, //DEBUG, gray
+    Qt::black, //INFO, black
+    QColor(255, 128, 0), //WARNING, orange
+    Qt::red, //ERROR, red
+};
+
 /*
  * The following vars MUST be defined in function using the following macros.
  *
@@ -189,15 +197,31 @@ Dialog::Dialog(QWidget *parent)
         return;
     }
 
-    m_testParamSettingsDialog->collect_test_params();
+    QString param_collet_ret_str;
+    m_txt_def_color = ui->testParamDisplayTxt->textColor();
+    ui->testParamDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
+    param_collet_ret_str = m_testParamSettingsDialog->collect_test_params();
     if(m_test_params.valid)
     {
         ui->testParamDisplayTxt->setText(m_test_params.info_str);
     }
-    m_hvConnSettingsDialog->collect_conn_params();
+    else
+    {
+        append_str_with_color_and_weight(ui->testParamDisplayTxt, param_collet_ret_str,
+                                         gs_log_lvl_fonts_arr[LOG_ERROR]);
+    }
+
+    m_txt_def_color = ui->hvConnParamDisplayTxt->textColor();
+    ui->hvConnParamDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
+    param_collet_ret_str = m_hvConnSettingsDialog->collect_conn_params();
     if(m_hv_conn_params.valid)
     {
         ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
+    }
+    else
+    {
+        append_str_with_color_and_weight(ui->hvConnParamDisplayTxt, param_collet_ret_str,
+                                         gs_log_lvl_fonts_arr[LOG_ERROR]);
     }
     select_modbus_device();
 
@@ -655,14 +679,6 @@ void Dialog::on_stopTestBtn_clicked()
 void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
                                        bool always_rec, QColor set_color, int set_font_w )
 {
-    static QColor log_lvl_fonts_arr[] =
-    {
-        Qt::gray, //DEBUG, gray
-        Qt::black, //INFO, black
-        QColor(255, 128, 0), //WARNING, orange
-        Qt::red, //ERROR, red
-    };
-
     QColor text_color;
     int text_font_w;
     QString line(common_tool_get_curr_date_str() + ","
@@ -676,7 +692,7 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
     }
 
     lvl = VALID_LOG_LVL(lvl) ? lvl : LOG_ERROR;
-    text_color = set_color.isValid() ? set_color : log_lvl_fonts_arr[lvl];
+    text_color = set_color.isValid() ? set_color : gs_log_lvl_fonts_arr[lvl];
     text_font_w = (set_font_w > 0) ? set_font_w : m_txt_def_font.weight();
 
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, line, text_color, text_font_w);
