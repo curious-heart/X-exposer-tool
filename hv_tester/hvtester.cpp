@@ -554,6 +554,26 @@ void HVTester::go_test_sig_handler()
     }
 }
 
+quint16 HVTester::get_start_expo_cmd_from_test_method()
+{
+    if(hv_test_params && hv_test_params->valid)
+    {
+        switch(hv_test_params->test_content)
+        {
+        case TEST_CONTENT_NORMAL:
+            return START_EXPO_DATA;
+        case TEST_CONTENT_COOL_HV:
+            return START_EXPO_DATA_COOL_HV;
+        default: //TEST_CONTENT_ONLY_COIL:
+            return START_EXPO_DATA_ONLY_COIL;
+        }
+    }
+    else
+    {
+        return START_EXPO_DATA;
+    }
+}
+
 void HVTester::construct_mb_du(tester_op_enum_t op, QModbusDataUnit &mb_du)
 {
     QVector<quint16> mb_reg_vals;
@@ -563,8 +583,10 @@ void HVTester::construct_mb_du(tester_op_enum_t op, QModbusDataUnit &mb_du)
     {
         case TEST_OP_SET_EXPO_TRIPLE:
             mb_reg_vals.append((quint16)(hv_curr_expo_param_triple.cube_volt_kv));
-            mb_reg_vals.append((quint16)(1000* hv_curr_expo_param_triple.cube_current_ma));
-            mb_reg_vals.append((quint16)(hv_curr_expo_param_triple.dura_ms));
+            mb_reg_vals.append((quint16)(hv_test_params->expo_param_block.sw_to_mb_current_factor
+                                         * hv_curr_expo_param_triple.cube_current_ma));
+            mb_reg_vals.append((quint16)(hv_test_params->expo_param_block.sw_to_mb_dura_factor
+                                         * hv_curr_expo_param_triple.dura_ms));
 
             reg_val_map.insert(VoltSet, mb_reg_vals.at(0));
             reg_val_map.insert(FilamentSet, mb_reg_vals.at(1));
@@ -577,7 +599,7 @@ void HVTester::construct_mb_du(tester_op_enum_t op, QModbusDataUnit &mb_du)
             break;
 
         case TEST_OP_START_EXPO:
-            mb_reg_vals.append(START_EXPO_DATA);
+            mb_reg_vals.append(get_start_expo_cmd_from_test_method());
             mb_du.setStartAddress(ExposureStart);
             mb_du.setValues(mb_reg_vals);
             break;

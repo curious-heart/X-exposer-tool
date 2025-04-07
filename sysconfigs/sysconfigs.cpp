@@ -31,6 +31,7 @@ static const char* gs_ini_key_test_time_stat_grain_sec = "test_time_stat_grain_s
 
 static const char* gs_ini_key_mb_cube_current_intf_unit = "mb_cube_current_intf_unit";
 static const char* gs_ini_key_mb_dura_intf_unit = "mb_dura_intf_unit";
+static const char* gs_ini_key_hidden_ui_mb_dura_unit = "hidden_ui_mb_dura_unit";
 
 extern const char* g_str_cube_volt;
 extern const char* g_str_cube_current;
@@ -41,6 +42,7 @@ extern const char* g_str_current_unit_ua;
 extern const char* g_str_dura_unit_min;
 extern const char* g_str_dura_unit_s;
 extern const char* g_str_dura_unit_ms;
+extern const char* g_str_and;
 
 sys_configs_struct_t g_sys_configs_block;
 
@@ -62,14 +64,18 @@ static const int gs_def_mb_reconnect_wait_sep_ms = 1000;
 static const int gs_def_test_time_stat_grain_sec = 3;
 static const int gs_def_mb_one_cmd_round_time_ms = 150;
 
-static const char* gs_str_cfg_param_limit_error = "参数门限配置错误，请检查！";
-static const char* gs_str_cube_current_intf_unit_err = "管电流接口单位配置错误，请检查！";
-static const char* gs_str_dura_intf_unit_err = "管电流接口单位配置错误，请检查！";
+static const char* gs_str_cfg_param_limit_error = "参数门限配置错误";
+static const char* gs_str_plz_check = "请检查！";
+static const char* gs_str_mb_intf_unit = "接口单位";
+static const char* gs_str_mb_intf_unit_error = "接口单位配置错误";
 static const char* gs_str_should_be_one_val_of = "应为如下值之一：";
 static const char* gs_str_actual_val = "实际值";
+static const char* gs_str_hidden_ui_mb_dura_unit = "GUI隐藏的曝光时间单位选项";
+static const char* gs_str_cannot_be_the_same = "不能相等";
 
 static const mb_cube_current_unit_e_t gs_def_mb_cube_current_intf_unit = MB_CUBE_CURRENT_UNIT_UA;
 static const mb_dura_unit_e_t gs_def_mb_dura_intf_unit = MB_DURA_UNIT_MS;
+static const mb_dura_unit_e_t gs_def_hidden_ui_mb_dura_unit = MB_DURA_UNIT_MIN;
 
 static RangeChecker<int> gs_cfg_file_log_level_ranger((int)LOG_DEBUG, (int)LOG_ERROR, "",
                      EDGE_INCLUDED, EDGE_INCLUDED);
@@ -105,7 +111,7 @@ static RangeChecker<float> gs_cfg_file_value_gt0_float_ranger(0, 0, "",
 bool fill_sys_configs(QString * ret_str_ptr)
 {
     bool ret = true, cfg_ret;
-    QString ret_str, cfg_ret_str;
+    QString ret_str;
     QSettings settings(gs_sysconfigs_file_fpn, QSettings::IniFormat);
 
     /*--------------------*/
@@ -174,21 +180,20 @@ bool fill_sys_configs(QString * ret_str_ptr)
                    g_sys_configs_block.mb_one_cmd_round_time_ms, gs_def_mb_one_cmd_round_time_ms,
                            1, &gs_cfg_file_value_ge0_int_ranger);
 
-    BEGIN_INT_RANGE_CHECK(MB_CUBE_CURRENT_UNIT_UA, MB_CUBE_CURRENT_UNIT_MA,
-                          EDGE_INCLUDED, EDGE_INCLUDED)
-        GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_cube_current_intf_unit, toInt,
-                               g_sys_configs_block.mb_cube_current_intf_unit,
-                               gs_def_mb_cube_current_intf_unit,
-                               1, (RangeChecker<int>*)0, (mb_cube_current_unit_e_t));
-    END_INT_RANGE_CHECK
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_cube_current_intf_unit, toInt,
+                           g_sys_configs_block.mb_cube_current_intf_unit,
+                           gs_def_mb_cube_current_intf_unit,
+                           1, (RangeChecker<int>*)0, (mb_cube_current_unit_e_t));
 
-    BEGIN_INT_RANGE_CHECK(MB_DURA_UNIT_MS, MB_DURA_UNIT_MIN, EDGE_INCLUDED, EDGE_INCLUDED)
-        GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_dura_intf_unit, toInt,
-                               g_sys_configs_block.mb_dura_intf_unit,
-                               gs_def_mb_dura_intf_unit,
-                               1, (RangeChecker<int>*)0, (mb_dura_unit_e_t));
-    END_INT_RANGE_CHECK
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_dura_intf_unit, toInt,
+                           g_sys_configs_block.mb_dura_intf_unit,
+                           gs_def_mb_dura_intf_unit,
+                           1, (RangeChecker<int>*)0, (mb_dura_unit_e_t));
 
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_hidden_ui_mb_dura_unit, toInt,
+                           g_sys_configs_block.hidden_ui_mb_dura_unit,
+                           gs_def_hidden_ui_mb_dura_unit,
+                           1, (RangeChecker<int>*)0, (mb_dura_unit_e_t));
     settings.endGroup();
 
     /*check the validation of config parameters.*/
@@ -216,7 +221,7 @@ bool fill_sys_configs(QString * ret_str_ptr)
                 (g_sys_configs_block.dura_ms_min/1000), (g_sys_configs_block.dura_ms_max/1000),
                 &gs_cfg_file_value_gt0_float_ranger, g_str_dura_unit_s)
 
-    if(!ret)  ret_str = QString(gs_str_cfg_param_limit_error) + "\n" + ret_str;
+    if(!ret)  ret_str = QString(gs_str_cfg_param_limit_error) + "," + gs_str_plz_check + "\n" + ret_str;
 #undef CHECK_LIMIT_RANGE
 
 #define CHECK_ENUM(title_str, e_v, e_set, str_func) \
@@ -235,14 +240,30 @@ bool fill_sys_configs(QString * ret_str_ptr)
 
     QSet<mb_cube_current_unit_e_t> cube_current_unit_set;
     cube_current_unit_set MB_CUBE_CURRENT_UNIT_E;
-    CHECK_ENUM(gs_str_cube_current_intf_unit_err, g_sys_configs_block.mb_cube_current_intf_unit,
+    CHECK_ENUM((QString(g_str_cube_current) + gs_str_mb_intf_unit_error + "," + gs_str_plz_check),
+               g_sys_configs_block.mb_cube_current_intf_unit,
                cube_current_unit_set, QString::number)
 
     QSet<mb_dura_unit_e_t> dura_unit_set;
     dura_unit_set MB_DURA_UNIT_E;
-    CHECK_ENUM(gs_str_dura_intf_unit_err, g_sys_configs_block.mb_dura_intf_unit,
+    CHECK_ENUM((QString(g_str_expo_dura) + gs_str_mb_intf_unit_error + "," + gs_str_plz_check),
+               g_sys_configs_block.mb_dura_intf_unit,
+               dura_unit_set, QString::number)
+    CHECK_ENUM((QString(gs_str_hidden_ui_mb_dura_unit) + gs_str_mb_intf_unit_error + "," + gs_str_plz_check),
+               g_sys_configs_block.hidden_ui_mb_dura_unit,
                dura_unit_set, QString::number)
 #undef CHECK_ENMU
+
+    if(ret)
+    {
+        if(g_sys_configs_block.hidden_ui_mb_dura_unit == g_sys_configs_block.mb_dura_intf_unit)
+        {
+            ret = false;
+            ret_str = QString(g_str_expo_dura) + gs_str_mb_intf_unit
+                    + " " + g_str_and + " "
+                    + gs_str_hidden_ui_mb_dura_unit + " " + gs_str_cannot_be_the_same;
+        }
+    }
 
     if(ret_str_ptr) *ret_str_ptr = ret_str;
     return ret;

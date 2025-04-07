@@ -109,6 +109,7 @@ private:
     void post_test_info_message(LOG_LEVEL lvl, QString msg,
                                bool always_rec = false,
                                QColor set_color = QColor(), int set_font_w = -1);
+    quint16 get_start_expo_cmd_from_test_method();
 
 public slots:
     /*user signal handler.*/

@@ -38,6 +38,13 @@ typedef struct
 }judge_ctrl_labels_s_t;
 typedef QMap<QWidget*, judge_ctrl_labels_s_t> judge_ctrl_desc_map_t;
 
+typedef enum
+{
+    EXPO_PARAMS_UI_TO_SW,
+    EXPO_PARAMS_FILE_TO_SW,
+    EXPO_PARAMS_SW_TO_MB_INTF,
+}expo_params_trans_factor_e_t;
+
 class testParamSettingsDialog : public QDialog
 {
     Q_OBJECT
@@ -107,8 +114,7 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
 */
 
     Ui::testParamSettingsDialog *ui;
-    QButtonGroup *m_expoDuraUnitBtnGrp, *m_coolDuraModeBtnGrp, *m_testContentBtnGrp,
-                 *m_cubeCurrentUnitBtnGrp;
+    QButtonGroup *m_expoDuraUnitBtnGrp, *m_coolDuraModeBtnGrp, *m_testContentBtnGrp;
     QVector<test_params_ctrls_ability_struct_t> m_test_params_ctrls_abilities;
 
     test_params_struct_t * m_test_params;
@@ -143,6 +149,12 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     void refresh_judge_ctrls_display();
     bool construct_judge_params(QString &err_str, QString &info_str);
 
+    void arrange_ui_according_to_cfgs();
+    test_content_enum_t get_test_content(QString *content_str);
+    float cube_current_trans_factor(expo_params_trans_factor_e_t trans, QString *unit_str = nullptr,
+                                    QString file_unit_str = "");
+    float expo_dura_trans_factor(expo_params_trans_factor_e_t trans, QString *unit_str = nullptr,
+                                 QString file_unit_str = "");
 public:
     QString collect_test_params();
 };

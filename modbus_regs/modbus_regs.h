@@ -46,6 +46,8 @@
 #define C(a) a
 typedef enum MB_REG_ENUM hv_mb_reg_e_t;
 #define START_EXPO_DATA 2
+#define START_EXPO_DATA_COOL_HV 3
+#define START_EXPO_DATA_ONLY_COIL 4
 
 #define NORMAL_MB_REG_ADDR(addr) (HSV <= (addr) && (addr) < MAX_HV_NORMAL_MB_REG_NUM)
 #define EXTEND_MB_REG_ADDR(addr) (EXT_MB_REG_START_FLAG < (addr) && (addr) < HV_MB_REG_END_FLAG)

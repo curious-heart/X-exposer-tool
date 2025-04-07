@@ -48,6 +48,7 @@ typedef struct expo_params_struct
     int expo_cnt;
     bool fixed_cool_dura;
     float expo_cool_dura_ms, expo_cool_dura_factor;
+    float sw_to_mb_current_factor, sw_to_mb_dura_factor;
 }expo_params_struct_t;
 
 typedef struct

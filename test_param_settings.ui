@@ -359,24 +359,7 @@
               <item>
                <widget class="QLabel" name="cubeCurrentLbl">
                 <property name="text">
-                 <string>管电流</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QRadioButton" name="cubeCurrentUnituARButton">
-                <property name="text">
-                 <string>uA</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QRadioButton" name="cubeCurrentUnitmARButton">
-                <property name="text">
-                 <string>mA</string>
+                 <string>管电流（mA）</string>
                 </property>
                </widget>
               </item>
