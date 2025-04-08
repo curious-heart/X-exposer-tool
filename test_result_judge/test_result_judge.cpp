@@ -85,7 +85,8 @@ void TestResultJudge::clear_judge_result_disp_items()
 }
 
 void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
-                   mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str)
+                   mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str,
+                                    bool only_judge)
 {
     float val, ref_val, low_limit, up_limit;
     QString bad_str;
@@ -154,7 +155,7 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
         bad_val_list.append({m_judge_list[idx].ref_reg_no, m_judge_list[idx].val_reg_no, e_result});
     }
 
-    if(bad_str.isEmpty())
+    if(bad_str.isEmpty() || only_judge)
     {
         /*No bad value.*/
         return;

@@ -124,7 +124,7 @@ signals:
                                bool always_rec = false,
                                QColor set_color = QColor(), int set_font_w = -1);
     void rec_mb_regs_sig(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
-                         int loop_idx, int round_idx);
+                         int loop_idx, int round_idx, bool proc_monitor = false);
     void test_complete_sig(tester_end_code_enum_t code);
 
     /* now we do not use this signal. tester just retry and retry, and main_dialog matain the

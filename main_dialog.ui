@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>685</width>
+    <width>804</width>
     <height>536</height>
    </rect>
   </property>
@@ -97,20 +97,17 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="QPushButton" name="dsoSetBtn">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
+        <widget class="QLabel" name="label">
          <property name="text">
-          <string>示波器设置</string>
+          <string>测试过程监控</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QTextEdit" name="dsoParamDisplayTxt">
+        <widget class="QTextEdit" name="testProcMonitorTxtEdit">
          <property name="readOnly">
           <bool>true</bool>
          </property>

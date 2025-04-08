@@ -24,6 +24,7 @@ static const char* gs_str_test_complete = "测试完成";
 static const char* gs_str_test_abort_by_user = "用户中止测试";
 static const char* gs_str_test_end_exception = "测试异常中止";
 static const char* gs_str_sep_line = "========================================";
+static const char* gs_str_sep_short_line = "=================";
 
 static const char* gs_str_test_rec_name_sufx = "曝光测试结果";
 static const char* gs_str_test_rec_file_type = ".csv";
@@ -57,6 +58,12 @@ const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
     State, ExposureStatus, BatteryLevel, BatteryVoltmeter, OilBoxTemperature,
     Workstatus, exposureCount,
 };
+
+const hv_mb_reg_e_t Dialog::m_test_proc_monitor_regs[] =
+{
+    Voltmeter, Ammeter, State, ExposureStatus,
+};
+
 static const hv_mb_reg_e_t gs_judge_result_disp_reg[] =
 {VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter, EXT_MB_REG_DISTANCE, State,
  ExposureStatus};
@@ -285,6 +292,11 @@ Dialog::Dialog(QWidget *parent)
     connect(this, &Dialog::refresh_time_stat_display_sig,
             this, &Dialog::refresh_time_stat_display, Qt::QueuedConnection);
 
+    connect(&m_test_proc_monitor_timer, &QTimer::timeout,
+            this, &Dialog::test_proc_report_timer_sig_handler, Qt::QueuedConnection);
+    connect(this, &Dialog::get_test_proc_st_sig,
+            this, &Dialog::get_test_proc_st_sig_handler, Qt::QueuedConnection);
+
     m_txt_def_color = ui->testInfoDisplayTxt->textColor();
     ui->testInfoDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
     m_txt_def_font = ui->testInfoDisplayTxt->currentFont();
@@ -374,7 +386,6 @@ void Dialog::refresh_butoons()
     ui->hvConnSetBtn->setEnabled((QModbusDevice::UnconnectedState == m_modbus_state)
                                  && !m_testing);
     ui->testParamSetBtn->setEnabled(!m_testing);
-    ui->dsoSetBtn->setEnabled(!m_dso_connected && !m_testing);
     ui->hvConnBtn->setEnabled((QModbusDevice::UnconnectedState == m_modbus_state) && !m_testing);
     ui->hvDisconnBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
 
@@ -691,6 +702,7 @@ void Dialog::on_startTestBtn_clicked()
     refresh_time_stat_display(true, true);
 
     m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
+    m_test_proc_monitor_timer.start(g_sys_configs_block.test_proc_monitor_period_ms);
 }
 
 void Dialog::on_stopTestBtn_clicked()
@@ -762,7 +774,7 @@ void Dialog::map_judge_result_to_style(judge_result_e_t judge_result, str_with_s
 }
 
 void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
-                                 int loop_idx, int round_idx)
+                                 int loop_idx, int round_idx, bool proc_monitor)
 {
     if(!m_testing)
     {
@@ -774,9 +786,12 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     hv_mb_reg_e_t reg_no;
     QString disp_prefix_str(common_tool_get_curr_date_str() + ","
                  + common_tool_get_curr_time_str() + ",");
-    disp_prefix_str += QString("%1%2%3%4%5%6,").
-            arg(g_str_the_line_pron, QString::number(loop_idx), g_str_loop,
-                g_str_the_line_pron, QString::number(round_idx), g_str_time_ci);
+    if(!proc_monitor)
+    {
+        disp_prefix_str += QString("%1%2%3%4%5%6,").
+                arg(g_str_the_line_pron, QString::number(loop_idx), g_str_loop,
+                    g_str_the_line_pron, QString::number(round_idx), g_str_time_ci);
+    }
 
     QString line;
 
@@ -817,6 +832,9 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         }
     }
 
+    const hv_mb_reg_e_t * disp_reg_arr = proc_monitor ?
+                                        m_test_proc_monitor_regs : m_mbregs_to_record;
+    int disp_reg_arr_cnt = proc_monitor ? ARRAY_COUNT(m_test_proc_monitor_regs) : ARRAY_COUNT(m_mbregs_to_record);
     QString val_str;
     str_line_with_styles_t style_line;
     str_with_style_s_t style_str,
@@ -824,9 +842,9 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     str_with_style_s_t style_comma = {",", m_txt_def_color, m_txt_def_font.weight()};
     style_line.append(last_style);
     idx = 0;
-    while(idx < ARRAY_COUNT(m_mbregs_to_record))
+    while(idx < disp_reg_arr_cnt)
     {
-        reg_no = m_mbregs_to_record[idx];
+        reg_no = disp_reg_arr[idx];
         base = (State == reg_no) ? 2 : 10;
         val_str = QString::number(reg_val_map.value(reg_no), base);
         line += val_str + ",";
@@ -853,8 +871,15 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
             last_style.color = style_str.color; last_style.weight = style_str.weight;
         }
     }
-    REC_INFO_IN_FILE(line << "\n");
-    append_line_with_styles(ui->testInfoDisplayTxt, style_line);
+    if(proc_monitor)
+    {
+        append_line_with_styles(ui->testProcMonitorTxtEdit, style_line);
+    }
+    else
+    {
+        REC_INFO_IN_FILE(line << "\n");
+        append_line_with_styles(ui->testInfoDisplayTxt, style_line);
+    }
 
     style_line.clear();
     /*
@@ -970,6 +995,9 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 
     reset_internal_flags();
     refresh_butoons();
+
+    m_test_proc_monitor_timer.stop();
+    ui->testProcMonitorTxtEdit->append(gs_str_sep_short_line);
 }
 
 void Dialog::mb_op_err_req_reconnect_sig_handler()
@@ -1038,12 +1066,12 @@ void Dialog::time_stat_timer_sig_handler()
     emit refresh_time_stat_display_sig();
 }
 
+
 void Dialog::on_Dialog_finished(int /*result*/)
 {
     modbus_disconnect();
     m_cfg_recorder.record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
 }
-
 
 void Dialog::on_pauseTestBtn_clicked()
 {
@@ -1097,5 +1125,74 @@ void Dialog::on_manTestSettingBtn_clicked()
     else
     {
         ui->testParamDisplayTxt->setText(m_test_params.info_str);
+    }
+}
+
+void Dialog::test_proc_report_timer_sig_handler()
+{
+    emit get_test_proc_st_sig();
+}
+
+void Dialog::mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finished_sig_handler)(),
+                              bool sync)
+{
+    QString err_msg_hdr = "Read registers during test proc monitor error:";
+    mb_reg_val_map_t regs_read_result;
+
+    if(!mb_reply)
+    {
+        DIY_LOG(LOG_ERROR, err_msg_hdr + " mb reply is null!");
+        return;
+    }
+
+    if(!sync || mb_reply->isFinished())
+    {
+        if(QModbusDevice::NoError != mb_reply->error())
+        {
+            DIY_LOG(LOG_ERROR, err_msg_hdr + " " + mb_reply->errorString());
+            return;
+        }
+        QModbusDataUnit rb_du = mb_reply->result();
+        if(!rb_du.isValid())
+        {
+            DIY_LOG(LOG_ERROR, err_msg_hdr + " reply du is not valid.");
+            return;
+        }
+        int st_addr = rb_du.startAddress(), idx = 0, cnt = rb_du.valueCount();
+        for(; idx < cnt; ++idx)
+        {
+            regs_read_result.insert(hv_mb_reg_e_t(st_addr + idx), rb_du.value(idx));
+        }
+        rec_mb_regs_sig_handler(TEST_OP_READ_REGS, regs_read_result, 0, 0, true);
+    }
+    else
+    {//sync op, and not finished.
+        connect(mb_reply, &QModbusReply::finished,
+                this, finished_sig_handler, Qt::QueuedConnection);
+        connect(mb_reply, &QModbusReply::errorOccurred,
+                    this, &Dialog::modbus_error_sig_handler, Qt::QueuedConnection);
+    }
+}
+
+void Dialog::get_test_proc_st_sig_handler()
+{
+    QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
+    QModbusReply *mb_reply;
+
+    if(m_test_paused) return;
+
+    mb_du.setStartAddress(HSV);
+    mb_du.setValueCount(MAX_HV_NORMAL_MB_REG_NUM);
+    mb_reply = m_modbus_device->sendReadRequest(mb_du, m_hv_conn_params.srvr_address);
+    mb_rw_reply_received(mb_reply, &Dialog::modbus_op_finished_sig_handler, true);
+}
+
+void Dialog::modbus_op_finished_sig_handler()
+{
+    QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
+    mb_rw_reply_received(mb_reply, nullptr, false);
+    if(mb_reply)
+    {
+        mb_reply->deleteLater();
     }
 }

@@ -52,7 +52,7 @@ private:
     QString m_curr_rec_folder_name, m_curr_rec_file_name;
     QFile m_curr_rec_file;
     QTextStream m_curr_txt_stream;
-    static const hv_mb_reg_e_t m_mbregs_to_record[];
+    static const hv_mb_reg_e_t m_mbregs_to_record[], m_test_proc_monitor_regs[];
     QColor m_txt_def_color;
     QFont m_txt_def_font;
 
@@ -69,12 +69,16 @@ private:
 
     void record_header();
 
+    void mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finished_sig_handler)(),
+                              bool sync);
+
     QTimer m_reconn_wait_timer;
 
     QDateTime m_test_start_time, m_pause_dura_check_point;
     int m_pause_cnt = 0, m_pause_dura_ms = 0, m_act_test_dura_ms = 0;
     int m_expt_test_dura_ms = 0, m_expt_test_remain_dura_ms = 0;
     QTimer m_time_stat_timer; //this is a periodical timer.
+    QTimer m_test_proc_monitor_timer;//this is a periodical timer.
     void refresh_time_stat_display(bool total_dura = false, bool start_test = false,
                                    bool pause_resumed = false);
 
@@ -92,6 +96,7 @@ private:
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
     void modbus_state_changed_sig_handler(QModbusDevice::State state);
+    void modbus_op_finished_sig_handler();
     void on_hvConnBtn_clicked();
     void on_hvDisconnBtn_clicked();
     void on_startTestBtn_clicked();
@@ -101,7 +106,7 @@ private slots:
                                        bool always_rec = false,
                                        QColor set_color = QColor(), int set_font_w = -1);
     void rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
-                                 int loop_idx, int round_idx);
+                                 int loop_idx, int round_idx, bool proc_moniter = false);
     void test_complete_sig_hanler(tester_end_code_enum_t code);
     void mb_op_err_req_reconnect_sig_handler();
 
@@ -122,6 +127,9 @@ private slots:
 
     void on_manTestSettingBtn_clicked();
 
+    void test_proc_report_timer_sig_handler();
+    void get_test_proc_st_sig_handler();
+
 signals:
     void go_test_sig();
     void stop_test_sig(tester_end_code_enum_t code);
@@ -132,5 +140,6 @@ signals:
     void auto_reconnect_sig();
     void refresh_time_stat_display_sig(bool total_dura = false, bool start_test = false,
                                        bool from_timer = false);
+    void get_test_proc_st_sig();
 };
 #endif // DIALOG_H

@@ -42,6 +42,8 @@ typedef struct
 
     mb_cube_current_unit_e_t mb_cube_current_intf_unit;
     mb_dura_unit_e_t mb_dura_intf_unit, hidden_ui_mb_dura_unit;
+
+    int test_proc_monitor_period_ms;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

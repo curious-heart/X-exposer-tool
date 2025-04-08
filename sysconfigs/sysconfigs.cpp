@@ -265,6 +265,8 @@ bool fill_sys_configs(QString * ret_str_ptr)
         }
     }
 
+    g_sys_configs_block.test_proc_monitor_period_ms = 50;
+
     if(ret_str_ptr) *ret_str_ptr = ret_str;
     return ret;
 }

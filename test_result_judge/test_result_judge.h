@@ -70,7 +70,8 @@ public:
      * result_disp_prefix_str: in. for judge result display.
      */
     void judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
-                   mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str);
+                   mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str,
+                       bool only_judge = false);
 
     const QStringList & get_judge_result_strs();
     void get_result_disp_header_str(QString &header_str);
