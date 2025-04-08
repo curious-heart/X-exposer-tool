@@ -130,7 +130,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="manTestcubeVoltSpin"/>
+      <widget class="QSpinBox" name="manTestcubeVoltSpin">
+       <property name="maximum">
+        <number>999</number>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="manTestcubeVoltUnitLbl">
@@ -154,12 +158,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="manTestcubeCurrentDblspin"/>
-     </item>
-     <item>
-      <widget class="Line" name="line_2">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
+      <widget class="QDoubleSpinBox" name="manTestcubeCurrentDblspin">
+       <property name="maximum">
+        <double>2147483648.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -171,6 +172,13 @@
       </widget>
      </item>
      <item>
+      <widget class="Line" name="line_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QLabel" name="manTestexpoDuraLbl">
        <property name="text">
         <string>曝光时间</string>
@@ -178,7 +186,11 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="manTestexpoDuraDblspin"/>
+      <widget class="QDoubleSpinBox" name="manTestexpoDuraDblspin">
+       <property name="maximum">
+        <double>2147483648.000000000000000</double>
+       </property>
+      </widget>
      </item>
      <item>
       <widget class="QLabel" name="manTestexpoDuraUnitLbl">

@@ -173,6 +173,13 @@ void Dialog::set_man_test_grp_visible(test_mode_enum_t mode)
     ui->manTestSettingBtn->setVisible(visible);
     ui->line_3->setVisible(visible);
     ui->line_4->setVisible(visible);
+
+
+    if(visible)
+    {
+        m_testParamSettingsDialog->expo_params_ui_sync(EXPO_PARAMS_UI_SYNC_SET_DLG_TO_MAIN,
+                                                       &m_ui_sync_ctrls);
+    }
 }
 
 Dialog::Dialog(QWidget *parent)
@@ -185,6 +192,15 @@ Dialog::Dialog(QWidget *parent)
     bool ret;
 
     ui->setupUi(this);
+
+    m_ui_sync_ctrls =
+    {
+        /*.cube_volt_ctrl = */ui->manTestcubeVoltSpin,
+        /*.cube_current_ctrl = */ui->manTestcubeCurrentDblspin,
+        /*.expo_dura_ctrl = */ui->manTestexpoDuraDblspin,
+        /*.cube_current_unit = */ui->manTestcubeCurrentUnitLbl,
+        /*.expo_dura_unit = */ui->manTestexpoDuraUnitLbl,
+    };
 
     ret = fill_sys_configs(&ret_str);
     if(!ret)
@@ -1065,4 +1081,21 @@ void Dialog::on_pauseTestBtn_clicked()
 
     m_test_paused = pause_st;
     refresh_butoons();
+}
+
+void Dialog::on_manTestSettingBtn_clicked()
+{
+    bool check_ret;
+    QString check_info_str;
+
+    check_ret = m_testParamSettingsDialog->expo_params_ui_sync(EXPO_PARAMS_UI_SYNC_MAIN_TO_SET_DLG,
+                                                              &m_ui_sync_ctrls, &check_info_str);
+    if(!check_ret)
+    {
+        QMessageBox::critical(this, "", check_info_str);
+    }
+    else
+    {
+        ui->testParamDisplayTxt->setText(m_test_params.info_str);
+    }
 }

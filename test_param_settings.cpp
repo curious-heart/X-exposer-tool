@@ -137,6 +137,7 @@ const testParamSettingsDialog::test_mode_espair_struct_t
     {ui->coolDuraEdit->setWhatsThis(ui->timesCoolDuraRButton->text());}\
     ARRANGE_CTRLS_ABILITY(ui->expoDuraUnitmsRButton, true, true, true, false, false)\
     ARRANGE_CTRLS_ABILITY(ui->expoDuraUnitsecRButton, true, true, true, false, false)\
+    ARRANGE_CTRLS_ABILITY(ui->expoDuraUnitminRButton, true, true, true, false, false)\
     ARRANGE_CTRLS_ABILITY(ui->fixedCoolDuraRButton, false, true, true, true, true)\
     ARRANGE_CTRLS_ABILITY(ui->timesCoolDuraRButton, false, true, true, true, true)\
     ARRANGE_CTRLS_ABILITY(ui->limitShortestCoolDuraChBox, false, true, true, true, true)\
@@ -178,10 +179,12 @@ void testParamSettingsDialog::arrange_ui_according_to_cfgs()
     case MB_CUBE_CURRENT_UNIT_MA:
         ui->cubeCurrentLbl->setText(QString("%1（%2）").arg(g_str_cube_current,
                                                           g_str_current_unit_ma));
+        m_ui_cube_current_unit_str = g_str_current_unit_ma;
         break;
     default: //MB_CUBE_CURRENT_UNIT_UA:
         ui->cubeCurrentLbl->setText(QString("%1（%2）").arg(g_str_cube_current,
                                                           g_str_current_unit_ua));
+        m_ui_cube_current_unit_str = g_str_current_unit_ua;
         break;
     }
 }
@@ -205,6 +208,7 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     m_expoDuraUnitBtnGrp = new QButtonGroup(this);
     m_expoDuraUnitBtnGrp->addButton(ui->expoDuraUnitmsRButton);
     m_expoDuraUnitBtnGrp->addButton(ui->expoDuraUnitsecRButton);
+    m_expoDuraUnitBtnGrp->addButton(ui->expoDuraUnitminRButton);
 
     m_coolDuraModeBtnGrp = new QButtonGroup(this);
     m_coolDuraModeBtnGrp->addButton(ui->fixedCoolDuraRButton);
@@ -234,6 +238,8 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     m_rec_ui_cfg_fout.insert(ui->custExpoParamFileNoteEdit);
     if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this,
                                                           m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+
+    record_ui_expo_dura_unit_str();
 
     TEST_PARAMS_CTRLS_ABT_TBL;
 
@@ -463,6 +469,7 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
                            &m_expo_params_from_ui.vals.cube_current_ma_step,
                            m_expo_params_from_ui.err_msg_cube_current_step, new_unit_str);
     m_test_params->expo_param_block.sw_to_mb_current_factor = cube_current_trans_factor(EXPO_PARAMS_SW_TO_MB_INTF);
+    m_test_params->expo_param_block.ui_to_sw_current_factor = cube_current_trans_factor(EXPO_PARAMS_UI_TO_SW);
 
     factor = expo_dura_trans_factor(EXPO_PARAMS_UI_TO_SW, &new_unit_str);
     m_expo_params_from_ui.valid_expo_dura_start =
@@ -481,6 +488,7 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
                            &m_expo_params_from_ui.vals.expo_dura_ms_step,
                            m_expo_params_from_ui.err_msg_expo_dura_step);
     m_test_params->expo_param_block.sw_to_mb_dura_factor = expo_dura_trans_factor(EXPO_PARAMS_SW_TO_MB_INTF);
+    m_test_params->expo_param_block.ui_to_sw_dura_factor = expo_dura_trans_factor(EXPO_PARAMS_UI_TO_SW);
 
     m_expo_params_from_ui.valid_expo_cnt =
         get_one_expo_param<int>(ui->repeatsNumEdit, INT_DATA, 1,
@@ -969,6 +977,8 @@ QString testParamSettingsDialog::collect_test_params()
     QString ret_str;
     float max_expo_dura;
     QString file_content;
+
+    record_ui_expo_dura_unit_str();
 
     if(!m_test_params)
     {
@@ -1844,3 +1854,66 @@ void testParamSettingsDialog::on_readDistChBox_stateChanged(int arg1)
     }
 }
 
+bool testParamSettingsDialog::expo_params_ui_sync(expo_params_ui_sync_type_e_t direction,
+                                      expo_params_ui_sync_ctrls_s_t * main_ctrls, QString *info_str)
+{
+    QString check_info_str;
+    if(!main_ctrls) return false;
+
+    if(EXPO_PARAMS_UI_SYNC_MAIN_TO_SET_DLG == direction)
+    {
+        /*
+        QString set_dlg_ori_volt_str = ui->cubeVoltStartEdit->text(),
+                set_dlg_ori_current_str = ui->cubeCurrentStartEdit->text(),
+                set_dlg_ori_dura_str = ui->expoDuraStartEdit->text();
+        */
+
+        ui->cubeVoltStartEdit->setText(main_ctrls->cube_volt_ctrl->cleanText());
+        ui->cubeCurrentStartEdit->setText(main_ctrls->cube_current_ctrl->cleanText());
+        ui->expoDuraStartEdit->setText(main_ctrls->expo_dura_ctrl->cleanText());
+        check_info_str = collect_test_params();
+        if(m_test_params->valid)
+        {
+            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this,
+                                                         m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+            return true;
+        }
+
+        /*
+        ui->cubeVoltStartEdit->setText(set_dlg_ori_volt_str);
+        ui->cubeCurrentStartEdit->setText(set_dlg_ori_current_str);
+        ui->expoDuraStartEdit->setText(set_dlg_ori_dura_str);
+        collect_test_params();
+        */
+        if(info_str) *info_str = check_info_str;
+        return false;
+    }
+    else //EXPO_PARAMS_UI_SYNC_SET_DLG_TO_MAIN
+    {
+        main_ctrls->cube_volt_ctrl->setValue(m_test_params->expo_param_block.expo_params.regular_parms.
+                                             cube_volt_kv_start);
+        main_ctrls->cube_current_ctrl->setValue(m_test_params->expo_param_block.expo_params.regular_parms.
+                    cube_current_ma_start/m_test_params->expo_param_block.ui_to_sw_current_factor);
+        main_ctrls->expo_dura_ctrl->setValue(m_test_params->expo_param_block.expo_params.regular_parms.
+                     expo_dura_ms_start/m_test_params->expo_param_block.ui_to_sw_dura_factor);
+        main_ctrls->cube_current_unit->setText(m_ui_cube_current_unit_str);
+        main_ctrls->expo_dura_unit->setText(m_ui_expo_dura_unit_str);
+        return true;
+    }
+}
+
+void testParamSettingsDialog::record_ui_expo_dura_unit_str()
+{
+    if(ui->expoDuraUnitmsRButton->isChecked())
+    {
+        m_ui_expo_dura_unit_str = g_str_dura_unit_ms;
+    }
+    else if(ui->expoDuraUnitsecRButton->isChecked())
+    {
+        m_ui_expo_dura_unit_str = g_str_dura_unit_s;
+    }
+    else //ui->expoDuraUnitminRButton->isChecked()
+    {
+        m_ui_expo_dura_unit_str = g_str_dura_unit_min;
+    }
+}

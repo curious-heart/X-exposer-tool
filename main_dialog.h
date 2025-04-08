@@ -87,6 +87,7 @@ private:
     void rec_judge_result(tester_end_code_enum_t code);
 
     CToolKeyFilter m_key_filter;
+    expo_params_ui_sync_ctrls_s_t m_ui_sync_ctrls;
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
@@ -118,6 +119,8 @@ private slots:
     void on_pauseTestBtn_clicked();
 
     void time_stat_timer_sig_handler();
+
+    void on_manTestSettingBtn_clicked();
 
 signals:
     void go_test_sig();

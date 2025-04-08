@@ -8,6 +8,9 @@
 #include <QCheckBox>
 #include <QLabel>
 #include <QMap>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
+#include <QLabel>
 
 #include "common_tools/common_tool_func.h"
 #include "test_params_struct.h"
@@ -44,6 +47,19 @@ typedef enum
     EXPO_PARAMS_FILE_TO_SW,
     EXPO_PARAMS_SW_TO_MB_INTF,
 }expo_params_trans_factor_e_t;
+
+typedef enum
+{
+    EXPO_PARAMS_UI_SYNC_MAIN_TO_SET_DLG,
+    EXPO_PARAMS_UI_SYNC_SET_DLG_TO_MAIN,
+}expo_params_ui_sync_type_e_t;
+
+typedef struct
+{
+    QSpinBox * cube_volt_ctrl;
+    QDoubleSpinBox * cube_current_ctrl, *expo_dura_ctrl;
+    QLabel *cube_current_unit, *expo_dura_unit;
+}expo_params_ui_sync_ctrls_s_t;
 
 class testParamSettingsDialog : public QDialog
 {
@@ -120,6 +136,8 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     test_params_struct_t * m_test_params;
     expo_params_from_ui_struct_t m_expo_params_from_ui;
 
+    QString m_ui_cube_current_unit_str, m_ui_expo_dura_unit_str;
+
     template <typename T>
     bool get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, float factor,
                              RangeChecker<T>* range, void * val_ptr, QString &ret_str,
@@ -155,8 +173,11 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
                                     QString file_unit_str = "");
     float expo_dura_trans_factor(expo_params_trans_factor_e_t trans, QString *unit_str = nullptr,
                                  QString file_unit_str = "");
+    void record_ui_expo_dura_unit_str();
 public:
     QString collect_test_params();
+    bool expo_params_ui_sync(expo_params_ui_sync_type_e_t direction,
+                             expo_params_ui_sync_ctrls_s_t * main_ctrls, QString *info_str = nullptr);
 };
 
 #endif // TEST_PARAM_SETTINGS_H
