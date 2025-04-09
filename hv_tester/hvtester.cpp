@@ -602,6 +602,7 @@ void HVTester::construct_mb_du(tester_op_enum_t op, QModbusDataUnit &mb_du)
             mb_reg_vals.append(get_start_expo_cmd_from_test_method());
             mb_du.setStartAddress(ExposureStart);
             mb_du.setValues(mb_reg_vals);
+            emit begin_exposure_sig(true);
             break;
 
         case TEST_OP_READ_REGS:
@@ -617,6 +618,7 @@ void HVTester::construct_mb_du(tester_op_enum_t op, QModbusDataUnit &mb_du)
         default:
             DIY_LOG(LOG_ERROR, QString("%1 %2").arg(gs_str_unexpected_tester_op,
                                                     QString::number(op)));
+            emit begin_exposure_sig(false);
             return;
     }
 }

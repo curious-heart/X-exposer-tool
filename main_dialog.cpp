@@ -304,6 +304,9 @@ Dialog::Dialog(QWidget *parent)
     connect(&m_hv_tester, &HVTester::mb_op_err_req_reconnect_sig,
             this, &Dialog::mb_op_err_req_reconnect_sig_handler, Qt::QueuedConnection);
 
+    connect(&m_hv_tester, &HVTester::begin_exposure_sig,
+            this, &Dialog::begin_exposure_sig_handler);
+
     connect(this, &Dialog::auto_reconnect_sig,
             this, &Dialog::auto_reconnect_sig_handler, Qt::QueuedConnection);
 
@@ -738,6 +741,7 @@ void Dialog::on_stopTestBtn_clicked()
 {
     m_reconn_wait_timer.stop();
     m_time_stat_timer.stop();
+    m_test_proc_monitor_timer.stop();
 
     refresh_time_stat_display();
     emit stop_test_sig(TEST_END_ABORT_BY_USER);
@@ -964,7 +968,7 @@ void Dialog::reset_time_stat_vars()
 
 void Dialog::reset_internal_flags()
 {
-    m_testing = false;
+    m_testing = false; m_during_exposuring = false;
     m_test_paused = false;
     m_self_reconnecting = false;
     m_asked_for_reconnecting = false;
@@ -974,6 +978,8 @@ void Dialog::reset_internal_flags()
 
 void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 {
+    m_test_proc_monitor_timer.stop();
+
     if(!m_testing)
     {
         DIY_LOG(LOG_WARN,
@@ -1026,7 +1032,6 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     reset_internal_flags();
     refresh_butoons();
 
-    m_test_proc_monitor_timer.stop();
     ui->testProcMonitorTxtEdit->append(gs_str_sep_short_line);
 }
 
@@ -1153,16 +1158,19 @@ void Dialog::on_manTestSettingBtn_clicked()
     }
 }
 
+void Dialog::begin_exposure_sig_handler(bool start)
+{
+    m_during_exposuring = start;
+}
+
 void Dialog::test_proc_report_timer_sig_handler()
 {
-    if(m_testing && !m_test_paused) emit get_test_proc_st_sig();
+    if(m_testing && !m_test_paused && m_during_exposuring) emit get_test_proc_st_sig();
 }
 
 void Dialog::mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finished_sig_handler)(),
                               bool sync)
 {
-    static bool ls_exposuring = false;
-
     QString err_msg_hdr = "Read registers during test proc monitor error:";
     mb_reg_val_map_t regs_read_result;
 
@@ -1193,13 +1201,10 @@ void Dialog::mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finishe
         if(regs_read_result[ExposureStatus] >= EXPOSURE_ST_EXPOSURING)
         {
             rec_mb_regs_sig_handler(TEST_OP_READ_REGS, regs_read_result, 0, 0, true);
-            ls_exposuring = true;
         }
-        if(ls_exposuring && (EXPOSURE_ST_EXPOSURING != regs_read_result[ExposureStatus])
-                && (EXPOSURE_ST_ENDING != regs_read_result[ExposureStatus]))
+        if(EXPOSURE_ST_COOLING == regs_read_result[ExposureStatus])
         {
-            ls_exposuring = false;
-            m_test_proc_monitor_timer.stop();
+            m_during_exposuring = false;
         }
     }
     else

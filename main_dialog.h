@@ -47,7 +47,7 @@ private:
     modbus_conn_parameters_struct_t m_hv_conn_params;
     QModbusDevice::State m_modbus_state = QModbusDevice::UnconnectedState;
     bool m_dso_connected = false;
-    bool m_testing = false, m_test_paused = false, m_self_reconnecting = false;
+    bool m_testing = false, m_test_paused = false, m_self_reconnecting = false, m_during_exposuring = false;
     bool m_asked_for_reconnecting = false;
     QString m_curr_rec_folder_name, m_curr_rec_file_name;
     QFile m_curr_rec_file;
@@ -131,6 +131,8 @@ private slots:
     void get_test_proc_st_sig_handler();
 
     void on_testPromMonitorClrBtn_clicked();
+
+    void begin_exposure_sig_handler(bool start = true);
 
 signals:
     void go_test_sig();

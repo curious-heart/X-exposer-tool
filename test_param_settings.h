@@ -11,6 +11,7 @@
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 #include <QLabel>
+#include <QRadioButton>
 
 #include "common_tools/common_tool_func.h"
 #include "test_params_struct.h"
@@ -166,7 +167,7 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     void refresh_judge_ctrls_display();
     bool construct_judge_params(QString &err_str, QString &info_str);
 
-    void arrange_ui_according_to_cfgs();
+    void arrange_ui_according_to_cfgs(QRadioButton * &hidden_dura_rb, QRadioButton * &mb_intf_dura_rb);
     test_content_enum_t get_test_content(QString *content_str);
     float cube_current_trans_factor(expo_params_trans_factor_e_t trans, QString *unit_str = nullptr,
                                     QString file_unit_str = "");

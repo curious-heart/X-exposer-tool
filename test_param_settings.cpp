@@ -160,18 +160,22 @@ const testParamSettingsDialog::test_mode_espair_struct_t
     ARRANGE_CTRLS_ABILITY(ui->custExpoParamFileNoteEdit, false, false, false, true, true)\
 }
 
-void testParamSettingsDialog::arrange_ui_according_to_cfgs()
+void testParamSettingsDialog::arrange_ui_according_to_cfgs(QRadioButton * &hidden_dura_rb,
+                                                           QRadioButton * &mb_intf_dura_rb)
 {
     switch(g_sys_configs_block.hidden_ui_mb_dura_unit)
     {
     case MB_DURA_UNIT_MS:
         ui->expoDuraUnitmsRButton->setVisible(false);
+        hidden_dura_rb = ui->expoDuraUnitmsRButton;
         break;
     case MB_DURA_UNIT_SEC:
         ui->expoDuraUnitsecRButton->setVisible(false);
+        hidden_dura_rb = ui->expoDuraUnitsecRButton;
         break;
     default: //MB_DURA_UNIT_MIN:
         ui->expoDuraUnitminRButton->setVisible(false);
+        hidden_dura_rb = ui->expoDuraUnitminRButton;
         break;
     }
 
@@ -179,12 +183,15 @@ void testParamSettingsDialog::arrange_ui_according_to_cfgs()
     {
     case MB_DURA_UNIT_MS:
         ui->expoDuraUnitmsRButton->setChecked(true);
+        mb_intf_dura_rb = ui->expoDuraUnitmsRButton;
         break;
     case MB_DURA_UNIT_SEC:
         ui->expoDuraUnitsecRButton->setChecked(true);
+        mb_intf_dura_rb = ui->expoDuraUnitsecRButton;
         break;
     default: //MB_DURA_UNIT_MIN:
         ui->expoDuraUnitminRButton->setChecked(true);
+        mb_intf_dura_rb = ui->expoDuraUnitminRButton;
         break;
     }
 
@@ -271,12 +278,14 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
 
     ui->testContentNormalRButton->setChecked(true);
 
-    arrange_ui_according_to_cfgs();
+    QRadioButton *hidden_dura_rb, *mb_intf_dura_rb;
+    arrange_ui_according_to_cfgs(hidden_dura_rb, mb_intf_dura_rb);
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.insert(ui->custExpoParamFileNoteEdit);
     if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this,
                                                           m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+    if(hidden_dura_rb->isChecked()) mb_intf_dura_rb->setChecked(true);
 
     record_ui_expo_dura_unit_str();
 
@@ -597,7 +606,7 @@ QString valid_cube_current_header_strs()
 {
     return QString("\"%1%2%3\"").arg(gs_valid_cube_current_header_prefix_str,
                              gs_cust_expo_file_v_unit_sep, g_str_current_unit_ua)
-           + "\n" + g_str_or + "\n"
+           + " " + g_str_or + " "
            + QString("\"%1%2%3\"").arg(gs_valid_cube_current_header_prefix_str,
                              gs_cust_expo_file_v_unit_sep, g_str_current_unit_ma);
 }
@@ -606,10 +615,10 @@ QString valid_expo_dura_current_header_str()
 {
     return QString("\"%1%2%3\"").arg(gs_valid_expo_dura_header_prefix_str,
                              gs_cust_expo_file_v_unit_sep, g_str_dura_unit_ms)
-           + "\n" + g_str_or + "\n"
+           + " " + g_str_or + " "
            + QString("\"%1%2%3\"").arg(gs_valid_expo_dura_header_prefix_str,
                              gs_cust_expo_file_v_unit_sep, g_str_dura_unit_s)
-           + "\n" + g_str_or + "\n"
+           + " " + g_str_or + " "
            + QString("\"%1%2%3\"").arg(gs_valid_expo_dura_header_prefix_str,
                              gs_cust_expo_file_v_unit_sep, g_str_dura_unit_min);
 
@@ -654,21 +663,18 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
             h_items = line.split(gs_cust_expo_file_item_sep_in_line, Qt::SkipEmptyParts);
             if(h_items.count() < gs_cust_expo_file_item_num_in_line)
             {
-                valid_line = false;
                 break;
             }
 
             file_current_unit_str = h_items[gs_cust_expo_file_current_item_idx];
             if(!file_current_unit_str.contains(gs_cust_expo_file_v_unit_sep))
             {
-                valid_line = false;
                 break;
             }
             v_u_items = file_current_unit_str.split(gs_cust_expo_file_v_unit_sep);
             file_current_unit_str = v_u_items[1];
             if(!is_cube_current_unit_str_valid(file_current_unit_str))
             {
-                valid_line = false;
                 break;
             }
             cube_current_file_to_sw_factor
@@ -677,18 +683,18 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
             file_dura_unit_str = h_items[gs_cust_expo_file_dura_item_idx];
             if(!file_dura_unit_str.contains(gs_cust_expo_file_v_unit_sep))
             {
-                valid_line = false;
                 break;
             }
             v_u_items = file_dura_unit_str.split(gs_cust_expo_file_v_unit_sep);
             file_dura_unit_str = v_u_items[1];
             if(!is_expo_dura_unit_str_valid(file_dura_unit_str))
             {
-                valid_line = false;
                 break;
             }
             expo_dura_file_to_sw_factor
                     = expo_dura_trans_factor(EXPO_PARAMS_FILE_TO_SW, nullptr, file_dura_unit_str);
+            valid_line = true;
+            break;
         }while(true);
     }
     file_content += line + "\n";
@@ -699,7 +705,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
         header_like_str += QString(g_str_cube_volt) + g_str_can_be + " " + valid_cube_volt_header_strs() + "\n";
         header_like_str += QString(g_str_cube_current) + g_str_can_be + " " + valid_cube_current_header_strs() + "\n";
         header_like_str += QString(g_str_expo_dura) + g_str_can_be + " " + valid_expo_dura_current_header_str() + "\n";
-        header_like_str += QString(g_str_for_examp) + gs_valid_header_line_s + "\n";
+        header_like_str += QString(g_str_for_examp) + " \"" + gs_valid_header_line_s + "\"\n";
 
         DIY_LOG(LOG_ERROR,
                 QString("%1:%2\nbut it is:%3\n\n").arg(file_fpn, header_like_str, line))
@@ -713,7 +719,6 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
     QString item_str;
     expo_param_triple_struct_t expo_param_triple;
     bool c2n_ret;
-    valid_line = true;
     while(valid_line && file_stream.readLineInto(&line))
     {
         file_content += line + "\n";
@@ -967,7 +972,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
         WRONG_HEADER_STR(valid_cube_current_header_strs());
     }
     cube_current_file_to_sw_factor
-            = expo_dura_trans_factor(EXPO_PARAMS_FILE_TO_SW, nullptr, file_current_unit_str);
+            = cube_current_trans_factor(EXPO_PARAMS_FILE_TO_SW, nullptr, file_current_unit_str);
     QVector<float> cube_current_ma_v;
     for(item_idx = 1; item_idx < item_cnt; ++item_idx)
     {

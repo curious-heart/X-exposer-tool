@@ -126,6 +126,7 @@ signals:
     void rec_mb_regs_sig(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                          int loop_idx, int round_idx, bool proc_monitor = false);
     void test_complete_sig(tester_end_code_enum_t code);
+    void begin_exposure_sig(bool start = true);
 
     /* now we do not use this signal. tester just retry and retry, and main_dialog matain the
        connection.
