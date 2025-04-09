@@ -33,6 +33,15 @@ static const char* gs_ini_key_mb_cube_current_intf_unit = "mb_cube_current_intf_
 static const char* gs_ini_key_mb_dura_intf_unit = "mb_dura_intf_unit";
 static const char* gs_ini_key_hidden_ui_mb_dura_unit = "hidden_ui_mb_dura_unit";
 
+static const char* gs_ini_key_test_proc_monitor_period_ms = "test_proc_monitor_period_ms";
+
+static const char* gs_ini_grp_ui_disp_cfg = "ui_disp_cfg";
+static const char* gs_ini_key_distance_group_disp = "distance_group_disp";
+static const char* gs_ini_key_sw_ver_disp = "sw_ver_disp";
+static const char* gs_ini_key_hw_ver_disp = "hw_ver_disp";
+static const char* gs_ini_key_hv_ctrl_board_no_disp = "hv_ctrl_board_no_disp";
+static const char* gs_ini_key_tube_or_oilbox_no_disp = "tube_or_oilbox_no_disp";
+
 extern const char* g_str_cube_volt;
 extern const char* g_str_cube_current;
 extern const char* g_str_expo_dura;
@@ -64,6 +73,15 @@ static const int gs_def_mb_reconnect_wait_sep_ms = 1000;
 static const int gs_def_test_time_stat_grain_sec = 3;
 static const int gs_def_mb_one_cmd_round_time_ms = 150;
 
+
+static const int gs_def_test_proc_monitor_period_ms = 1000;
+
+static const int gs_def_distance_group_disp = 1;
+static const int gs_def_sw_ver_disp = 1;
+static const int gs_def_hw_ver_disp = 1;
+static const int gs_def_hv_ctrl_board_no_disp = 1;
+static const ui_disp_tube_or_oilbox_str_e_t gs_def_tube_or_oilbox_no_disp = UI_DISP_OILBOX_NO;
+
 static const char* gs_str_cfg_param_limit_error = "参数门限配置错误";
 static const char* gs_str_plz_check = "请检查！";
 static const char* gs_str_mb_intf_unit = "接口单位";
@@ -88,6 +106,9 @@ static RangeChecker<float> gs_cfg_file_value_ge0_float_ranger(0, 0, "",
 
 static RangeChecker<int> gs_cfg_file_value_gt0_int_ranger(0, 0, "",
                        EDGE_EXCLUDED, EDGE_INFINITE);
+
+static RangeChecker<int> gs_cfg_file_value_01_int_ranger(0, 1, "",
+                       EDGE_INCLUDED, EDGE_INCLUDED);
 
 static RangeChecker<float> gs_cfg_file_value_gt0_float_ranger(0, 0, "",
                        EDGE_EXCLUDED, EDGE_INFINITE);
@@ -194,6 +215,11 @@ bool fill_sys_configs(QString * ret_str_ptr)
                            g_sys_configs_block.hidden_ui_mb_dura_unit,
                            gs_def_hidden_ui_mb_dura_unit,
                            1, (RangeChecker<int>*)0, (mb_dura_unit_e_t));
+
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_test_proc_monitor_period_ms, toInt,
+                   g_sys_configs_block.test_proc_monitor_period_ms, gs_def_test_proc_monitor_period_ms,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
     settings.endGroup();
 
     /*check the validation of config parameters.*/
@@ -252,7 +278,6 @@ bool fill_sys_configs(QString * ret_str_ptr)
     CHECK_ENUM((QString(gs_str_hidden_ui_mb_dura_unit) + gs_str_mb_intf_unit_error + "," + gs_str_plz_check),
                g_sys_configs_block.hidden_ui_mb_dura_unit,
                dura_unit_set, QString::number)
-#undef CHECK_ENMU
 
     if(ret)
     {
@@ -265,8 +290,35 @@ bool fill_sys_configs(QString * ret_str_ptr)
         }
     }
 
-    g_sys_configs_block.test_proc_monitor_period_ms = 50;
+    /*--------------------*/
+    settings.beginGroup(gs_ini_grp_ui_disp_cfg);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_distance_group_disp, toInt,
+                           g_sys_configs_block.distance_group_disp, gs_def_distance_group_disp,
+                           1, &gs_cfg_file_value_01_int_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_sw_ver_disp, toInt,
+                           g_sys_configs_block.sw_ver_disp, gs_def_sw_ver_disp,
+                           1, &gs_cfg_file_value_01_int_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_hw_ver_disp, toInt,
+                           g_sys_configs_block.hw_ver_disp, gs_def_hw_ver_disp,
+                           1, &gs_cfg_file_value_01_int_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_hv_ctrl_board_no_disp, toInt,
+                           g_sys_configs_block.hv_ctrl_board_no_disp, gs_def_hv_ctrl_board_no_disp,
+                           1, &gs_cfg_file_value_01_int_ranger);
 
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_tube_or_oilbox_no_disp, toInt,
+                           g_sys_configs_block.tube_or_oilbox_no_disp,
+                           gs_def_tube_or_oilbox_no_disp,
+                           1, (RangeChecker<int>*)0, (ui_disp_tube_or_oilbox_str_e_t));
+    QSet<ui_disp_tube_or_oilbox_str_e_t> tube_or_oilbox_no_disp_set;
+    tube_or_oilbox_no_disp_set UI_DISP_TUBE_OR_OILBOX_E;
+    CHECK_ENUM(QString(gs_ini_key_tube_or_oilbox_no_disp),
+               g_sys_configs_block.tube_or_oilbox_no_disp, tube_or_oilbox_no_disp_set,
+               QString::number)
+    settings.endGroup();
+
+    /*--------------------*/
     if(ret_str_ptr) *ret_str_ptr = ret_str;
     return ret;
+
+#undef CHECK_ENMU
 }

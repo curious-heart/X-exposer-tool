@@ -52,16 +52,16 @@ extern const char* g_str_time_ci;
 extern const char* g_str_the_line_pron;
 
 /*设置管电压、设置管电流、曝光时间必须连续放置*/
-const hv_mb_reg_e_t Dialog::m_mbregs_to_record[] =
+static const hv_mb_reg_e_t gs_mbregs_to_record[] =
 {
     HSV, VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter, EXT_MB_REG_DISTANCE,
     State, ExposureStatus, BatteryLevel, BatteryVoltmeter, OilBoxTemperature,
     Workstatus, exposureCount,
 };
 
-const hv_mb_reg_e_t Dialog::m_test_proc_monitor_regs[] =
+static const hv_mb_reg_e_t gs_test_proc_monitor_regs[] =
 {
-    Voltmeter, Ammeter, State, ExposureStatus,
+    Voltmeter, Ammeter, EXT_MB_REG_DISTANCE, State, ExposureStatus,
 };
 
 static const hv_mb_reg_e_t gs_judge_result_disp_reg[] =
@@ -189,6 +189,30 @@ void Dialog::set_man_test_grp_visible(test_mode_enum_t mode)
     }
 }
 
+void Dialog::update_regs_to_rec_list()
+{
+    m_mbregs_rec_list.clear();
+    for(int idx = 0; idx < ARRAY_COUNT(gs_mbregs_to_record); ++idx)
+    {
+        m_mbregs_rec_list.append(gs_mbregs_to_record[idx]);
+    }
+    if(!m_test_params.other_param_block.read_dist) m_mbregs_rec_list.removeOne(EXT_MB_REG_DISTANCE);
+
+    m_mbregs_monitor_list.clear();
+    for(int idx = 0; idx < ARRAY_COUNT(gs_test_proc_monitor_regs); ++idx)
+    {
+        m_mbregs_monitor_list.append(gs_test_proc_monitor_regs[idx]);
+    }
+    if(!m_test_params.other_param_block.read_dist) m_mbregs_monitor_list.removeOne(EXT_MB_REG_DISTANCE);
+
+    mb_mbregs_result_disp_list.clear();
+    for(int idx = 0; idx < ARRAY_COUNT(gs_judge_result_disp_reg); ++idx)
+    {
+        mb_mbregs_result_disp_list.append(gs_judge_result_disp_reg[idx]);
+    }
+    if(!m_test_params.other_param_block.read_dist) mb_mbregs_result_disp_list.removeOne(EXT_MB_REG_DISTANCE);
+}
+
 Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
@@ -309,8 +333,8 @@ Dialog::Dialog(QWidget *parent)
         refresh_time_stat_display(true);
     }
 
-    m_test_judge.add_result_disp_items(gs_judge_result_disp_reg,
-                                       ARRAY_COUNT(gs_judge_result_disp_reg));
+    update_regs_to_rec_list();
+    m_test_judge.add_result_disp_items(mb_mbregs_result_disp_list);
 
     reset_judge_reg_ret_map();
 
@@ -342,14 +366,17 @@ Dialog::~Dialog()
     m_rec_ui_cfg_fout.clear();
 
     m_judge_reg_ret_map.clear();
+
+    m_mbregs_rec_list.clear();
+
     delete ui;
 }
 
 void Dialog::reset_judge_reg_ret_map()
 {
-    for(int idx = 0; idx < ARRAY_COUNT(m_mbregs_to_record); ++idx)
+    for(int idx = 0; idx < m_mbregs_rec_list.count(); ++idx)
     {
-        m_judge_reg_ret_map.insert(m_mbregs_to_record[idx], JUDGE_RESULT_OK);
+        m_judge_reg_ret_map.insert(m_mbregs_rec_list[idx], JUDGE_RESULT_OK);
     }
 }
 
@@ -367,6 +394,8 @@ void Dialog::on_testParamSetBtn_clicked()
         refresh_time_stat_display(true);
 
         set_man_test_grp_visible(m_test_params.test_mode);
+
+        update_regs_to_rec_list();
     }
 }
 
@@ -635,9 +664,9 @@ void Dialog::record_header()
     /*table header*/
     QString hdr;
     hdr = QString("%1,%2,%3,").arg(gs_str_date, gs_str_time, gs_str_no);
-    for(int idx = 0; idx < ARRAY_COUNT(m_mbregs_to_record); ++idx)
+    for(int idx = 0; idx < m_mbregs_rec_list.count(); ++idx)
     {
-        hdr += get_hv_mb_reg_str(m_mbregs_to_record[idx], CN_REG_NAME);
+        hdr += get_hv_mb_reg_str(m_mbregs_rec_list[idx], CN_REG_NAME);
         hdr += ",";
     }
     REC_INFO_IN_FILE(hdr << "\n");
@@ -805,7 +834,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     if(TEST_OP_SET_EXPO_TRIPLE == op)
     {
         idx = 0;
-        while(idx < ARRAY_COUNT(m_mbregs_to_record) && m_mbregs_to_record[idx] != VoltSet)
+        while(idx <  m_mbregs_rec_list.count() && m_mbregs_rec_list[idx] != VoltSet)
         {
             line += ",";
             ++idx;
@@ -821,7 +850,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     }
 
     mb_reg_judge_result_list_t judge_result;
-    m_test_judge.judge_mb_regs(reg_val_map, judge_result, disp_prefix_str);
+    m_test_judge.judge_mb_regs(reg_val_map, judge_result, disp_prefix_str, proc_monitor);
     reset_judge_reg_ret_map();
     for(int idx = 0; idx < judge_result.count(); ++idx)
     {
@@ -832,9 +861,10 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         }
     }
 
-    const hv_mb_reg_e_t * disp_reg_arr = proc_monitor ?
-                                        m_test_proc_monitor_regs : m_mbregs_to_record;
-    int disp_reg_arr_cnt = proc_monitor ? ARRAY_COUNT(m_test_proc_monitor_regs) : ARRAY_COUNT(m_mbregs_to_record);
+    const QList<hv_mb_reg_e_t> &disp_reg_arr = proc_monitor ?
+                                        m_mbregs_monitor_list : m_mbregs_rec_list;
+    int disp_reg_arr_cnt = proc_monitor ? m_mbregs_monitor_list.count()
+                                        : m_mbregs_rec_list.count();
     QString val_str;
     str_line_with_styles_t style_line;
     str_with_style_s_t style_str,
@@ -1045,11 +1075,6 @@ void Dialog::auto_reconnect_sig_handler()
     }
 }
 
-void Dialog::on_dsoSetBtn_clicked()
-{
-    QMessageBox::information(this, "", "功能尚未实现！");
-}
-
 void Dialog::reconn_wait_timer_sig_handler()
 {
     m_self_reconnecting = true;
@@ -1130,12 +1155,14 @@ void Dialog::on_manTestSettingBtn_clicked()
 
 void Dialog::test_proc_report_timer_sig_handler()
 {
-    emit get_test_proc_st_sig();
+    if(m_testing && !m_test_paused) emit get_test_proc_st_sig();
 }
 
 void Dialog::mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finished_sig_handler)(),
                               bool sync)
 {
+    static bool ls_exposuring = false;
+
     QString err_msg_hdr = "Read registers during test proc monitor error:";
     mb_reg_val_map_t regs_read_result;
 
@@ -1163,7 +1190,17 @@ void Dialog::mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finishe
         {
             regs_read_result.insert(hv_mb_reg_e_t(st_addr + idx), rb_du.value(idx));
         }
-        rec_mb_regs_sig_handler(TEST_OP_READ_REGS, regs_read_result, 0, 0, true);
+        if(regs_read_result[ExposureStatus] >= EXPOSURE_ST_EXPOSURING)
+        {
+            rec_mb_regs_sig_handler(TEST_OP_READ_REGS, regs_read_result, 0, 0, true);
+            ls_exposuring = true;
+        }
+        if(ls_exposuring && (EXPOSURE_ST_EXPOSURING != regs_read_result[ExposureStatus])
+                && (EXPOSURE_ST_ENDING != regs_read_result[ExposureStatus]))
+        {
+            ls_exposuring = false;
+            m_test_proc_monitor_timer.stop();
+        }
     }
     else
     {//sync op, and not finished.
@@ -1179,7 +1216,7 @@ void Dialog::get_test_proc_st_sig_handler()
     QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
     QModbusReply *mb_reply;
 
-    if(m_test_paused) return;
+    if(!m_testing || m_test_paused) return;
 
     mb_du.setStartAddress(HSV);
     mb_du.setValueCount(MAX_HV_NORMAL_MB_REG_NUM);
@@ -1196,3 +1233,9 @@ void Dialog::modbus_op_finished_sig_handler()
         mb_reply->deleteLater();
     }
 }
+
+void Dialog::on_testPromMonitorClrBtn_clicked()
+{
+    ui->testProcMonitorTxtEdit->clear();
+}
+

@@ -144,7 +144,6 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
                              QString new_unit_str = "");
 
     void get_expo_param_vals_from_ui();
-    bool judge_dura_factor_from_str(QString h_s, float *factor);
     bool get_expo_param_vals_from_cust_file(QString file_fpn,
                                             QVector<expo_param_triple_struct_t> &param_vector,
                                             float * max_expo_dura_ms,

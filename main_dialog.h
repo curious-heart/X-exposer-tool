@@ -52,7 +52,7 @@ private:
     QString m_curr_rec_folder_name, m_curr_rec_file_name;
     QFile m_curr_rec_file;
     QTextStream m_curr_txt_stream;
-    static const hv_mb_reg_e_t m_mbregs_to_record[], m_test_proc_monitor_regs[];
+    QList<hv_mb_reg_e_t> m_mbregs_rec_list, m_mbregs_monitor_list, mb_mbregs_result_disp_list;
     QColor m_txt_def_color;
     QFont m_txt_def_font;
 
@@ -93,6 +93,8 @@ private:
     CToolKeyFilter m_key_filter;
     expo_params_ui_sync_ctrls_s_t m_ui_sync_ctrls;
 
+    void update_regs_to_rec_list();
+
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
     void modbus_state_changed_sig_handler(QModbusDevice::State state);
@@ -115,8 +117,6 @@ private slots:
     /*internal used signal handler*/
     void auto_reconnect_sig_handler();
 
-    void on_dsoSetBtn_clicked();
-
     void on_Dialog_finished(int result);
 
     void reconn_wait_timer_sig_handler();
@@ -129,6 +129,8 @@ private slots:
 
     void test_proc_report_timer_sig_handler();
     void get_test_proc_st_sig_handler();
+
+    void on_testPromMonitorClrBtn_clicked();
 
 signals:
     void go_test_sig();

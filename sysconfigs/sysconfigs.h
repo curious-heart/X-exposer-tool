@@ -21,6 +21,14 @@ typedef enum
     MB_DURA_UNIT_E
 }mb_dura_unit_e_t;
 
+#define UI_DISP_TUBE_OR_OILBOX_E \
+    ENUM_NAME_DEF(UI_DISP_TUBE_NO) \
+    ENUM_NAME_DEF(UI_DISP_OILBOX_NO)
+typedef enum
+{
+    UI_DISP_TUBE_OR_OILBOX_E
+}ui_disp_tube_or_oilbox_str_e_t;
+
 typedef struct
 {
     int log_level;
@@ -44,6 +52,9 @@ typedef struct
     mb_dura_unit_e_t mb_dura_intf_unit, hidden_ui_mb_dura_unit;
 
     int test_proc_monitor_period_ms;
+
+    int distance_group_disp, sw_ver_disp, hw_ver_disp, hv_ctrl_board_no_disp;
+    ui_disp_tube_or_oilbox_str_e_t tube_or_oilbox_no_disp;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

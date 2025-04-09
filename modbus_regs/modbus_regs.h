@@ -84,4 +84,15 @@ Q_DECLARE_METATYPE(mb_reg_val_map_t)
 typedef QList<hv_mb_reg_e_t> mb_reg_addr_list_t;
 Q_DECLARE_METATYPE(mb_reg_addr_list_t)
 
+typedef enum
+{
+    EXPOSURE_ST_IDLE = 0,
+    EXPOSURE_ST_WARNING = 1,
+    EXPOSURE_ST_DELAY = 2,
+    EXPOSURE_ST_WARMUP = 3,
+    EXPOSURE_ST_EXPOSURING = 4,
+    EXPOSURE_ST_ENDING = 5,
+    EXPOSURE_ST_COOLING = 6,
+}mb_reg_exposure_st_e_t;
+
 #endif // MODBUS_REGS_H
