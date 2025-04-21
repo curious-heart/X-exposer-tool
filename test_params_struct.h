@@ -20,6 +20,7 @@ typedef enum
     TEST_CONTENT_NORMAL = 0,
     TEST_CONTENT_COOL_HV,
     TEST_CONTENT_ONLY_COIL,
+    TEST_CONTENT_DECOUPLE,
 }test_content_enum_t;
 
 typedef struct

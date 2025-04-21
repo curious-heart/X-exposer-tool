@@ -560,12 +560,14 @@ quint16 HVTester::get_start_expo_cmd_from_test_method()
     {
         switch(hv_test_params->test_content)
         {
-        case TEST_CONTENT_NORMAL:
-            return START_EXPO_DATA;
         case TEST_CONTENT_COOL_HV:
             return START_EXPO_DATA_COOL_HV;
-        default: //TEST_CONTENT_ONLY_COIL:
+        case TEST_CONTENT_ONLY_COIL:
             return START_EXPO_DATA_ONLY_COIL;
+        case TEST_CONTENT_DECOUPLE:
+            return START_EXPO_DATA_DECOUPLE;
+        default: //TEST_CONTENT_NORMAL:
+            return START_EXPO_DATA;
         }
     }
     else

@@ -11,6 +11,7 @@
 
 static const char* gs_str_plz_set_valid_conn_params = "请首先设置有效的连接参数";
 static const char* gs_str_plz_set_valid_test_params = "请首先设置有效的测试参数";
+static const char* gs_str_mb_not_connect_param_not_written = "modbus未连接，参数未写入下位机";
 static const char* gs_str_init_fail = "初始化失败";
 static const char* gs_str_modbus_not_in_disconnected_state = "modbus未处于断开状态";
 static const char* gs_str_modbus_not_in_connected_state = "modbus未处于连接状态";
@@ -25,6 +26,7 @@ static const char* gs_str_test_abort_by_user = "用户中止测试";
 static const char* gs_str_test_end_exception = "测试异常中止";
 static const char* gs_str_sep_line = "========================================";
 static const char* gs_str_sep_short_line = "=================";
+static const char* gs_str_expo_tripple_set_ok = "曝光参数设置成功";
 
 static const char* gs_str_test_rec_name_sufx = "曝光测试结果";
 static const char* gs_str_test_rec_file_type = ".csv";
@@ -50,6 +52,8 @@ static const char* gs_str_testing = "正在测试";
 extern const char* g_str_loop;
 extern const char* g_str_time_ci;
 extern const char* g_str_the_line_pron;
+extern const char* g_str_cube_current;
+extern const char* g_str_coil_current;
 
 /*设置管电压、设置管电流、曝光时间必须连续放置*/
 static const hv_mb_reg_e_t gs_mbregs_to_record[] =
@@ -223,6 +227,7 @@ Dialog::Dialog(QWidget *parent)
     bool ret;
 
     ui->setupUi(this);
+    ui->app_logo->setPixmap(QPixmap("./app_images/logo.png"));
 
     m_ui_sync_ctrls =
     {
@@ -251,6 +256,8 @@ Dialog::Dialog(QWidget *parent)
         QMessageBox::critical(this, "Error", gs_str_init_fail);
         return;
     }
+    m_testParamSettingsDialog->setWindowTitle(ui->testParamSetBtn->text());
+    m_hvConnSettingsDialog->setWindowTitle(ui->hvConnSetBtn->text());
 
     QString param_collet_ret_str;
     m_txt_def_color = ui->testParamDisplayTxt->textColor();
@@ -399,6 +406,23 @@ void Dialog::on_testParamSetBtn_clicked()
         set_man_test_grp_visible(m_test_params.test_mode);
 
         update_regs_to_rec_list();
+
+        if(TEST_CONTENT_DECOUPLE == m_test_params.test_content)
+        {
+            ui->manTestcubeCurrentLbl->setText(g_str_coil_current);
+        }
+        else
+        {
+            ui->manTestcubeCurrentLbl->setText(g_str_cube_current);
+        }
+
+        if(TEST_CONTENT_NORMAL != m_test_params.test_content)
+        {
+            if(set_mb_expo_triple())
+            {
+                QMessageBox::information(this, "", gs_str_expo_tripple_set_ok);
+            }
+        }
     }
 }
 
@@ -675,6 +699,50 @@ void Dialog::record_header()
     REC_INFO_IN_FILE(hdr << "\n");
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, hdr,
                                      m_txt_def_color, m_txt_def_font.weight());
+}
+
+bool Dialog::set_mb_expo_triple()
+{
+    expo_param_triple_struct_t curr_triple;
+    QVector<quint16> mb_reg_vals;
+    QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
+
+    if(!m_test_params.valid)
+    {
+        QMessageBox::critical(this, "Error", gs_str_plz_set_valid_test_params);
+        return false;
+    }
+
+    if(QModbusDevice::ConnectedState != m_modbus_state)
+    {
+        QMessageBox::critical(this, "Error", gs_str_mb_not_connect_param_not_written);
+        return false;
+    }
+
+    if(m_test_params.expo_param_block.cust)
+    {
+        curr_triple = m_test_params.expo_param_block.expo_params.cust_params_arr[0];
+    }
+    else
+    {
+        curr_triple.cube_volt_kv
+                = m_test_params.expo_param_block.expo_params.regular_parms.cube_volt_kv_start;
+        curr_triple.cube_current_ma
+                = m_test_params.expo_param_block.expo_params.regular_parms.cube_current_ma_start;
+        curr_triple.dura_ms
+                = m_test_params.expo_param_block.expo_params.regular_parms.expo_dura_ms_start;
+    }
+    mb_reg_vals.append((quint16)curr_triple.cube_volt_kv);
+    mb_reg_vals.append((quint16)(m_test_params.expo_param_block.sw_to_mb_current_factor
+                                 * curr_triple.cube_current_ma));
+    mb_reg_vals.append((quint16)(m_test_params.expo_param_block.sw_to_mb_dura_factor
+                                 * curr_triple.dura_ms));
+
+    mb_du.setStartAddress(VoltSet);
+    mb_du.setValues(mb_reg_vals);
+
+    m_modbus_device->sendWriteRequest(mb_du, m_hv_conn_params.srvr_address);
+    return true;
 }
 
 void Dialog::on_startTestBtn_clicked()
@@ -1155,6 +1223,13 @@ void Dialog::on_manTestSettingBtn_clicked()
     else
     {
         ui->testParamDisplayTxt->setText(m_test_params.info_str);
+        if(TEST_CONTENT_NORMAL != m_test_params.test_content)
+        {
+            if(set_mb_expo_triple())
+            {
+                QMessageBox::information(this, "", gs_str_expo_tripple_set_ok);
+            }
+        }
     }
 }
 

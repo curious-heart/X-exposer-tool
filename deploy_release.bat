@@ -20,6 +20,7 @@ set dest_folder=%1
 set ver_str=%2
 
 xcopy .\configs %dest_folder%\configs /Y /E /I
+xcopy .\app_images %dest_folder%\app_images /Y /E /I
 xcopy .\*.csv %dest_folder%\ /Y /I
 xcopy .\*.docx %dest_folder%\ /Y /I
 copy %exe_folder%\%exe_file_base_name%.exe %dest_folder%\

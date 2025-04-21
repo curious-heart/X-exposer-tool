@@ -85,6 +85,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QRadioButton" name="testContentDecoupleRButton">
+       <property name="text">
+        <string>解耦模式测试</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
