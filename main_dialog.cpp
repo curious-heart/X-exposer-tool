@@ -108,6 +108,17 @@ static QColor gs_log_lvl_fonts_arr[] =
 #define REC_INFO_IN_FILE(op_str) \
     if(m_curr_rec_file.isOpen()) {m_curr_txt_stream << op_str;}
 
+#define USE_CUBE_OR_COIL_CURRENT_STR \
+        if(TEST_CONTENT_DECOUPLE == m_test_params.test_content \
+                || TEST_CONTENT_ONLY_COIL == m_test_params.test_content) \
+        { \
+            ui->manTestcubeCurrentLbl->setText(g_str_coil_current); \
+        } \
+        else \
+        { \
+            ui->manTestcubeCurrentLbl->setText(g_str_cube_current); \
+        }
+
 void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool pause_resumed)
 {
     QDateTime curr_dt;
@@ -359,6 +370,8 @@ Dialog::Dialog(QWidget *parent)
 
     set_man_test_grp_visible(m_test_params.test_mode);
 
+    USE_CUBE_OR_COIL_CURRENT_STR;
+
     m_init_ok = true;
 }
 
@@ -410,14 +423,7 @@ void Dialog::on_testParamSetBtn_clicked()
 
         update_regs_to_rec_list();
 
-        if(TEST_CONTENT_DECOUPLE == m_test_params.test_content)
-        {
-            ui->manTestcubeCurrentLbl->setText(g_str_coil_current);
-        }
-        else
-        {
-            ui->manTestcubeCurrentLbl->setText(g_str_cube_current);
-        }
+        USE_CUBE_OR_COIL_CURRENT_STR;
 
         if(TEST_CONTENT_NORMAL != m_test_params.test_content)
         {

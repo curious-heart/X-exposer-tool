@@ -2046,6 +2046,24 @@ void testParamSettingsDialog::record_ui_expo_dura_unit_str()
     }
 }
 
+void testParamSettingsDialog::use_cube_or_coil_current_str(bool coil_current)
+{
+    if(coil_current)
+    {
+        gs_str_current_name = g_str_coil_current;
+        gs_str_fb_current_name = g_str_fb_coil_current;
+    }
+    else
+    {
+        gs_str_current_name = g_str_cube_current;
+        gs_str_fb_current_name = g_str_fb_cube_current;
+    }
+
+    ui->cubeCurrentLbl->setText(QString("%1（%2）").arg(gs_str_current_name,
+                                                      m_ui_cube_current_unit_str));
+    ui->amtmAChkbox->setText(QString("%1(%2)").arg(gs_str_fb_current_name, m_ui_cube_current_unit_str));
+}
+
 void testParamSettingsDialog::on_expoDuraUnitmsRButton_toggled(bool checked)
 {
     if(checked)
@@ -2089,20 +2107,7 @@ void testParamSettingsDialog::on_expoDuraUnitminRButton_toggled(bool checked)
 
 void testParamSettingsDialog::on_testContentDecoupleRButton_toggled(bool checked)
 {
-    if(checked)
-    {
-        gs_str_current_name = g_str_coil_current;
-        gs_str_fb_current_name = g_str_fb_coil_current;
-    }
-    else
-    {
-        gs_str_current_name = g_str_cube_current;
-        gs_str_fb_current_name = g_str_fb_cube_current;
-    }
-
-    ui->cubeCurrentLbl->setText(QString("%1（%2）").arg(gs_str_current_name,
-                                                      m_ui_cube_current_unit_str));
-    ui->amtmAChkbox->setText(QString("%1(%2)").arg(gs_str_fb_current_name, m_ui_cube_current_unit_str));
+    use_cube_or_coil_current_str(checked);
 }
 
 
@@ -2133,5 +2138,7 @@ void testParamSettingsDialog::on_testContentOnlyCoilRButton_toggled(bool checked
         gs_valid_cube_volt_kv_range.set_min_max(g_sys_configs_block.cube_volt_kv_min,
                                                 g_sys_configs_block.cube_volt_kv_max);
     }
+
+    use_cube_or_coil_current_str(checked);
 }
 

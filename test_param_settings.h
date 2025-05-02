@@ -188,6 +188,9 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     void record_ui_expo_dura_unit_str();
 
     float m_ui_dura_start_in_ms = 0, m_ui_dura_end_in_ms = 0, m_ui_dura_step_in_ms = 0;
+
+    void use_cube_or_coil_current_str(bool coil_current = false);
+
 public:
     QString collect_test_params();
     bool expo_params_ui_sync(expo_params_ui_sync_type_e_t direction,
