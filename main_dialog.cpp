@@ -229,6 +229,9 @@ Dialog::Dialog(QWidget *parent)
     ui->setupUi(this);
     ui->app_logo->setPixmap(QPixmap("./app_images/logo.png"));
 
+    QIcon icon(":/icons/app_images/app.ico");
+    setWindowIcon(icon);
+
     m_ui_sync_ctrls =
     {
         /*.cube_volt_ctrl = */ui->manTestcubeVoltSpin,

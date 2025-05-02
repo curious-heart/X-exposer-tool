@@ -65,3 +65,8 @@ qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 msvc:QMAKE_CXXFLAGS += -execution-charset:utf-8
+
+RC_FILE = X-exposer.rc
+
+RESOURCES += \
+    X-exposer.qrc
