@@ -1,4 +1,4 @@
-QT       += core gui serialbus serialport network
+QT       += core gui serialbus serialport network charts
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -18,6 +18,7 @@ SOURCES += \
     hv_connsettings.cpp \
     hv_tester/hvtester.cpp \
     logger/logger.cpp \
+    mb_regs_chart_display.cpp \
     mb_rtu_over_tcp/qmodbusrtuovertcpclient.cpp \
     modbus_regs/modbus_regs.cpp \
     qtsingleapplication/qtlocalpeer.cpp \
@@ -39,6 +40,7 @@ HEADERS += \
     hv_connsettings.h \
     hv_tester/hvtester.h \
     logger/logger.h \
+    mb_regs_chart_display.h \
     mb_rtu_over_tcp/private/qmodbusrtuovertcpclient_p.h \
     mb_rtu_over_tcp/qmodbusrtuovertcpclient.h \
     modbus_regs/modbus_regs.h \

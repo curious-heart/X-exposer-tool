@@ -16,6 +16,8 @@
 #include "config_recorder/uiconfigrecorder.h"
 #include "test_result_judge/test_result_judge.h"
 
+#include "mb_regs_chart_display.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
 QT_END_NAMESPACE
@@ -39,6 +41,7 @@ private:
     HVTester m_hv_tester;
     testParamSettingsDialog * m_testParamSettingsDialog = nullptr;
     hvConnSettings * m_hvConnSettingsDialog = nullptr;
+    MbRegsChartDisp * m_mbRegsChartWnd = nullptr;
 
     void reset_time_stat_vars();
     void reset_internal_flags();
@@ -94,6 +97,8 @@ private:
     expo_params_ui_sync_ctrls_s_t m_ui_sync_ctrls;
 
     void update_regs_to_rec_list();
+
+    void display_mb_regs_chart();
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);

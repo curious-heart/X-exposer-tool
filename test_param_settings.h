@@ -210,6 +210,8 @@ public:
     QString collect_test_params();
     bool expo_params_ui_sync(expo_params_ui_sync_type_e_t direction,
                              expo_params_ui_sync_ctrls_s_t * main_ctrls, QString *info_str = nullptr);
+    void get_volt_info_for_chart(QString &name_str, QString &unit_str, int &low, int &up);
+    void get_current_info_for_chart(QString &name_str, QString &unit_str, float &low, float &up);
 };
 
 #endif // TEST_PARAM_SETTINGS_H

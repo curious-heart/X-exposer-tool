@@ -35,7 +35,7 @@ static const char* gs_str_create_file = "创建文件";
 extern const char* g_str_fail;
 
 static const char* gs_str_date = "日期";
-static const char* gs_str_time = "时间";
+const char* g_str_time = "时间";
 static const char* gs_str_no = "序号";
 
 static const char* gs_str_pause = "暂停";
@@ -372,6 +372,12 @@ Dialog::Dialog(QWidget *parent)
 
     USE_CUBE_OR_COIL_CURRENT_STR;
 
+    m_mbRegsChartWnd = new MbRegsChartDisp(this);
+    if(m_mbRegsChartWnd)
+    {
+       m_mbRegsChartWnd->setAttribute(Qt::WA_DeleteOnClose, false);
+    }
+
     m_init_ok = true;
 }
 
@@ -699,7 +705,7 @@ void Dialog::record_header()
 
     /*table header*/
     QString hdr;
-    hdr = QString("%1,%2,%3,").arg(gs_str_date, gs_str_time, gs_str_no);
+    hdr = QString("%1,%2,%3,").arg(gs_str_date, g_str_time, gs_str_no);
     for(int idx = 0; idx < m_mbregs_rec_list.count(); ++idx)
     {
         hdr += get_hv_mb_reg_str(m_mbregs_rec_list[idx], CN_REG_NAME);
@@ -752,6 +758,31 @@ bool Dialog::set_mb_expo_triple()
 
     m_modbus_device->sendWriteRequest(mb_du, m_hv_conn_params.srvr_address);
     return true;
+}
+
+void Dialog::display_mb_regs_chart()
+{
+    if(m_mbRegsChartWnd)
+    {
+        if(m_testParamSettingsDialog)
+        {
+            QString name_str, unit_str;
+            int v_low, v_up;
+            float c_low, c_up;
+
+            m_testParamSettingsDialog->get_volt_info_for_chart(name_str, unit_str, v_low, v_up);
+            m_mbRegsChartWnd->set_volt_name_and_unit(name_str, unit_str);
+            m_mbRegsChartWnd->set_volt_range(v_low, v_up);
+
+            m_testParamSettingsDialog->get_current_info_for_chart(name_str, unit_str, c_low, c_up);
+            m_mbRegsChartWnd->set_current_name_and_unit(name_str, unit_str);
+            m_mbRegsChartWnd->set_current_range(c_low, c_up);
+        }
+
+        m_mbRegsChartWnd->showNormal();
+        m_mbRegsChartWnd->raise();
+        m_mbRegsChartWnd->activateWindow();
+    }
 }
 
 void Dialog::on_startTestBtn_clicked()
@@ -812,6 +843,8 @@ void Dialog::on_startTestBtn_clicked()
 
     m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
     m_test_proc_monitor_timer.start(g_sys_configs_block.test_proc_monitor_period_ms);
+
+    display_mb_regs_chart();
 }
 
 void Dialog::on_stopTestBtn_clicked()
@@ -993,10 +1026,11 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     }
 
     style_line.clear();
-    /*
-    append_str_with_color_and_weight(ui->testInfoDisplayTxt, line + "\n",
-                                     m_txt_def_color, m_txt_def_font.weight());
-     */
+
+    if(m_mbRegsChartWnd)
+    {
+        m_mbRegsChartWnd->addData(reg_val_map[Voltmeter], reg_val_map[Ammeter]);
+    }
 }
 
 void Dialog::rec_judge_result(tester_end_code_enum_t code)

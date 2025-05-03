@@ -2215,3 +2215,37 @@ void testParamSettingsDialog::on_testContentDecoupleRButton_toggled(bool checked
         update_current_name_and_unit();
     }
 }
+
+void testParamSettingsDialog::get_volt_info_for_chart(QString &name_str, QString &unit_str, int &low, int &up)
+{
+    name_str = g_str_cube_volt;
+    unit_str = g_str_volt_unit_kv;
+
+    low = gs_valid_cube_volt_kv_range.range_min();
+    up = gs_valid_cube_volt_kv_range.range_max();
+}
+
+void testParamSettingsDialog::get_current_info_for_chart(QString &name_str, QString &unit_str,
+                                                         float &low, float &up)
+{
+    name_str = gs_str_fb_current_name;
+
+    switch(m_used_current_intf_unit)
+    {
+    case MB_CUBE_CURRENT_UNIT_A:
+        unit_str = g_str_current_unit_a;
+        break;
+
+    case MB_CUBE_CURRENT_UNIT_MA:
+        unit_str = g_str_current_unit_ma;
+        break;
+
+    default: //MB_CUBE_CURRENT_UNIT_UA:
+        unit_str = g_str_current_unit_ua;
+        break;
+    }
+    low = m_test_params->expo_param_block.sw_to_mb_current_factor
+            * gs_valid_cube_current_ma_range.range_min();
+    up = m_test_params->expo_param_block.sw_to_mb_current_factor
+            * gs_valid_cube_current_ma_range.range_max();
+}
