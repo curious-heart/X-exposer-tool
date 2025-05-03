@@ -15,6 +15,7 @@
 
 #include "common_tools/common_tool_func.h"
 #include "test_params_struct.h"
+#include "sysconfigs/sysconfigs.h"
 #include "config_recorder/uiconfigrecorder.h"
 #include "test_result_judge/test_result_judge.h"
 
@@ -104,6 +105,8 @@ private slots:
 
     void on_testContentOnlyCoilRButton_toggled(bool checked);
 
+    void on_testContentNormalRButton_toggled(bool checked);
+
 private:
     typedef struct
     {
@@ -179,17 +182,29 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     void refresh_judge_ctrls_display();
     bool construct_judge_params(QString &err_str, QString &info_str);
 
-    void arrange_ui_according_to_cfgs(QRadioButton * &hidden_dura_rb, QRadioButton * &mb_intf_dura_rb);
+    void arrange_ui_according_to_syscfgs(QRadioButton * &hidden_dura_rb, QRadioButton * &mb_intf_dura_rb);
     test_content_enum_t get_test_content(QString *content_str);
-    float cube_current_trans_factor(expo_params_trans_factor_e_t trans, QString *unit_str = nullptr,
-                                    QString file_unit_str = "");
-    float expo_dura_trans_factor(expo_params_trans_factor_e_t trans, QString *unit_str = nullptr,
-                                 QString file_unit_str = "");
-    void record_ui_expo_dura_unit_str();
+    float cube_current_trans_factor(expo_params_trans_factor_e_t trans, QString file_unit_str = "");
+    float expo_dura_trans_factor(expo_params_trans_factor_e_t trans, QString file_unit_str = "");
 
     float m_ui_dura_start_in_ms = 0, m_ui_dura_end_in_ms = 0, m_ui_dura_step_in_ms = 0;
 
-    void use_cube_or_coil_current_str(bool coil_current = false);
+    /* the actuall used current intf unit.
+     * it is initiated by g_sys_configs_block.mb_cube_current_intf_unit (i.e
+     * config file). But it may change when user select different test content.
+    */
+    mb_cube_current_unit_e_t m_used_current_intf_unit, m_used_current_ui_unit;
+    void update_current_display();
+
+    /* from_rb_toggle: indicating if this function is called from radio button toggle
+     * handler. if it is true, "checked" indicates radio button state; else, "checked" is ignored.
+     */
+    void update_current_name_and_unit();
+    /* from_rb_toggle: indicating if this function is called from radio button toggle
+     * handler. if it is true, "u_str" indicates the str to be used; else, "u_str" is ignored.
+     */
+    void update_current_range_checker();
+    void update_expo_dura_unit(bool from_rb_toggle, QString u_str = "");
 
 public:
     QString collect_test_params();

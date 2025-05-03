@@ -29,7 +29,12 @@ static const char* gs_ini_key_dura_sec_max = "dura_sec_max";
 static const char* gs_ini_key_mb_reconnect_wait_sep_ms = "mb_reconnect_wait_sep_ms";
 static const char* gs_ini_key_test_time_stat_grain_sec = "test_time_stat_grain_sec";
 
+static const char* gs_ini_key_coil_current_a_min = "coil_current_a_min";
+static const char* gs_ini_key_coil_current_a_max = "coil_current_a_max";
+
 static const char* gs_ini_key_mb_cube_current_intf_unit = "mb_cube_current_intf_unit";
+static const char* gs_ini_key_ui_current_unit = "ui_current_unit";
+
 static const char* gs_ini_key_mb_dura_intf_unit = "mb_dura_intf_unit";
 static const char* gs_ini_key_hidden_ui_mb_dura_unit = "hidden_ui_mb_dura_unit";
 
@@ -44,8 +49,11 @@ static const char* gs_ini_key_tube_or_oilbox_no_disp = "tube_or_oilbox_no_disp";
 
 extern const char* g_str_cube_volt;
 extern const char* g_str_cube_current;
+extern const char* g_str_current;
 extern const char* g_str_expo_dura;
+extern const char* g_str_coil_current;
 extern const char* g_str_volt_unit_kv;
+extern const char* g_str_current_unit_a;
 extern const char* g_str_current_unit_ma;
 extern const char* g_str_current_unit_ua;
 extern const char* g_str_dura_unit_min;
@@ -63,6 +71,9 @@ static const float gs_def_cube_current_ma_min = 0.5;
 static const float gs_def_cube_current_ma_max = 5;
 static const float gs_def_dura_sec_min = 0.5;
 static const float gs_def_dura_sec_max = 1.4;
+
+static const float gs_def_coil_current_a_min = 0;
+static const float gs_def_coil_current_a_max = 2;
 
 static const float gs_def_cool_dura_factor = 30;
 static const int gs_def_extra_cool_time_ms = 2000;
@@ -86,12 +97,15 @@ static const char* gs_str_cfg_param_limit_error = "参数门限配置错误";
 static const char* gs_str_plz_check = "请检查！";
 static const char* gs_str_mb_intf_unit = "接口单位";
 static const char* gs_str_mb_intf_unit_error = "接口单位配置错误";
+static const char* gs_str_ui_unit_error = "ui显示单位配置错误";
 static const char* gs_str_should_be_one_val_of = "应为如下值之一：";
 static const char* gs_str_actual_val = "实际值";
 static const char* gs_str_hidden_ui_mb_dura_unit = "GUI隐藏的曝光时间单位选项";
 static const char* gs_str_cannot_be_the_same = "不能相等";
 
 static const mb_cube_current_unit_e_t gs_def_mb_cube_current_intf_unit = MB_CUBE_CURRENT_UNIT_UA;
+static const mb_cube_current_unit_e_t gs_def_ui_current_unit = MB_CUBE_CURRENT_UNIT_UA;
+
 static const mb_dura_unit_e_t gs_def_mb_dura_intf_unit = MB_DURA_UNIT_MS;
 static const mb_dura_unit_e_t gs_def_hidden_ui_mb_dura_unit = MB_DURA_UNIT_MIN;
 
@@ -169,6 +183,16 @@ bool fill_sys_configs(QString * ret_str_ptr)
                            g_sys_configs_block.dura_ms_max, gs_def_dura_sec_max,
                            1000, (RangeChecker<float>*)0);
 
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_coil_current_a_min, toFloat,
+                           g_sys_configs_block.coil_current_a_min, gs_def_coil_current_a_min,
+                           1, (RangeChecker<float>*)0);
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_coil_current_a_max, toFloat,
+                           g_sys_configs_block.coil_current_a_max, gs_def_coil_current_a_max,
+                           1, (RangeChecker<float>*)0);
+
+
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_cool_dura_factor, toFloat,
                            g_sys_configs_block.cool_dura_factor, gs_def_cool_dura_factor,
                            1, &gs_cfg_file_value_ge0_float_ranger);
@@ -204,6 +228,11 @@ bool fill_sys_configs(QString * ret_str_ptr)
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_cube_current_intf_unit, toInt,
                            g_sys_configs_block.mb_cube_current_intf_unit,
                            gs_def_mb_cube_current_intf_unit,
+                           1, (RangeChecker<int>*)0, (mb_cube_current_unit_e_t));
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_ui_current_unit, toInt,
+                           g_sys_configs_block.ui_current_unit,
+                           gs_def_ui_current_unit,
                            1, (RangeChecker<int>*)0, (mb_cube_current_unit_e_t));
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_mb_dura_intf_unit, toInt,
@@ -247,6 +276,10 @@ bool fill_sys_configs(QString * ret_str_ptr)
                 (g_sys_configs_block.dura_ms_min/1000), (g_sys_configs_block.dura_ms_max/1000),
                 &gs_cfg_file_value_gt0_float_ranger, g_str_dura_unit_s)
 
+    CHECK_LIMIT_RANGE(g_str_coil_current,
+                g_sys_configs_block.coil_current_a_min, g_sys_configs_block.coil_current_a_max,
+                &gs_cfg_file_value_ge0_float_ranger, g_str_current_unit_a)
+
     if(!ret)  ret_str = QString(gs_str_cfg_param_limit_error) + "," + gs_str_plz_check + "\n" + ret_str;
 #undef CHECK_LIMIT_RANGE
 
@@ -266,8 +299,11 @@ bool fill_sys_configs(QString * ret_str_ptr)
 
     QSet<mb_cube_current_unit_e_t> cube_current_unit_set;
     cube_current_unit_set MB_CUBE_CURRENT_UNIT_E;
-    CHECK_ENUM((QString(g_str_cube_current) + gs_str_mb_intf_unit_error + "," + gs_str_plz_check),
+    CHECK_ENUM((QString(g_str_current) + gs_str_mb_intf_unit_error + "," + gs_str_plz_check),
                g_sys_configs_block.mb_cube_current_intf_unit,
+               cube_current_unit_set, QString::number)
+    CHECK_ENUM((QString(g_str_current) + gs_str_ui_unit_error + "," + gs_str_plz_check),
+               g_sys_configs_block.ui_current_unit,
                cube_current_unit_set, QString::number)
 
     QSet<mb_dura_unit_e_t> dura_unit_set;

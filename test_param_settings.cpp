@@ -7,7 +7,6 @@
 #include "logger/logger.h"
 #include "test_param_settings.h"
 #include "ui_test_param_settings.h"
-#include "sysconfigs/sysconfigs.h"
 #include "version_def/version_def.h"
 
 static RangeChecker<int> gs_valid_cube_volt_kv_range;
@@ -21,6 +20,7 @@ static const char* gs_str_test_mode = "测试模式";
 static const char* gs_str_test_content = "测试内容";
 const char* g_str_cube_volt = "管电压";
 const char* g_str_cube_current = "管电流";
+const char* g_str_current = "电流";
 const char* g_str_expo_dura = "曝光时间";
 const char* g_str_coil_current = "灯丝电流";
 static const char* gs_str_current_name = g_str_cube_current;
@@ -46,6 +46,7 @@ static const char* gs_str_read_file_fail = "读取文件失败";
 static const char* gs_str_please_select_file = "请选择自定义曝光文件";
 static const char* gs_str_cust_file_sel_caption = "选择自定义曝光参数文件";
 const char* g_str_volt_unit_kv = "kV";
+const char* g_str_current_unit_a = "A";
 const char* g_str_current_unit_ma = "mA";
 const char* g_str_current_unit_ua = "uA";
 const char* g_str_dura_unit_min = "min";
@@ -70,9 +71,6 @@ static const char* gs_valid_cube_current_header_prefix_str = "current";
 static const char* gs_valid_expo_dura_header_prefix_str = "dura";
 static const char* gs_str_header_with_unit = "带参数单位的表头";
 static const char* gs_str_sep_by_comma = "以半角逗号分开";
-static const char* gs_str_as_in_order = "依次指示";
-static const char* gs_valid_header_line_min = "volt-kv,current-ma,dura-min";
-static const char* gs_valid_header_line_ms = "volt-kv,current-ma,dura-ms";
 static const char* gs_valid_header_line_s = "volt-kv,current-ma,dura-s";
 static const char* gs_cust_expo_file_item_sep_in_line = ",";
 static const char* gs_cust_expo_file_v_unit_sep = "-";
@@ -137,11 +135,11 @@ const testParamSettingsDialog::test_mode_espair_struct_t
     ARRANGE_CTRLS_ABILITY(ui->cubeVoltStepEdit, false, false, true, false, false)\
     ui->cubeVoltStepEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_volt, gs_str_step));\
     ARRANGE_CTRLS_ABILITY(ui->cubeCurrentStartEdit, true, true, true, false, false)\
-    ui->cubeCurrentStartEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_current, gs_str_start_val));\
+    ui->cubeCurrentStartEdit->setWhatsThis(QString("%1%2").arg(gs_str_current_name, gs_str_start_val));\
     ARRANGE_CTRLS_ABILITY(ui->cubeCurrentEndEdit, false, false, true, false, false)\
-    ui->cubeCurrentEndEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_current, gs_str_end_val));\
+    ui->cubeCurrentEndEdit->setWhatsThis(QString("%1%2").arg(gs_str_current_name, gs_str_end_val));\
     ARRANGE_CTRLS_ABILITY(ui->cubeCurrentStepEdit, false, false, true, false, false)\
-    ui->cubeCurrentStepEdit->setWhatsThis(QString("%1%2").arg(g_str_cube_current, gs_str_step));\
+    ui->cubeCurrentStepEdit->setWhatsThis(QString("%1%2").arg(gs_str_current_name, gs_str_step));\
     ARRANGE_CTRLS_ABILITY(ui->expoDuraStartEdit, true, true, true, false, false)\
     ui->expoDuraStartEdit->setWhatsThis(QString("%1%2").arg(g_str_expo_dura, gs_str_start_val));\
     ARRANGE_CTRLS_ABILITY(ui->expoDuraEndEdit, false, false, true, false, false)\
@@ -166,7 +164,7 @@ const testParamSettingsDialog::test_mode_espair_struct_t
     ARRANGE_CTRLS_ABILITY(ui->custExpoParamFileNoteEdit, false, false, false, true, true)\
 }
 
-void testParamSettingsDialog::arrange_ui_according_to_cfgs(QRadioButton * &hidden_dura_rb,
+void testParamSettingsDialog::arrange_ui_according_to_syscfgs(QRadioButton * &hidden_dura_rb,
                                                            QRadioButton * &mb_intf_dura_rb)
 {
     switch(g_sys_configs_block.hidden_ui_mb_dura_unit)
@@ -201,21 +199,7 @@ void testParamSettingsDialog::arrange_ui_according_to_cfgs(QRadioButton * &hidde
         break;
     }
 
-    switch(g_sys_configs_block.mb_cube_current_intf_unit)
-    {
-    case MB_CUBE_CURRENT_UNIT_MA:
-        ui->cubeCurrentLbl->setText(QString("%1（%2）").arg(gs_str_current_name,
-                                                          g_str_current_unit_ma));
-        ui->amtmAChkbox->setText(QString("%1(%2)").arg(gs_str_fb_current_name, g_str_current_unit_ma));
-        m_ui_cube_current_unit_str = g_str_current_unit_ma;
-        break;
-    default: //MB_CUBE_CURRENT_UNIT_UA:
-        ui->cubeCurrentLbl->setText(QString("%1（%2）").arg(gs_str_current_name,
-                                                          g_str_current_unit_ua));
-        ui->amtmAChkbox->setText(QString("%1(%2)").arg(gs_str_fb_current_name, g_str_current_unit_ua));
-        m_ui_cube_current_unit_str = g_str_current_unit_ua;
-        break;
-    }
+    update_current_name_and_unit();
 
     ui->readDistChBox->setVisible(g_sys_configs_block.distance_group_disp);
     ui->distmmChkbox->setVisible(g_sys_configs_block.distance_group_disp);
@@ -270,6 +254,9 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
         return;
     }
 
+    m_used_current_intf_unit = g_sys_configs_block.mb_cube_current_intf_unit;
+    m_used_current_ui_unit = g_sys_configs_block.ui_current_unit;
+
     gs_valid_cube_volt_kv_range.set_min_max(g_sys_configs_block.cube_volt_kv_min,
                                             g_sys_configs_block.cube_volt_kv_max);
     gs_valid_cube_volt_kv_range.set_unit_str(g_str_volt_unit_kv);
@@ -319,10 +306,14 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
 
     float expo_dura_ui_to_sw_f = expo_dura_trans_factor(EXPO_PARAMS_UI_TO_SW);
     SAVE_EXPO_DURA_UI_TO_SW(expo_dura_ui_to_sw_f);
+
     ui->testContentNormalRButton->setChecked(true);
 
+    m_test_params->test_content = get_test_content(nullptr); //default value
     QRadioButton *hidden_dura_rb, *mb_intf_dura_rb;
-    arrange_ui_according_to_cfgs(hidden_dura_rb, mb_intf_dura_rb);
+    arrange_ui_according_to_syscfgs(hidden_dura_rb, mb_intf_dura_rb);
+
+    /*------------------------------------------*/
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.insert(ui->custExpoParamFileNoteEdit);
@@ -330,7 +321,11 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
                                                           m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
     if(hidden_dura_rb->isChecked()) mb_intf_dura_rb->setChecked(true);
 
-    record_ui_expo_dura_unit_str();
+    m_test_params->test_content = get_test_content(nullptr);
+    update_current_name_and_unit();
+    update_expo_dura_unit(false);
+
+    SAVE_EXPO_DURA_UI_TO_SW(m_test_params->expo_param_block.ui_to_sw_dura_factor);
 
     TEST_PARAMS_CTRLS_ABT_TBL;
 
@@ -406,85 +401,87 @@ get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, float ui_to
 }
 
 float testParamSettingsDialog::cube_current_trans_factor(expo_params_trans_factor_e_t trans,
-                                                     QString *unit_str, QString file_unit_str)
+                                                         QString file_unit_str)
 
 {
     // sw use ma.
     float factor;
-    QString u_str;
 
-    if(EXPO_PARAMS_UI_TO_SW == trans || EXPO_PARAMS_SW_TO_MB_INTF == trans)
-    {//ui intf is always as mb intf in unit.
-        if(MB_CUBE_CURRENT_UNIT_MA == g_sys_configs_block.mb_cube_current_intf_unit)
+    //sw always used ma
+    if(EXPO_PARAMS_UI_TO_SW == trans)
+    {
+        switch(m_used_current_ui_unit)
         {
+        case MB_CUBE_CURRENT_UNIT_A:
+            factor = 1000;
+            break;
+
+        case MB_CUBE_CURRENT_UNIT_MA:
             factor = 1;
-            u_str = g_str_current_unit_ma;
+            break;
+
+        default: //MB_CUBE_CURRENT_UNIT_UA:
+            factor = (float)(1.0/1000);
+            break;
         }
-        else //MB_CUBE_CURRENT_UNIT_UA
+    }
+    else if(EXPO_PARAMS_SW_TO_MB_INTF == trans)
+    {
+        switch(m_used_current_intf_unit)
         {
-            factor = ((EXPO_PARAMS_UI_TO_SW == trans) ? (1.0/1000) : 1000);
-            u_str = g_str_current_unit_ua;
+        case MB_CUBE_CURRENT_UNIT_A:
+            factor = (float)(1.0/1000);
+            break;
+
+        case MB_CUBE_CURRENT_UNIT_MA:
+            factor = 1;
+            break;
+
+        default: //MB_CUBE_CURRENT_UNIT_UA:
+            factor = 1000;
+            break;
         }
     }
     else //EXPO_PARAMS_FILE_TO_SW
     {
-        if(file_unit_str == g_str_current_unit_ma)
+        if(file_unit_str == g_str_current_unit_a)
+        {
+            factor = 1000;
+        }
+        else if(file_unit_str == g_str_current_unit_ma)
         {
             factor = 1;
-            u_str = g_str_current_unit_ma;
         }
         else //g_str_current_unit_ua
         {
-            factor = 1.0/1000;
-            u_str = g_str_current_unit_ua;
+            factor = (float)(1.0/1000);
+            file_unit_str = g_str_current_unit_ua;
         }
     }
 
-    if(unit_str) *unit_str = u_str;
     return factor;
 }
 
 float testParamSettingsDialog::expo_dura_trans_factor(expo_params_trans_factor_e_t trans,
-                                              QString *unit_str, QString file_unit_str)
+                                                      QString file_unit_str)
 {
     //sw use ma.
     float factor;
-    QString u_str;
 
-    if(EXPO_PARAMS_UI_TO_SW == trans)
+    if(EXPO_PARAMS_UI_TO_SW == trans || EXPO_PARAMS_FILE_TO_SW == trans)
     {
-        if(ui->expoDuraUnitminRButton->isChecked())
+        QString str_to_check = ((EXPO_PARAMS_UI_TO_SW == trans) ? m_ui_expo_dura_unit_str : file_unit_str);
+        if(g_str_dura_unit_min == str_to_check)
         {
             factor = 60 * 1000;
-            u_str = g_str_dura_unit_min;
         }
-        else if(ui->expoDuraUnitsecRButton->isChecked())
+        else if(g_str_dura_unit_s == str_to_check)
         {
             factor = 1000;
-            u_str = g_str_dura_unit_s;
         }
         else //ms
         {
             factor = 1;
-            u_str = g_str_dura_unit_ms;
-        }
-    }
-    else if(EXPO_PARAMS_FILE_TO_SW == trans)
-    {
-        if(file_unit_str == g_str_dura_unit_min)
-        {
-            factor = 60 * 1000;
-            u_str = g_str_dura_unit_min;
-        }
-        else if(file_unit_str == g_str_dura_unit_s)
-        {
-            factor = 1000;
-            u_str = g_str_dura_unit_s;
-        }
-        else //ms
-        {
-            factor = 1;
-            u_str = g_str_dura_unit_ms;
         }
     }
     else //EXPO_PARAMS_SW_TO_MB_INTF
@@ -492,10 +489,10 @@ float testParamSettingsDialog::expo_dura_trans_factor(expo_params_trans_factor_e
         switch(g_sys_configs_block.mb_dura_intf_unit)
         {
             case MB_DURA_UNIT_MIN:
-                factor = 1.0/(60*1000);
+                factor = (float)(1.0/(60*1000));
                 break;
             case MB_DURA_UNIT_SEC:
-                factor = 1.0/1000;
+                factor = (float)(1.0/1000);
                 break;
             default: //MB_DURA_UNIT_MS:
                 factor = 1;
@@ -503,7 +500,6 @@ float testParamSettingsDialog::expo_dura_trans_factor(expo_params_trans_factor_e
         }
     }
 
-    if(unit_str) *unit_str = u_str;
     return factor;
 }
 
@@ -528,7 +524,8 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
                            &m_expo_params_from_ui.vals.cube_volt_kv_step,
                            m_expo_params_from_ui.err_msg_cube_volt_step);
 
-    ui_to_sw_factor = cube_current_trans_factor(EXPO_PARAMS_UI_TO_SW, &new_unit_str);
+    ui_to_sw_factor = m_test_params->expo_param_block.ui_to_sw_current_factor;
+    new_unit_str = m_ui_cube_current_unit_str;
     m_expo_params_from_ui.valid_cube_current_start =
         get_one_expo_param<float>(ui->cubeCurrentStartEdit, FLOAT_DATA, ui_to_sw_factor,
                            &gs_valid_cube_current_ma_range,
@@ -544,10 +541,9 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
                            nullptr,
                            &m_expo_params_from_ui.vals.cube_current_ma_step,
                            m_expo_params_from_ui.err_msg_cube_current_step, new_unit_str);
-    m_test_params->expo_param_block.sw_to_mb_current_factor = cube_current_trans_factor(EXPO_PARAMS_SW_TO_MB_INTF);
-    m_test_params->expo_param_block.ui_to_sw_current_factor = cube_current_trans_factor(EXPO_PARAMS_UI_TO_SW);
 
-    ui_to_sw_factor = expo_dura_trans_factor(EXPO_PARAMS_UI_TO_SW, &new_unit_str);
+    ui_to_sw_factor = m_test_params->expo_param_block.ui_to_sw_dura_factor;
+    new_unit_str = m_ui_expo_dura_unit_str;
     m_expo_params_from_ui.valid_expo_dura_start =
         get_one_expo_param<float>(ui->expoDuraStartEdit, FLOAT_DATA, ui_to_sw_factor,
                            &gs_valid_expo_dura_ms_range,
@@ -563,8 +559,6 @@ void testParamSettingsDialog::get_expo_param_vals_from_ui()
                            nullptr,
                            &m_expo_params_from_ui.vals.expo_dura_ms_step,
                            m_expo_params_from_ui.err_msg_expo_dura_step);
-    m_test_params->expo_param_block.sw_to_mb_dura_factor = expo_dura_trans_factor(EXPO_PARAMS_SW_TO_MB_INTF);
-    m_test_params->expo_param_block.ui_to_sw_dura_factor = expo_dura_trans_factor(EXPO_PARAMS_UI_TO_SW);
 
     m_expo_params_from_ui.valid_expo_cnt =
         get_one_expo_param<int>(ui->repeatsNumEdit, INT_DATA, 1,
@@ -613,7 +607,7 @@ bool is_cube_volt_unit_str_valid(QString s)
 
 bool is_cube_current_unit_str_valid(QString s)
 {
-    return ((s == g_str_current_unit_ua) || (s == g_str_current_unit_ma));
+    return ((s == g_str_current_unit_ua) || (s == g_str_current_unit_ma) || (s == g_str_current_unit_a));
 }
 
 bool is_expo_dura_unit_str_valid(QString s)
@@ -702,7 +696,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                 break;
             }
             cube_current_file_to_sw_factor
-                    = cube_current_trans_factor(EXPO_PARAMS_FILE_TO_SW, nullptr, file_current_unit_str);
+                    = cube_current_trans_factor(EXPO_PARAMS_FILE_TO_SW, file_current_unit_str);
 
             file_dura_unit_str = h_items[gs_cust_expo_file_dura_item_idx];
             if(!file_dura_unit_str.contains(gs_cust_expo_file_v_unit_sep))
@@ -715,8 +709,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
             {
                 break;
             }
-            expo_dura_file_to_sw_factor
-                    = expo_dura_trans_factor(EXPO_PARAMS_FILE_TO_SW, nullptr, file_dura_unit_str);
+            expo_dura_file_to_sw_factor = expo_dura_trans_factor(EXPO_PARAMS_FILE_TO_SW, file_dura_unit_str);
             valid_line = true;
             break;
         }while(true);
@@ -737,6 +730,9 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
         cust_file.close();
         return false;
     }
+
+    m_test_params->expo_param_block.file_to_sw_current_factor = cube_current_file_to_sw_factor;
+    m_test_params->expo_param_block.file_to_sw_dura_factor = expo_dura_file_to_sw_factor;
 
     int line_no = 2;
     QStringList line_items;
@@ -996,7 +992,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
         WRONG_HEADER_STR(valid_cube_current_header_strs());
     }
     cube_current_file_to_sw_factor
-            = cube_current_trans_factor(EXPO_PARAMS_FILE_TO_SW, nullptr, file_current_unit_str);
+            = cube_current_trans_factor(EXPO_PARAMS_FILE_TO_SW, file_current_unit_str);
     QVector<float> cube_current_ma_v;
     for(item_idx = 1; item_idx < item_cnt; ++item_idx)
     {
@@ -1013,6 +1009,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
         cube_current_ma_v.append(ma);
     }
     current_cnt = cube_current_ma_v.count();
+    m_test_params->expo_param_block.file_to_sw_current_factor = cube_current_file_to_sw_factor;
 
     /*3rd line: expo dura*/
     if(!file_stream.readLineInto(&line)) READ_CUST_FILE_ERR;
@@ -1028,8 +1025,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
     {
         WRONG_HEADER_STR(valid_expo_dura_current_header_str());
     }
-    expo_dura_file_to_sw_factor
-            = expo_dura_trans_factor(EXPO_PARAMS_FILE_TO_SW, nullptr, file_dura_unit_str);
+    expo_dura_file_to_sw_factor = expo_dura_trans_factor(EXPO_PARAMS_FILE_TO_SW, file_dura_unit_str);
     QVector<float> dura_ms_v;
     max_ms = 0;
     for(item_idx = 1; item_idx < item_cnt; ++item_idx)
@@ -1048,6 +1044,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
         if(ms > max_ms) max_ms = ms;
     }
     dura_cnt = dura_ms_v.count();
+    m_test_params->expo_param_block.file_to_sw_dura_factor = expo_dura_file_to_sw_factor;
 
     int i, j, k;
     expo_param_triple_struct_t expo_param_triple;
@@ -1105,8 +1102,6 @@ QString testParamSettingsDialog::collect_test_params()
     QString ret_str;
     float max_expo_dura;
     QString file_content;
-
-    record_ui_expo_dura_unit_str();
 
     if(!m_test_params)
     {
@@ -1581,11 +1576,11 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
     if(!m_test_params || !m_test_params->valid) return;
     QString &info_str = m_test_params->info_str;
 
-    cube_current_sw_to_ui_factor = cube_current_trans_factor(EXPO_PARAMS_UI_TO_SW, &current_unit_s);
-    cube_current_sw_to_ui_factor = 1/cube_current_sw_to_ui_factor;
+    cube_current_sw_to_ui_factor = 1/(m_test_params->expo_param_block.ui_to_sw_current_factor);
+    current_unit_s = m_ui_cube_current_unit_str;
 
-    expo_dura_sw_to_ui_factor = expo_dura_trans_factor(EXPO_PARAMS_UI_TO_SW, &dura_unit_s);
-    expo_dura_sw_to_ui_factor = 1/expo_dura_sw_to_ui_factor;
+    expo_dura_sw_to_ui_factor = 1/(m_test_params->expo_param_block.ui_to_sw_dura_factor);
+    dura_unit_s = m_ui_expo_dura_unit_str;
 
     info_str = QString("%1:").arg(gs_str_test_mode);
     info_str += test_mode_list[test_mode].s + "\n";
@@ -2030,51 +2025,131 @@ bool testParamSettingsDialog::expo_params_ui_sync(expo_params_ui_sync_type_e_t d
     }
 }
 
-void testParamSettingsDialog::record_ui_expo_dura_unit_str()
+void testParamSettingsDialog::update_expo_dura_unit(bool from_rb_toggle, QString u_str)
 {
-    if(ui->expoDuraUnitmsRButton->isChecked())
+    if(!from_rb_toggle)
     {
-        m_ui_expo_dura_unit_str = g_str_dura_unit_ms;
+        if(ui->expoDuraUnitmsRButton->isChecked())
+        {
+            u_str = g_str_dura_unit_ms;
+        }
+        else if(ui->expoDuraUnitsecRButton->isChecked())
+        {
+            u_str = g_str_dura_unit_s;
+        }
+        else //ui->expoDuraUnitminRButton->isChecked()
+        {
+            u_str = g_str_dura_unit_min;
+        }
     }
-    else if(ui->expoDuraUnitsecRButton->isChecked())
-    {
-        m_ui_expo_dura_unit_str = g_str_dura_unit_s;
-    }
-    else //ui->expoDuraUnitminRButton->isChecked()
-    {
-        m_ui_expo_dura_unit_str = g_str_dura_unit_min;
-    }
+    m_ui_expo_dura_unit_str = u_str;
+
+    m_test_params->expo_param_block.sw_to_mb_dura_factor = expo_dura_trans_factor(EXPO_PARAMS_SW_TO_MB_INTF);
+    m_test_params->expo_param_block.ui_to_sw_dura_factor = expo_dura_trans_factor(EXPO_PARAMS_UI_TO_SW);
 }
 
-void testParamSettingsDialog::use_cube_or_coil_current_str(bool coil_current)
+void testParamSettingsDialog::update_current_display()
 {
-    if(coil_current)
-    {
-        gs_str_current_name = g_str_coil_current;
-        gs_str_fb_current_name = g_str_fb_coil_current;
-    }
-    else
-    {
-        gs_str_current_name = g_str_cube_current;
-        gs_str_fb_current_name = g_str_fb_cube_current;
-    }
-
     ui->cubeCurrentLbl->setText(QString("%1（%2）").arg(gs_str_current_name,
                                                       m_ui_cube_current_unit_str));
-    ui->amtmAChkbox->setText(QString("%1(%2)").arg(gs_str_fb_current_name, m_ui_cube_current_unit_str));
+    ui->amtmAChkbox->setText(QString("%1(%2)").arg(gs_str_fb_current_name,
+                                                   m_ui_cube_current_unit_str));
+
+    ui->cubeCurrentStartEdit->setWhatsThis(QString("%1%2").arg(gs_str_current_name, gs_str_start_val));
+    ui->cubeCurrentEndEdit->setWhatsThis(QString("%1%2").arg(gs_str_current_name, gs_str_end_val));
+    ui->cubeCurrentStepEdit->setWhatsThis(QString("%1%2").arg(gs_str_current_name, gs_str_step));
+}
+
+#define USE_NEW_CURRENT_UNIT_STR \
+    switch(m_used_current_ui_unit) \
+    {\
+    case MB_CUBE_CURRENT_UNIT_A:\
+        m_ui_cube_current_unit_str = g_str_current_unit_a;\
+        break;\
+    case MB_CUBE_CURRENT_UNIT_MA:\
+        m_ui_cube_current_unit_str = g_str_current_unit_ma;\
+        break;\
+    default: /* MB_CUBE_CURRENT_UNIT_UA */\
+        m_ui_cube_current_unit_str = g_str_current_unit_ua;\
+        break;\
+    }
+
+#define USE_NEW_CURRENT_NAME_STR(coil) \
+    if((coil))\
+    {\
+        gs_str_current_name = g_str_coil_current;\
+        gs_str_fb_current_name = g_str_fb_coil_current;\
+    }\
+    else\
+    {\
+        gs_str_current_name = g_str_cube_current;\
+        gs_str_fb_current_name = g_str_fb_cube_current;\
+    }
+
+void testParamSettingsDialog::update_current_name_and_unit()
+{
+    bool checked = false;
+
+    if(TEST_CONTENT_ONLY_COIL == m_test_params->test_content
+            || TEST_CONTENT_DECOUPLE == m_test_params->test_content)
+    {
+        checked = true;
+    }
+
+    m_used_current_ui_unit = checked ? MB_CUBE_CURRENT_UNIT_A : g_sys_configs_block.ui_current_unit;
+    m_used_current_intf_unit = checked ? MB_CUBE_CURRENT_UNIT_MA : g_sys_configs_block.mb_cube_current_intf_unit;
+
+    m_test_params->expo_param_block.sw_to_mb_current_factor = cube_current_trans_factor(EXPO_PARAMS_SW_TO_MB_INTF);
+    m_test_params->expo_param_block.ui_to_sw_current_factor = cube_current_trans_factor(EXPO_PARAMS_UI_TO_SW);
+
+    USE_NEW_CURRENT_UNIT_STR;
+
+    USE_NEW_CURRENT_NAME_STR(checked);
+
+    update_current_display();
+
+    /*update range*/
+    update_current_range_checker();
+}
+
+void testParamSettingsDialog::update_current_range_checker()
+{
+    float cfg_to_sw_factor;
+    switch(m_test_params->test_content)
+    {
+    case TEST_CONTENT_COOL_HV:
+        gs_valid_cube_current_ma_range.set_min_max(0, g_sys_configs_block.cube_current_ma_max);
+        gs_valid_cube_current_ma_range.set_edge(EDGE_INCLUDED, EDGE_INCLUDED);
+        break;
+
+    case TEST_CONTENT_ONLY_COIL:
+    case TEST_CONTENT_DECOUPLE:
+        cfg_to_sw_factor = 1000;
+        gs_valid_cube_current_ma_range.set_min_max(g_sys_configs_block.coil_current_a_min * cfg_to_sw_factor,
+                                               g_sys_configs_block.coil_current_a_max * cfg_to_sw_factor);
+        gs_valid_cube_current_ma_range.set_edge(EDGE_EXCLUDED, EDGE_INCLUDED);
+        break;
+
+    default: //TEST_CONTENT_NORMAL
+        gs_valid_cube_current_ma_range.set_min_max(g_sys_configs_block.cube_current_ma_min,
+                                                   g_sys_configs_block.cube_current_ma_max);
+        gs_valid_cube_current_ma_range.set_edge(EDGE_INCLUDED, EDGE_INCLUDED);
+        break;
+    }
+    gs_valid_cube_current_ma_range.set_unit_str(m_ui_cube_current_unit_str);
 }
 
 void testParamSettingsDialog::on_expoDuraUnitmsRButton_toggled(bool checked)
 {
     if(checked)
     {
+        update_expo_dura_unit(true, g_str_dura_unit_ms);
         LOAD_EXPO_DUAR_SW_TO_UI(1);
     }
     else
     {
         SAVE_EXPO_DURA_UI_TO_SW(1);
     }
-    record_ui_expo_dura_unit_str();
 }
 
 void testParamSettingsDialog::on_expoDuraUnitsecRButton_toggled(bool checked)
@@ -2082,13 +2157,13 @@ void testParamSettingsDialog::on_expoDuraUnitsecRButton_toggled(bool checked)
     float ui_to_sw_f = 1000.0;
     if(checked)
     {
+        update_expo_dura_unit(true, g_str_dura_unit_s);
         LOAD_EXPO_DUAR_SW_TO_UI(1/ui_to_sw_f);
     }
     else
     {
         SAVE_EXPO_DURA_UI_TO_SW(ui_to_sw_f);
     }
-    record_ui_expo_dura_unit_str();
 }
 
 void testParamSettingsDialog::on_expoDuraUnitminRButton_toggled(bool checked)
@@ -2096,49 +2171,47 @@ void testParamSettingsDialog::on_expoDuraUnitminRButton_toggled(bool checked)
     float ui_to_sw_f = 60 * 1000.0;
     if(checked)
     {
+        update_expo_dura_unit(true, g_str_dura_unit_min);
         LOAD_EXPO_DUAR_SW_TO_UI(1/ui_to_sw_f);
     }
     else
     {
         SAVE_EXPO_DURA_UI_TO_SW(ui_to_sw_f);
     }
-    record_ui_expo_dura_unit_str();
 }
 
-void testParamSettingsDialog::on_testContentDecoupleRButton_toggled(bool checked)
+void testParamSettingsDialog::on_testContentNormalRButton_toggled(bool checked)
 {
-    use_cube_or_coil_current_str(checked);
+    if(checked)
+    {
+        m_test_params->test_content = TEST_CONTENT_NORMAL;
+        update_current_name_and_unit();
+    }
 }
-
 
 void testParamSettingsDialog::on_testContentCoolHVRButton_toggled(bool checked)
 {
     if(checked)
     {
-        gs_valid_cube_current_ma_range.set_min_max(0,
-                                               gs_valid_cube_current_ma_range.range_max());
-    }
-    else
-    {
-        gs_valid_cube_current_ma_range.set_min_max(g_sys_configs_block.cube_current_ma_min,
-                                                   g_sys_configs_block.cube_current_ma_max);
+        m_test_params->test_content = TEST_CONTENT_COOL_HV;
+        update_current_name_and_unit();
     }
 }
-
 
 void testParamSettingsDialog::on_testContentOnlyCoilRButton_toggled(bool checked)
 {
     if(checked)
     {
-        gs_valid_cube_volt_kv_range.set_min_max(0,
-                                               gs_valid_cube_volt_kv_range.range_max());
+        m_test_params->test_content = TEST_CONTENT_ONLY_COIL;
+        update_current_name_and_unit();
     }
-    else
-    {
-        gs_valid_cube_volt_kv_range.set_min_max(g_sys_configs_block.cube_volt_kv_min,
-                                                g_sys_configs_block.cube_volt_kv_max);
-    }
-
-    use_cube_or_coil_current_str(checked);
 }
 
+void testParamSettingsDialog::on_testContentDecoupleRButton_toggled(bool checked)
+{
+    if(checked)
+    {
+        m_test_params->test_content = TEST_CONTENT_DECOUPLE;
+        update_current_name_and_unit();
+    }
+}

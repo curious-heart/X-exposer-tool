@@ -6,7 +6,8 @@
 #define ENUM_NAME_DEF(e) e,
 #define MB_CUBE_CURRENT_UNIT_E \
     ENUM_NAME_DEF(MB_CUBE_CURRENT_UNIT_UA)\
-    ENUM_NAME_DEF(MB_CUBE_CURRENT_UNIT_MA)
+    ENUM_NAME_DEF(MB_CUBE_CURRENT_UNIT_MA)\
+    ENUM_NAME_DEF(MB_CUBE_CURRENT_UNIT_A)
 typedef enum
 {
     MB_CUBE_CURRENT_UNIT_E
@@ -44,11 +45,13 @@ typedef struct
     float dura_ms_min;
     float dura_ms_max;
 
+    float coil_current_a_min, coil_current_a_max;
+
     int mb_reconnect_wait_ms, mb_err_retry_wait_ms;
     int test_time_stat_grain_sec;
     int mb_one_cmd_round_time_ms;
 
-    mb_cube_current_unit_e_t mb_cube_current_intf_unit;
+    mb_cube_current_unit_e_t mb_cube_current_intf_unit, ui_current_unit;
     mb_dura_unit_e_t mb_dura_intf_unit, hidden_ui_mb_dura_unit;
 
     int test_proc_monitor_period_ms;

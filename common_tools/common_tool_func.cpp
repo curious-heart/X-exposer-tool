@@ -567,7 +567,7 @@ static const char* gs_range_checker_err_msg_invalid_eval =
         "Invalid range: min must be less than or equal to max!";
 
 template <typename T>
-RangeChecker<T>::RangeChecker(T min, T max, const char* unit_str,
+RangeChecker<T>::RangeChecker(T min, T max, QString unit_str,
                            range_edge_enum_t low_edge, range_edge_enum_t up_edge)
 {
     if((low_edge > EDGE_INFINITE) || (up_edge > EDGE_INFINITE)
@@ -647,7 +647,8 @@ range_str(common_data_type_enum_t d_type, double factor, QString new_unit_str )
                 ((INT_DATA == d_type) ? QString::number((int)(max * factor)) :
                                         QString::number((float)(max * factor)));
     ret_str += (EDGE_INCLUDED == up_edge) ? "]" : ")";
-    ret_str += ((1 == factor) || new_unit_str.isEmpty()) ? QString(unit_str) : new_unit_str;
+    //ret_str += ((1 == factor) || new_unit_str.isEmpty()) ? QString(unit_str) : new_unit_str;
+    ret_str += (new_unit_str.isEmpty()) ? QString(unit_str) : new_unit_str;
     return ret_str;
 }
 
@@ -665,7 +666,7 @@ template <typename T> void RangeChecker<T>::set_edge(range_edge_enum_t low_e, ra
     low_edge = low_e; up_edge = up_e;
 }
 
-template <typename T> void RangeChecker<T>::set_unit_str(const char* unit_s)
+template <typename T> void RangeChecker<T>::set_unit_str(QString unit_s)
 {
     unit_str = unit_s;
 }
