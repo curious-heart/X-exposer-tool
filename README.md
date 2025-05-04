@@ -15,6 +15,4 @@
 - 软件内部：使用ms。
 - modbus接口：ms、s或min。配置文件参数mb_dura_intf_unit决定。
 
-软件内部的对modbus回读数据是否超标的判断：TestResultJudge内实际是没有单位的。  
-20250430新需求的实现中，需要需修改。之前的实现中没有问题：回读数据目前只有管电压、管电流和测距值，这三者在GUI和modbus接口的单位都是一样的，所以可以直接将modbus回读的数据与GUI设置的范围进行比较，不需要转换。
-
+软件内部的对modbus回读数据是否超标的判断：TestResultJudge内实际是没有单位的。它只是简单将设置寄存器的值和回读寄存器的值进行比较。在构造judge结构（construct_judge_params）时，会进行一次单位转换。

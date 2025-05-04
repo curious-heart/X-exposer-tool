@@ -34,6 +34,7 @@ typedef struct
 {
     hv_mb_reg_e_t ref_reg_no, val_reg_no;
     judge_gui_ctrls_s_t gui_ctrls;
+    float ui_to_mb_intf_factor;
 }judge_ctrls_s_t;
 
 typedef struct
@@ -163,12 +164,16 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     bool get_expo_param_vals_from_cust_file(QString file_fpn,
                                             QVector<expo_param_triple_struct_t> &param_vector,
                                             float * max_expo_dura_ms,
-                                            QString &ret_str, QString &file_content);
+                                            QString &ret_str, QString &file_content,
+                                            bool only_check_unit = false);
 
     bool get_expo_param_vals_from_cust2_file(QString file_fpn,
                                             QVector<expo_param_triple_struct_t> &param_vector,
                                             float * max_expo_dura_ms,
-                                            QString &ret_str, QString &file_content);
+                                            QString &ret_str, QString &file_content,
+                                            bool only_check_unit = false);
+    void update_file_unit_info();
+    void set_ui_dura_rb_according_to_file();
     void refresh_controls_display();
     void format_test_params_info_str(QString &file_content);
 
@@ -181,11 +186,15 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     void setup_judge_ctrls();
     void refresh_judge_ctrls_display();
     bool construct_judge_params(QString &err_str, QString &info_str);
+    void update_judge_ui_to_mb_intf_factor();
 
     void arrange_ui_according_to_syscfgs(QRadioButton * &hidden_dura_rb, QRadioButton * &mb_intf_dura_rb);
+    QString m_hidden_dura_unit_str;
     test_content_enum_t get_test_content(QString *content_str);
-    float cube_current_trans_factor(expo_params_trans_factor_e_t trans, QString file_unit_str = "");
-    float expo_dura_trans_factor(expo_params_trans_factor_e_t trans, QString file_unit_str = "");
+    float cube_current_trans_factor(expo_params_trans_factor_e_t trans, QString file_unit_str = "",
+                                    mb_cube_current_unit_e_t * file_unit = nullptr);
+    float expo_dura_trans_factor(expo_params_trans_factor_e_t trans, QString file_unit_str = "",
+                                 mb_dura_unit_e_t * file_unit = nullptr);
 
     float m_ui_dura_start_in_ms = 0, m_ui_dura_end_in_ms = 0, m_ui_dura_step_in_ms = 0;
 
@@ -193,7 +202,8 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
      * it is initiated by g_sys_configs_block.mb_cube_current_intf_unit (i.e
      * config file). But it may change when user select different test content.
     */
-    mb_cube_current_unit_e_t m_used_current_intf_unit, m_used_current_ui_unit;
+    mb_cube_current_unit_e_t m_used_current_intf_unit, m_used_current_ui_unit, m_file_current_unit;
+    mb_dura_unit_e_t m_file_dura_unit;
     void update_current_display();
 
     /* from_rb_toggle: indicating if this function is called from radio button toggle
