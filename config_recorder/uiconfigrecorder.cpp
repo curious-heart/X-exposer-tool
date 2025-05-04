@@ -113,17 +113,21 @@ void UiConfigRecorder::load_configs_to_ui(QWidget * ui_widget,
 
     cfg_setting.beginGroup(ui_widget->objectName());
 
-    READ_FROM_CFG(QLineEdit, ,(!str_val.isEmpty()), setText(str_val));
-    READ_FROM_CFG(QTextEdit, ,(!str_val.isEmpty()), setText(str_val));
-    READ_FROM_CFG(QComboBox, int_val = str_val.toInt(&tr_ret),
-                  (tr_ret && (int_val < LIST_VAR_NAME(QComboBox)[idx]->count())),
-                  setCurrentIndex(int_val));
+    /* Be careful: Load radiobutton and checkbox firstly is more reasonable, because these
+     * ones are normally used as config-switch, which may affect the content of editor widget.
+    */
+
     READ_FROM_CFG(QRadioButton, int_val = str_val.toInt(&tr_ret),
                   (tr_ret && (BOX_CHECKED == int_val || BOX_UNCHECKED == int_val)),
                   setChecked(int_val));
     READ_FROM_CFG(QCheckBox, int_val = str_val.toInt(&tr_ret),
                   (tr_ret && (BOX_CHECKED == int_val || BOX_UNCHECKED == int_val)),
                   setChecked(int_val));
+    READ_FROM_CFG(QComboBox, int_val = str_val.toInt(&tr_ret),
+                  (tr_ret && (int_val < LIST_VAR_NAME(QComboBox)[idx]->count())),
+                  setCurrentIndex(int_val));
+    READ_FROM_CFG(QLineEdit, ,(!str_val.isEmpty()), setText(str_val));
+    READ_FROM_CFG(QTextEdit, ,(!str_val.isEmpty()), setText(str_val));
 
     cfg_setting.endGroup();
 }

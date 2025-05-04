@@ -273,6 +273,9 @@
                 <property name="text">
                  <string>s</string>
                 </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
                </widget>
               </item>
               <item>

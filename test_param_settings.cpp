@@ -167,6 +167,8 @@ const testParamSettingsDialog::test_mode_espair_struct_t
 void testParamSettingsDialog::arrange_ui_according_to_syscfgs(QRadioButton * &hidden_dura_rb,
                                                            QRadioButton * &mb_intf_dura_rb)
 {
+    /*This function should only set visiable attribute.*/
+
     switch(g_sys_configs_block.hidden_ui_mb_dura_unit)
     {
     case MB_DURA_UNIT_MS:
@@ -186,20 +188,15 @@ void testParamSettingsDialog::arrange_ui_according_to_syscfgs(QRadioButton * &hi
     switch(g_sys_configs_block.mb_dura_intf_unit)
     {
     case MB_DURA_UNIT_MS:
-        ui->expoDuraUnitmsRButton->setChecked(true);
         mb_intf_dura_rb = ui->expoDuraUnitmsRButton;
         break;
     case MB_DURA_UNIT_SEC:
-        ui->expoDuraUnitsecRButton->setChecked(true);
         mb_intf_dura_rb = ui->expoDuraUnitsecRButton;
         break;
     default: //MB_DURA_UNIT_MIN:
-        ui->expoDuraUnitminRButton->setChecked(true);
         mb_intf_dura_rb = ui->expoDuraUnitminRButton;
         break;
     }
-
-    update_current_name_and_unit();
 
     ui->readDistChBox->setVisible(g_sys_configs_block.distance_group_disp);
     ui->distmmChkbox->setVisible(g_sys_configs_block.distance_group_disp);
@@ -234,9 +231,14 @@ void testParamSettingsDialog::arrange_ui_according_to_syscfgs(QRadioButton * &hi
 
 #define LOAD_EXPO_DUAR_SW_TO_UI(sw_to_ui_f) \
 {\
+    static bool init = true; \
+    if(init) init = false; \
+    else\
+    {\
     ui->expoDuraStartEdit->setText(QString::number(m_ui_dura_start_in_ms * (sw_to_ui_f))); \
     ui->expoDuraEndEdit->setText(QString::number(m_ui_dura_end_in_ms * (sw_to_ui_f))); \
     ui->expoDuraStepEdit->setText(QString::number(m_ui_dura_step_in_ms * (sw_to_ui_f))); \
+    }\
 }
 
 testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
@@ -304,14 +306,15 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     ui->limitShortestCoolDuraChBox->setChecked(true);
     ui->readDistChBox->setChecked(true);
 
-    float expo_dura_ui_to_sw_f = expo_dura_trans_factor(EXPO_PARAMS_UI_TO_SW);
-    SAVE_EXPO_DURA_UI_TO_SW(expo_dura_ui_to_sw_f);
-
     ui->testContentNormalRButton->setChecked(true);
 
     m_test_params->test_content = get_test_content(nullptr); //default value
     QRadioButton *hidden_dura_rb, *mb_intf_dura_rb;
     arrange_ui_according_to_syscfgs(hidden_dura_rb, mb_intf_dura_rb);
+    if(hidden_dura_rb->isChecked() || !(mb_intf_dura_rb->isChecked()))
+    {
+        mb_intf_dura_rb->setChecked(true);
+    }
 
     /*------------------------------------------*/
 
@@ -319,7 +322,10 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     m_rec_ui_cfg_fout.insert(ui->custExpoParamFileNoteEdit);
     if(m_cfg_recorder) m_cfg_recorder->load_configs_to_ui(this,
                                                           m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
-    if(hidden_dura_rb->isChecked()) mb_intf_dura_rb->setChecked(true);
+    if(hidden_dura_rb->isChecked())
+    {
+        mb_intf_dura_rb->setChecked(true);
+    }
 
     m_test_params->test_content = get_test_content(nullptr);
     update_current_name_and_unit();
