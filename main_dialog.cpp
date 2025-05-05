@@ -373,16 +373,17 @@ Dialog::Dialog(QWidget *parent)
     USE_CUBE_OR_COIL_CURRENT_STR;
 
     m_mbRegsChartWnd = new MbRegsChartDisp(this);
-    if(m_mbRegsChartWnd)
-    {
-       m_mbRegsChartWnd->setAttribute(Qt::WA_DeleteOnClose, false);
-    }
+    m_mbRegsChartWnd->setAttribute(Qt::WA_DeleteOnClose, false);
 
     m_init_ok = true;
 }
 
 Dialog::~Dialog()
 {
+    m_reconn_wait_timer.stop();
+    m_time_stat_timer.stop();
+    m_test_proc_monitor_timer.stop();
+
     if(QModbusDevice::ConnectedState == m_modbus_state)
     {
         modbus_disconnect();
@@ -508,7 +509,7 @@ void Dialog::select_modbus_device()
     {
         if(!m_modbus_device || (m_curr_conn_type != m_hv_conn_params.type))
         {
-            if(m_modbus_device) delete m_modbus_device;
+            if(m_modbus_device) m_modbus_device->deleteLater();
 
             m_curr_conn_type = m_hv_conn_params.type;
             if(CONN_TYPE_TCPIP == m_curr_conn_type)
@@ -762,27 +763,31 @@ bool Dialog::set_mb_expo_triple()
 
 void Dialog::display_mb_regs_chart()
 {
-    if(m_mbRegsChartWnd)
+    if(!m_mbRegsChartWnd)
     {
-        if(m_testParamSettingsDialog)
-        {
-            QString name_str, unit_str;
-            int v_low, v_up;
-            float c_low, c_up;
-
-            m_testParamSettingsDialog->get_volt_info_for_chart(name_str, unit_str, v_low, v_up);
-            m_mbRegsChartWnd->set_volt_name_and_unit(name_str, unit_str);
-            m_mbRegsChartWnd->set_volt_range(v_low, v_up);
-
-            m_testParamSettingsDialog->get_current_info_for_chart(name_str, unit_str, c_low, c_up);
-            m_mbRegsChartWnd->set_current_name_and_unit(name_str, unit_str);
-            m_mbRegsChartWnd->set_current_range(c_low, c_up);
-        }
-
-        m_mbRegsChartWnd->showNormal();
-        m_mbRegsChartWnd->raise();
-        m_mbRegsChartWnd->activateWindow();
+         m_mbRegsChartWnd = new MbRegsChartDisp(this);
+         m_mbRegsChartWnd->setAttribute(Qt::WA_DeleteOnClose, false);
     }
+
+    if(m_testParamSettingsDialog)
+    {
+        QString name_str, unit_str;
+        int v_low, v_up;
+        float c_low, c_up;
+
+        m_testParamSettingsDialog->get_volt_info_for_chart(name_str, unit_str, v_low, v_up);
+        m_mbRegsChartWnd->set_volt_name_and_unit(name_str, unit_str);
+        m_mbRegsChartWnd->set_volt_range(v_low, v_up);
+
+        m_testParamSettingsDialog->get_current_info_for_chart(name_str, unit_str, c_low, c_up);
+        m_mbRegsChartWnd->set_current_name_and_unit(name_str, unit_str);
+        m_mbRegsChartWnd->set_current_range(c_low, c_up);
+    }
+
+    m_mbRegsChartWnd->restoreSavedGeometry();
+    m_mbRegsChartWnd->showNormal();
+    m_mbRegsChartWnd->raise();
+    m_mbRegsChartWnd->activateWindow();
 }
 
 void Dialog::on_startTestBtn_clicked()
@@ -1360,5 +1365,13 @@ void Dialog::modbus_op_finished_sig_handler()
 void Dialog::on_testPromMonitorClrBtn_clicked()
 {
     ui->testProcMonitorTxtEdit->clear();
+
+    if(m_mbRegsChartWnd) m_mbRegsChartWnd->clearData();
+}
+
+
+void Dialog::on_dispChartBtn_clicked()
+{
+    display_mb_regs_chart();
 }
 

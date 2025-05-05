@@ -140,6 +140,8 @@ private slots:
     void begin_exposure_sig_handler(bool start = true);
 
     bool set_mb_expo_triple();
+    void on_dispChartBtn_clicked();
+
 signals:
     void go_test_sig();
     void stop_test_sig(tester_end_code_enum_t code);

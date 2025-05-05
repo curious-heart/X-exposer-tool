@@ -16,6 +16,8 @@ static const int gs_def_time_axis_pt_cnt = 100;
 #define VOLT_TITLE_TEXT m_volt_name_str + "(" + m_volt_unit_str + ")"
 #define CURRENT_TITLE_TEXT m_current_name_str + "(" + m_current_unit_str + ")"
 
+#define AXIS_RANGE_WITH_MARGIN(v, margin) ((v) * (1 + (margin)))
+
 MbRegsChartDisp::MbRegsChartDisp(QWidget *parent)
     : QMainWindow(parent),
       m_volt_axis_low(gs_def_volt_axis_low), m_volt_axis_up(gs_def_volt_axis_up),
@@ -46,19 +48,33 @@ MbRegsChartDisp::MbRegsChartDisp(QWidget *parent)
 
     volt_axis_Y = new QValueAxis();
     volt_axis_Y->setTitleText(VOLT_TITLE_TEXT);
-    volt_axis_Y->setRange(m_volt_axis_low, m_volt_axis_up);
+    volt_axis_Y->setRange(AXIS_RANGE_WITH_MARGIN(m_volt_axis_low, m_volt_axis_low_margin),
+                          AXIS_RANGE_WITH_MARGIN(m_volt_axis_up, m_volt_axis_up_margin));
     chart->addAxis(volt_axis_Y, Qt::AlignLeft);
     voltSeries->attachAxis(volt_axis_Y);
 
     current_axis_Y = new QValueAxis();
     current_axis_Y->setTitleText(CURRENT_TITLE_TEXT);
-    current_axis_Y->setRange(m_current_axis_low, m_current_axis_up);
+    current_axis_Y->setRange(AXIS_RANGE_WITH_MARGIN(m_current_axis_low, m_current_axis_low_margin),
+                           AXIS_RANGE_WITH_MARGIN(m_current_axis_up, m_current_axis_up_margin));
     chart->addAxis(current_axis_Y, Qt::AlignRight);
     currentSeries->attachAxis(current_axis_Y);
 
     QChartView *chartView = new QChartView(chart);
     chartView->setRenderHint(QPainter::Antialiasing);
     setCentralWidget(chartView);
+
+    if(parent)
+    {
+        QSize parentSize = parent->size();
+        int w = parentSize.width() * m_wnd_w_ratio_to_parent;
+        int h = parentSize.height() * m_wnd_h_ratio_to_parent;
+        resize(w, h);
+    }
+    else
+    {
+        resize(m_def_wnd_w, m_def_wnd_h);
+    }
 }
 
 void MbRegsChartDisp::addData(int volt, float current)
@@ -80,12 +96,20 @@ void MbRegsChartDisp::addData(int volt, float current)
     ++timeIndex;
 }
 
+void MbRegsChartDisp::clearData()
+{
+    voltSeries->clear();
+    currentSeries->clear();
+    timeIndex = 0;
+}
+
 void MbRegsChartDisp::set_volt_range(int low, int up)
 {
     m_volt_axis_low = low;
     m_volt_axis_up = up;
 
-    volt_axis_Y->setRange(low, up);
+    volt_axis_Y->setRange(AXIS_RANGE_WITH_MARGIN(m_volt_axis_low, m_volt_axis_low_margin),
+                          AXIS_RANGE_WITH_MARGIN(m_volt_axis_up, m_volt_axis_up_margin));
 }
 
 void MbRegsChartDisp::set_current_range(float low, float up)
@@ -93,7 +117,8 @@ void MbRegsChartDisp::set_current_range(float low, float up)
     m_current_axis_low = low;
     m_current_axis_up = up;
 
-    current_axis_Y->setRange(low, up);
+    current_axis_Y->setRange(AXIS_RANGE_WITH_MARGIN(m_current_axis_low, m_current_axis_low_margin),
+                           AXIS_RANGE_WITH_MARGIN(m_current_axis_up, m_current_axis_up_margin));
 }
 
 void MbRegsChartDisp::set_time_axis_pt_cnt(int cnt)
@@ -115,4 +140,15 @@ void MbRegsChartDisp::set_current_name_and_unit(QString n, QString u)
 
     current_axis_Y->setTitleText(CURRENT_TITLE_TEXT);
     currentSeries->setName(CURRENT_TITLE_TEXT);
+}
+
+void MbRegsChartDisp::closeEvent(QCloseEvent *event)
+{
+    m_savedGeometry = saveGeometry();
+    QMainWindow::closeEvent(event);  // 调用父类
+}
+
+void MbRegsChartDisp::restoreSavedGeometry()
+{
+    if (!m_savedGeometry.isEmpty()) restoreGeometry(m_savedGeometry);
 }

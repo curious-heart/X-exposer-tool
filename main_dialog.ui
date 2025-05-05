@@ -111,11 +111,22 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="testPromMonitorClrBtn">
-             <property name="text">
-              <string>清空</string>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <item>
+              <widget class="QPushButton" name="dispChartBtn">
+               <property name="text">
+                <string>显示图表</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="testPromMonitorClrBtn">
+               <property name="text">
+                <string>清空</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </item>
