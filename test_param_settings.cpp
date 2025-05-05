@@ -350,7 +350,7 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     m_test_params->test_mode = (test_mode_enum_t)(ui->testModeComboBox->currentData().toInt());
     update_file_unit_info();
     update_current_name_and_unit();
-    update_expo_dura_unit(false);
+    set_ui_dura_rb_according_to_file();
 
     SAVE_EXPO_DURA_UI_TO_SW(m_test_params->expo_param_block.ui_to_sw_dura_factor);
 
