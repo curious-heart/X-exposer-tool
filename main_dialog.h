@@ -15,6 +15,8 @@
 #include "hv_tester/hvtester.h"
 #include "config_recorder/uiconfigrecorder.h"
 #include "test_result_judge/test_result_judge.h"
+#include "serialportsetdlg.h"
+#include "sc_data_connsettings.h"
 
 #include "mb_regs_chart_display.h"
 
@@ -41,7 +43,9 @@ private:
     HVTester m_hv_tester;
     testParamSettingsDialog * m_testParamSettingsDialog = nullptr;
     hvConnSettings * m_hvConnSettingsDialog = nullptr;
+    SerialPortSetDlg * m_pb_conn_settings_dlg = nullptr;
     MbRegsChartDisp * m_mbRegsChartWnd = nullptr;
+    sc_data_connsettings * m_sc_data_conn_settings_dlg = nullptr;
 
     void reset_time_stat_vars();
     void reset_internal_flags();
@@ -64,6 +68,9 @@ private:
     UiConfigRecorder m_cfg_recorder;
     qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
     void select_modbus_device();
+
+    serial_port_conn_params_struct_t m_pb_conn_params;
+    sc_data_conn_params_struct_t m_sc_data_conn_params;
 
     void refresh_butoons();
 
@@ -99,6 +106,8 @@ private:
     void update_regs_to_rec_list();
 
     void display_mb_regs_chart();
+
+    void arrange_ui_disp_according_to_syscfgs();
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
@@ -141,6 +150,10 @@ private slots:
 
     bool set_mb_expo_triple();
     void on_dispChartBtn_clicked();
+
+    void on_pbConnSetPbt_clicked();
+
+    void on_dataCollConnSetPbt_clicked();
 
 signals:
     void go_test_sig();

@@ -27,6 +27,8 @@ SOURCES += \
     qtsingleapplication/qtlockedfile_win.cpp \
     qtsingleapplication/qtsingleapplication.cpp \
     qtsingleapplication/qtsinglecoreapplication.cpp \
+    sc_data_connsettings.cpp \
+    serialportsetdlg.cpp \
     sysconfigs/sysconfigs.cpp \
     test_param_settings.cpp \
     main.cpp \
@@ -50,6 +52,8 @@ HEADERS += \
     qtsingleapplication/qtlockedfile.h \
     qtsingleapplication/qtsingleapplication.h \
     qtsingleapplication/qtsinglecoreapplication.h \
+    sc_data_connsettings.h \
+    serialportsetdlg.h \
     sysconfigs/sysconfigs.h \
     test_param_settings.h \
     main_dialog.h \
@@ -60,6 +64,8 @@ HEADERS += \
 FORMS += \
     hv_connsettings.ui \
     main_dialog.ui \
+    sc_data_connsettings.ui \
+    serialportsetdlg.ui \
     test_param_settings.ui
 
 # Default rules for deployment.

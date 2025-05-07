@@ -55,6 +55,8 @@ extern const char* g_str_the_line_pron;
 extern const char* g_str_cube_current;
 extern const char* g_str_coil_current;
 
+static const char* gs_str_pb_conn_settings_dlg_id_str = "pb_conn_settings";
+
 /*设置管电压、设置管电流、曝光时间必须连续放置*/
 static const hv_mb_reg_e_t gs_mbregs_to_record[] =
 {
@@ -228,6 +230,22 @@ void Dialog::update_regs_to_rec_list()
     if(!m_test_params.other_param_block.read_dist) mb_mbregs_result_disp_list.removeOne(EXT_MB_REG_DISTANCE);
 }
 
+#define INIT_SET_PARAMS_AND_DISP(edit_ctrl, dlg_ctrl, conn_func, params_block) \
+{\
+    m_txt_def_color = ui->edit_ctrl->textColor();\
+    ui->edit_ctrl->setProperty(g_prop_name_def_color, m_txt_def_color);\
+    param_collet_ret_str = dlg_ctrl->conn_func();\
+    if(params_block.valid)\
+    {\
+        ui->edit_ctrl->setText(params_block.info_str);\
+    }\
+    else\
+    {\
+        append_str_with_color_and_weight(ui->edit_ctrl, param_collet_ret_str,\
+                                         gs_log_lvl_fonts_arr[LOG_ERROR]);\
+    }\
+}
+
 Dialog::Dialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
@@ -238,8 +256,6 @@ Dialog::Dialog(QWidget *parent)
     bool ret;
 
     ui->setupUi(this);
-    ui->app_logo->setPixmap(QPixmap("./app_images/logo.png"));
-
     QIcon icon(":/icons/app_images/app.ico");
     setWindowIcon(icon);
 
@@ -264,41 +280,29 @@ Dialog::Dialog(QWidget *parent)
                                                             &m_test_judge);
     m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params, &m_cfg_recorder);
 
-    if(!m_testParamSettingsDialog || !m_hvConnSettingsDialog)
-    {
-        DIY_LOG(LOG_ERROR, "new setting dialog fail!");
-        QMessageBox::critical(this, "Error", gs_str_init_fail);
-        return;
-    }
+    m_sc_data_conn_settings_dlg = new sc_data_connsettings(this, &m_sc_data_conn_params,
+                                                           &m_cfg_recorder);
+    m_pb_conn_settings_dlg = new SerialPortSetDlg(this, &m_pb_conn_params,
+                                                  &m_cfg_recorder,
+                                                  gs_str_pb_conn_settings_dlg_id_str,
+                                                  ui->pbConnSetPbt->text());
+
     m_testParamSettingsDialog->setWindowTitle(ui->testParamSetBtn->text());
     m_hvConnSettingsDialog->setWindowTitle(ui->hvConnSetBtn->text());
 
     QString param_collet_ret_str;
-    m_txt_def_color = ui->testParamDisplayTxt->textColor();
-    ui->testParamDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
-    param_collet_ret_str = m_testParamSettingsDialog->collect_test_params();
-    if(m_test_params.valid)
-    {
-        ui->testParamDisplayTxt->setText(m_test_params.info_str);
-    }
-    else
-    {
-        append_str_with_color_and_weight(ui->testParamDisplayTxt, param_collet_ret_str,
-                                         gs_log_lvl_fonts_arr[LOG_ERROR]);
-    }
+    INIT_SET_PARAMS_AND_DISP(dataCollConnSetDispEdit, m_sc_data_conn_settings_dlg,
+                             collect_conn_params, m_sc_data_conn_params);
 
-    m_txt_def_color = ui->hvConnParamDisplayTxt->textColor();
-    ui->hvConnParamDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
-    param_collet_ret_str = m_hvConnSettingsDialog->collect_conn_params();
-    if(m_hv_conn_params.valid)
-    {
-        ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
-    }
-    else
-    {
-        append_str_with_color_and_weight(ui->hvConnParamDisplayTxt, param_collet_ret_str,
-                                         gs_log_lvl_fonts_arr[LOG_ERROR]);
-    }
+    INIT_SET_PARAMS_AND_DISP(pbConnSetDispEdit, m_pb_conn_settings_dlg,
+                             collect_conn_params, m_pb_conn_params);
+
+    INIT_SET_PARAMS_AND_DISP(testParamDisplayTxt, m_testParamSettingsDialog,
+                             collect_test_params, m_test_params);
+
+    INIT_SET_PARAMS_AND_DISP(hvConnParamDisplayTxt, m_hvConnSettingsDialog,
+                             collect_conn_params, m_hv_conn_params);
+
     select_modbus_device();
 
     m_rec_ui_cfg_fin.insert(nullptr); //no items needs to record.
@@ -374,6 +378,8 @@ Dialog::Dialog(QWidget *parent)
 
     m_mbRegsChartWnd = new MbRegsChartDisp(this);
     m_mbRegsChartWnd->setAttribute(Qt::WA_DeleteOnClose, false);
+
+    arrange_ui_disp_according_to_syscfgs();
 
     m_init_ok = true;
 }
@@ -1373,5 +1379,37 @@ void Dialog::on_testPromMonitorClrBtn_clicked()
 void Dialog::on_dispChartBtn_clicked()
 {
     display_mb_regs_chart();
+}
+
+
+void Dialog::on_pbConnSetPbt_clicked()
+{
+    int dlg_ret = m_pb_conn_settings_dlg->exec();
+
+    if(QDialog::Accepted == dlg_ret && m_pb_conn_params.valid)
+    {
+        ui->pbConnSetDispEdit->setText(m_pb_conn_params.info_str);
+    }
+}
+
+void Dialog::arrange_ui_disp_according_to_syscfgs()
+{
+    ui->testParamSetBtn->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->testParamDisplayTxt->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->pauseTestBtn->setVisible(g_sys_configs_block.pause_test_disp);
+    ui->pauseCntDisplayLbl->setVisible(g_sys_configs_block.pause_test_disp);
+    ui->pauseCntLbl->setVisible(g_sys_configs_block.pause_test_disp);
+    ui->pauseDuraDisplayLbl->setVisible(g_sys_configs_block.pause_test_disp);
+    ui->pauseDuraLbl->setVisible(g_sys_configs_block.pause_test_disp);
+}
+
+void Dialog::on_dataCollConnSetPbt_clicked()
+{
+    int dlg_ret = m_sc_data_conn_settings_dlg->exec();
+
+    if(QDialog::Accepted == dlg_ret && m_sc_data_conn_params.valid)
+    {
+        ui->dataCollConnSetDispEdit->setText(m_sc_data_conn_params.info_str);
+    }
 }
 

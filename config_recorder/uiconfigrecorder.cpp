@@ -42,12 +42,16 @@ UiConfigRecorder::UiConfigRecorder(QObject *parent, QString cfg_file_fpn)
             do_it = !filter_out.contains(LIST_VAR_NAME(ctrl_type)[idx]);\
         if(!do_it) continue;\
                             \
-        cfg_setting.setValue(LIST_VAR_NAME(ctrl_type)[idx]->objectName(),\
+        cfg_setting.setValue(key_pre_str \
+                             + LIST_VAR_NAME(ctrl_type)[idx]->objectName() \
+                             + key_post_str, \
                              LIST_VAR_NAME(ctrl_type)[idx]->value);  \
     }
 
 void UiConfigRecorder::record_ui_configs(QWidget * ui_widget,
                              const qobj_ptr_set_t &filter_in, const qobj_ptr_set_t &filter_out,
+                             QString sec_pre_str, QString sec_post_str,
+                             QString key_pre_str, QString key_post_str,
                              QSettings::Format cfg_format)
 {
     CTRL_PTR_VAR_DEF;
@@ -62,7 +66,7 @@ void UiConfigRecorder::record_ui_configs(QWidget * ui_widget,
         return;
     }
 
-    cfg_setting.beginGroup(ui_widget->objectName());
+    cfg_setting.beginGroup(sec_pre_str + ui_widget->objectName() + sec_post_str);
 
     CTRL_WRITE_TO_CFG(QLineEdit, text())
     CTRL_WRITE_TO_CFG(QTextEdit, toPlainText())
@@ -84,7 +88,10 @@ void UiConfigRecorder::record_ui_configs(QWidget * ui_widget,
             do_it = !filter_out.contains(LIST_VAR_NAME(ctrl_type)[idx]);\
         if(!do_it) continue;\
                             \
-        str_val = cfg_setting.value(LIST_VAR_NAME(ctrl_type)[idx]->objectName(),"").toString();\
+        str_val = cfg_setting.value(key_pre_str \
+                                    + LIST_VAR_NAME(ctrl_type)[idx]->objectName() \
+                                    + key_post_str, \
+                                    "").toString();\
         val;\
         if(cond)\
         {\
@@ -94,6 +101,8 @@ void UiConfigRecorder::record_ui_configs(QWidget * ui_widget,
 
 void UiConfigRecorder::load_configs_to_ui(QWidget * ui_widget,
                              const qobj_ptr_set_t &filter_in, const qobj_ptr_set_t &filter_out,
+                             QString sec_pre_str, QString sec_post_str,
+                             QString key_pre_str, QString key_post_str,
                              QSettings::Format cfg_format)
 {
     CTRL_PTR_VAR_DEF;
@@ -111,7 +120,7 @@ void UiConfigRecorder::load_configs_to_ui(QWidget * ui_widget,
         return;
     }
 
-    cfg_setting.beginGroup(ui_widget->objectName());
+    cfg_setting.beginGroup(sec_pre_str + ui_widget->objectName() + sec_post_str);
 
     /* Be careful: Load radiobutton and checkbox firstly is more reasonable, because these
      * ones are normally used as config-switch, which may affect the content of editor widget.

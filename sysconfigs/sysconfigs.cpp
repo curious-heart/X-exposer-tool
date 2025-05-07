@@ -46,6 +46,8 @@ static const char* gs_ini_key_sw_ver_disp = "sw_ver_disp";
 static const char* gs_ini_key_hw_ver_disp = "hw_ver_disp";
 static const char* gs_ini_key_hv_ctrl_board_no_disp = "hv_ctrl_board_no_disp";
 static const char* gs_ini_key_tube_or_oilbox_no_disp = "tube_or_oilbox_no_disp";
+static const char* gs_ini_key_test_params_settings_disp = "test_params_settings_disp";
+static const char* gs_ini_key_pause_test_disp = "pause_test_disp";
 
 extern const char* g_str_cube_volt;
 extern const char* g_str_cube_current;
@@ -92,6 +94,8 @@ static const int gs_def_sw_ver_disp = 1;
 static const int gs_def_hw_ver_disp = 1;
 static const int gs_def_hv_ctrl_board_no_disp = 1;
 static const ui_disp_tube_or_oilbox_str_e_t gs_def_tube_or_oilbox_no_disp = UI_DISP_OILBOX_NO;
+static const int gs_def_test_params_settings_disp = 0;
+static const int gs_def_pause_test_disp = 0;
 
 static const char* gs_str_cfg_param_limit_error = "参数门限配置错误";
 static const char* gs_str_plz_check = "请检查！";
@@ -350,6 +354,14 @@ bool fill_sys_configs(QString * ret_str_ptr)
     CHECK_ENUM(QString(gs_ini_key_tube_or_oilbox_no_disp),
                g_sys_configs_block.tube_or_oilbox_no_disp, tube_or_oilbox_no_disp_set,
                QString::number)
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_test_params_settings_disp, toInt,
+                           g_sys_configs_block.test_params_settings_disp, gs_def_test_params_settings_disp,
+                           1, &gs_cfg_file_value_01_int_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_pause_test_disp, toInt,
+                           g_sys_configs_block.pause_test_disp, gs_def_pause_test_disp,
+                           1, &gs_cfg_file_value_01_int_ranger);
+
     settings.endGroup();
 
     /*--------------------*/
