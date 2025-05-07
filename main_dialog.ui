@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>804</width>
+    <width>880</width>
     <height>546</height>
    </rect>
   </property>
@@ -39,16 +39,16 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_21">
            <item>
-            <widget class="QPushButton" name="dataCollConnPbt">
+            <widget class="QPushButton" name="dataCollStartPbt">
              <property name="text">
-              <string>连接</string>
+              <string>开始采集</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="dataCollDisconnPbt">
+            <widget class="QPushButton" name="dataCollStopPbt">
              <property name="text">
-              <string>断开</string>
+              <string>停止采集</string>
              </property>
             </widget>
            </item>

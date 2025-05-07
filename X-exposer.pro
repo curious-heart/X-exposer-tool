@@ -27,6 +27,7 @@ SOURCES += \
     qtsingleapplication/qtlockedfile_win.cpp \
     qtsingleapplication/qtsingleapplication.cpp \
     qtsingleapplication/qtsinglecoreapplication.cpp \
+    recvscanneddata.cpp \
     sc_data_connsettings.cpp \
     serialportsetdlg.cpp \
     sysconfigs/sysconfigs.cpp \
@@ -52,6 +53,7 @@ HEADERS += \
     qtsingleapplication/qtlockedfile.h \
     qtsingleapplication/qtsingleapplication.h \
     qtsingleapplication/qtsinglecoreapplication.h \
+    recvscanneddata.h \
     sc_data_connsettings.h \
     serialportsetdlg.h \
     sysconfigs/sysconfigs.h \
