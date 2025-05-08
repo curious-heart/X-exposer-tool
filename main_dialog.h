@@ -8,6 +8,7 @@
 #include <QSet>
 #include <QTimer>
 #include <QDateTime>
+#include <QMutexLocker>
 
 #include "common_tools/common_tool_func.h"
 #include "test_param_settings.h"
@@ -15,10 +16,13 @@
 #include "hv_tester/hvtester.h"
 #include "config_recorder/uiconfigrecorder.h"
 #include "test_result_judge/test_result_judge.h"
+#include "mb_regs_chart_display.h"
+
 #include "serialportsetdlg.h"
 #include "sc_data_connsettings.h"
+#include "sc_data_proc.h"
+#include "recvscanneddata.h"
 
-#include "mb_regs_chart_display.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
@@ -109,6 +113,13 @@ private:
 
     void arrange_ui_disp_according_to_syscfgs();
 
+    QQueue<recv_data_with_notes_s_t> dataQueue;
+    QMutex queueMutex;
+    RecvScannedData *recv_data_worker;
+    QThread *recv_data_workerThread;
+
+    QString log_disp_prepender_str();
+
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
     void modbus_state_changed_sig_handler(QModbusDevice::State state);
@@ -155,11 +166,20 @@ private slots:
 
     void on_dataCollConnSetPbt_clicked();
 
+    void on_dataCollStartPbt_clicked();
+    void on_dataCollStopPbt_clicked();
+    void handleNewDataReady();
+    void collect_data_conn_timeout();
+    void collect_data_disconn_timeout();
+
 signals:
     void go_test_sig();
     void stop_test_sig(tester_end_code_enum_t code);
     void mb_reconnected_sig();
     void pause_resume_test_sig(bool pause);
+
+    void start_collect_sc_data(QString ip, quint16 port, int connTimeout, int packetCount);
+    void stop_collect_sc_data();
 
     /*internal used signal*/
     void auto_reconnect_sig();

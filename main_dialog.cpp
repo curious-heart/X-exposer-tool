@@ -183,21 +183,16 @@ void Dialog::set_man_test_grp_visible(test_mode_enum_t mode)
     ui->manTestcubeVoltLbl->setVisible(visible);
     ui->manTestcubeVoltSpin->setVisible(visible);
     ui->manTestcubeVoltUnitLbl->setVisible(visible);
-    ui->line_1->setVisible(visible);
 
     ui->manTestcubeCurrentLbl->setVisible(visible);
     ui->manTestcubeCurrentDblspin->setVisible(visible);
     ui->manTestcubeCurrentUnitLbl->setVisible(visible);
-    ui->line_2->setVisible(visible);
 
     ui->manTestexpoDuraLbl->setVisible(visible);
     ui->manTestexpoDuraDblspin->setVisible(visible);
     ui->manTestexpoDuraUnitLbl->setVisible(visible);
 
     ui->manTestSettingBtn->setVisible(visible);
-    ui->line_3->setVisible(visible);
-    ui->line_4->setVisible(visible);
-
 
     if(visible)
     {
@@ -256,6 +251,7 @@ Dialog::Dialog(QWidget *parent)
     bool ret;
 
     ui->setupUi(this);
+
     QIcon icon(":/icons/app_images/app.ico");
     setWindowIcon(icon);
 
@@ -349,6 +345,7 @@ Dialog::Dialog(QWidget *parent)
     connect(this, &Dialog::get_test_proc_st_sig,
             this, &Dialog::get_test_proc_st_sig_handler, Qt::QueuedConnection);
 
+    ui->testInfoDisplayTxt->setFont(QFont("Courier New", 10));
     m_txt_def_color = ui->testInfoDisplayTxt->textColor();
     ui->testInfoDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
     m_txt_def_font = ui->testInfoDisplayTxt->currentFont();
@@ -381,6 +378,25 @@ Dialog::Dialog(QWidget *parent)
 
     arrange_ui_disp_according_to_syscfgs();
 
+    recv_data_worker = new RecvScannedData(&dataQueue, &queueMutex);
+    recv_data_workerThread = new QThread(this);
+    recv_data_worker->moveToThread(recv_data_workerThread);
+
+    connect(recv_data_workerThread, &QThread::finished,
+            recv_data_worker, &QObject::deleteLater);
+    connect(this, &Dialog::start_collect_sc_data,
+            recv_data_worker, &RecvScannedData::start_collect_sc_data, Qt::QueuedConnection);
+    connect(this, &Dialog::stop_collect_sc_data,
+            recv_data_worker, &RecvScannedData::stop_collect_sc_data, Qt::QueuedConnection);
+    connect(recv_data_worker, &RecvScannedData::new_data_ready,
+            this, &Dialog::handleNewDataReady, Qt::QueuedConnection);
+    connect(recv_data_worker, &RecvScannedData::conn_timeout,
+            this, &Dialog::collect_data_conn_timeout, Qt::QueuedConnection);
+    connect(recv_data_worker, &RecvScannedData::discconn_timeout,
+            this, &Dialog::collect_data_disconn_timeout, Qt::QueuedConnection);
+    recv_data_workerThread->start();
+
+
     m_init_ok = true;
 }
 
@@ -407,6 +423,10 @@ Dialog::~Dialog()
     m_judge_reg_ret_map.clear();
 
     m_mbregs_rec_list.clear();
+
+    recv_data_workerThread->quit();
+    recv_data_workerThread->wait();
+    recv_data_workerThread->deleteLater();
 
     delete ui;
 }
@@ -873,8 +893,7 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
 {
     QColor text_color;
     int text_font_w;
-    QString line(common_tool_get_curr_date_str() + ","
-                 + common_tool_get_curr_time_str() + ",");
+    QString line = log_disp_prepender_str();
     line += ","; //number is null
     line += msg;
 
@@ -938,8 +957,8 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
 
     int idx = 0, base = 10;
     hv_mb_reg_e_t reg_no;
-    QString disp_prefix_str(common_tool_get_curr_date_str() + ","
-                 + common_tool_get_curr_time_str() + ",");
+    QString disp_prefix_str = log_disp_prepender_str();
+
     if(!proc_monitor)
     {
         disp_prefix_str += QString("%1%2%3%4%5%6,").
@@ -1401,6 +1420,11 @@ void Dialog::arrange_ui_disp_according_to_syscfgs()
     ui->pauseCntLbl->setVisible(g_sys_configs_block.pause_test_disp);
     ui->pauseDuraDisplayLbl->setVisible(g_sys_configs_block.pause_test_disp);
     ui->pauseDuraLbl->setVisible(g_sys_configs_block.pause_test_disp);
+}
+
+QString Dialog::log_disp_prepender_str()
+{
+    return (common_tool_get_curr_date_str() + "," + common_tool_get_curr_time_str() + ",");
 }
 
 void Dialog::on_dataCollConnSetPbt_clicked()

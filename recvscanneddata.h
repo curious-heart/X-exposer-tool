@@ -10,6 +10,8 @@
 #include <QHostAddress>
 #include <QMutex>
 
+#include "sc_data_proc.h"
+
 class RecvScannedData : public QObject
 {
     Q_OBJECT
@@ -22,8 +24,9 @@ public:
         ST_WAIT_DISCONN_ACK
     };
 
-    explicit RecvScannedData(QQueue<QByteArray> *queue, QMutex *mutex,
+    explicit RecvScannedData(QQueue<recv_data_with_notes_s_t> *queue, QMutex *mutex,
                              QObject *parent = nullptr, quint16 localPort = 0);
+    ~RecvScannedData();
 
 signals:
     void conn_timeout();
@@ -33,17 +36,20 @@ signals:
 public slots:
     void start_collect_sc_data(QString ip, quint16 port, int connTimeout, int packetCount);
     void stop_collect_sc_data();
+    void data_ready_hdlr();
+    void conn_timeout_hdlr();
+    void disconn_timeout_hdlr();
 
 private:
-    QUdpSocket udpSocket;
-    QQueue<QByteArray> *dataQueue = nullptr;
+    QUdpSocket *udpSocket;
+    QQueue<recv_data_with_notes_s_t> *dataQueue = nullptr;
     QMutex *queueMutex = nullptr;
     QHostAddress remoteAddress;
     quint16 remotePort, m_localPort;
     int m_connTimeout;
 
-    QTimer connTimer;
-    QTimer discTimer;
+    QTimer *connTimer;
+    QTimer *discTimer;
 
     int expectedPacketCount = 0;
     int receivedPacketCount = 0;

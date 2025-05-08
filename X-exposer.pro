@@ -29,6 +29,7 @@ SOURCES += \
     qtsingleapplication/qtsinglecoreapplication.cpp \
     recvscanneddata.cpp \
     sc_data_connsettings.cpp \
+    sc_data_proc.cpp \
     serialportsetdlg.cpp \
     sysconfigs/sysconfigs.cpp \
     test_param_settings.cpp \
@@ -55,6 +56,7 @@ HEADERS += \
     qtsingleapplication/qtsinglecoreapplication.h \
     recvscanneddata.h \
     sc_data_connsettings.h \
+    sc_data_proc.h \
     serialportsetdlg.h \
     sysconfigs/sysconfigs.h \
     test_param_settings.h \

@@ -205,6 +205,122 @@
         </widget>
        </item>
        <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_2">
+         <item>
+          <widget class="QPushButton" name="hvConnBtn">
+           <property name="text">
+            <string>连接</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="hvDisconnBtn">
+           <property name="text">
+            <string>断开</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_4">
+         <item>
+          <widget class="QLabel" name="manTestcubeVoltLbl">
+           <property name="text">
+            <string>管电压</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSpinBox" name="manTestcubeVoltSpin">
+           <property name="maximum">
+            <number>999</number>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="manTestcubeVoltUnitLbl">
+           <property name="text">
+            <string>kV</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="manTestSettingBtn">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="text">
+            <string>设置</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_13">
+         <item>
+          <widget class="QLabel" name="manTestcubeCurrentLbl">
+           <property name="text">
+            <string>管电流</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="manTestcubeCurrentDblspin">
+           <property name="maximum">
+            <double>2147483648.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="manTestcubeCurrentUnitLbl">
+           <property name="text">
+            <string>uA</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_13">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_28">
+         <item>
+          <widget class="QLabel" name="manTestexpoDuraLbl">
+           <property name="text">
+            <string>曝光时间</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QDoubleSpinBox" name="manTestexpoDuraDblspin">
+           <property name="maximum">
+            <double>2147483648.000000000000000</double>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="manTestexpoDuraUnitLbl">
+           <property name="text">
+            <string>s</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
         <layout class="QHBoxLayout" name="horizontalLayout_15">
          <item>
           <widget class="QLabel" name="label_4">
@@ -235,24 +351,6 @@
           <widget class="QLabel" name="label_2">
            <property name="text">
             <string>空闲</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
-         <item>
-          <widget class="QPushButton" name="hvConnBtn">
-           <property name="text">
-            <string>连接</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="hvDisconnBtn">
-           <property name="text">
-            <string>断开</string>
            </property>
           </widget>
          </item>
@@ -548,108 +646,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="0,0,0,0,0,0,0,0,0,0,0,0,0,0,10,1,2">
-     <item>
-      <widget class="QLabel" name="manTestcubeVoltLbl">
-       <property name="text">
-        <string>管电压</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="manTestcubeVoltSpin">
-       <property name="maximum">
-        <number>999</number>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="manTestcubeVoltUnitLbl">
-       <property name="text">
-        <string>kV</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="Line" name="line_1">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="manTestcubeCurrentLbl">
-       <property name="text">
-        <string>管电流</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDoubleSpinBox" name="manTestcubeCurrentDblspin">
-       <property name="maximum">
-        <double>2147483648.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="manTestcubeCurrentUnitLbl">
-       <property name="text">
-        <string>uA</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="Line" name="line_2">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="manTestexpoDuraLbl">
-       <property name="text">
-        <string>曝光时间</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDoubleSpinBox" name="manTestexpoDuraDblspin">
-       <property name="maximum">
-        <double>2147483648.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="manTestexpoDuraUnitLbl">
-       <property name="text">
-        <string>s</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="manTestSettingBtn">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>设置</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="Line" name="line_3">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="Line" name="line_4">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-      </widget>
-     </item>
+    <layout class="QHBoxLayout" name="horizontalLayout_29" stretch="6,0,1">
      <item>
       <widget class="QPushButton" name="startTestBtn">
        <property name="sizePolicy">
@@ -670,8 +667,8 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>40</width>
-         <height>20</height>
+         <width>13</width>
+         <height>21</height>
         </size>
        </property>
       </spacer>
