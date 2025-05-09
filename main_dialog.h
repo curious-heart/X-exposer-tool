@@ -22,7 +22,7 @@
 #include "sc_data_connsettings.h"
 #include "sc_data_proc.h"
 #include "recvscanneddata.h"
-
+#include "curveplotwidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
@@ -118,7 +118,20 @@ private:
     RecvScannedData *recv_data_worker;
     QThread *recv_data_workerThread;
 
+    quint32 m_max_pt_value;
+    int m_disp_curv_pt_cnt;
     QString log_disp_prepender_str();
+    QVector<quint32> m_ch1_data_vec, m_ch2_data_vec;
+    QString m_ch1_wnd_str_id = "channel-1", m_ch2_wnd_str_id = "channel-2";
+    int split_data_into_channels(QByteArray& ori_data,
+                              QVector<quint32> &dv_ch1, QVector<quint32> &dv_ch2,
+                              quint64 &pkt_idx);
+    void openOrActivatePlotWindow(const QString &id,
+                                  int pt_cnt, const QVector<quint32>& row_data,
+                                  quint32 range_max);
+    void show_pt_curves();
+    void reset_pt_curves_wnd_pos_size(QString wnd_id);
+    QMap<QString, CurvePlotWidget*> m_plotWindows;
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
@@ -171,6 +184,8 @@ private slots:
     void handleNewDataReady();
     void collect_data_conn_timeout();
     void collect_data_disconn_timeout();
+
+    void on_dataCollDispCurvPbt_clicked();
 
 signals:
     void go_test_sig();

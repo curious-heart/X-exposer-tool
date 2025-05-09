@@ -15,6 +15,7 @@ INCLUDEPATH += "$$[QT_INSTALL_HEADERS]/QtSerialBus/$$[QT_VERSION]/QtSerialBus" \
 SOURCES += \
     common_tools/common_tool_func.cpp \
     config_recorder/uiconfigrecorder.cpp \
+    curveplotwidget.cpp \
     hv_connsettings.cpp \
     hv_tester/hvtester.cpp \
     logger/logger.cpp \
@@ -41,6 +42,7 @@ SOURCES += \
 HEADERS += \
     common_tools/common_tool_func.h \
     config_recorder/uiconfigrecorder.h \
+    curveplotwidget.h \
     hv_connsettings.h \
     hv_tester/hvtester.h \
     logger/logger.h \

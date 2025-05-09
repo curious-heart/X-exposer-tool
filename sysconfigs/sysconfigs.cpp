@@ -49,6 +49,11 @@ static const char* gs_ini_key_tube_or_oilbox_no_disp = "tube_or_oilbox_no_disp";
 static const char* gs_ini_key_test_params_settings_disp = "test_params_settings_disp";
 static const char* gs_ini_key_pause_test_disp = "pause_test_disp";
 
+static const char* gs_ini_grp_sc_data_cfg = "sc_data_cfg";
+static const char* gs_ini_key_max_pt_number = "max_pt_number";
+static const char* gs_ini_key_all_bytes_per_pt = "all_bytes_per_pt";
+static const char* gs_ini_key_pkt_idx_byte_cnt = "pkt_idx_byte_cnt";
+
 extern const char* g_str_cube_volt;
 extern const char* g_str_cube_current;
 extern const char* g_str_current;
@@ -112,6 +117,9 @@ static const mb_cube_current_unit_e_t gs_def_ui_current_unit = MB_CUBE_CURRENT_U
 
 static const mb_dura_unit_e_t gs_def_mb_dura_intf_unit = MB_DURA_UNIT_MS;
 static const mb_dura_unit_e_t gs_def_hidden_ui_mb_dura_unit = MB_DURA_UNIT_MIN;
+
+static const int gs_def_max_pt_number = 200, gs_def_all_bytes_per_pt = 3,
+                 gs_def_pkt_idx_byte_cnt = 2;
 
 static RangeChecker<int> gs_cfg_file_log_level_ranger((int)LOG_DEBUG, (int)LOG_ERROR, "",
                      EDGE_INCLUDED, EDGE_INCLUDED);
@@ -365,6 +373,23 @@ bool fill_sys_configs(QString * ret_str_ptr)
     settings.endGroup();
 
     /*--------------------*/
+    settings.beginGroup(gs_ini_grp_sc_data_cfg);
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_max_pt_number, toInt,
+                           g_sys_configs_block.max_pt_number, gs_def_max_pt_number,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_all_bytes_per_pt, toInt,
+                           g_sys_configs_block.all_bytes_per_pt, gs_def_all_bytes_per_pt,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_pkt_idx_byte_cnt, toInt,
+                           g_sys_configs_block.pkt_idx_byte_cnt, gs_def_pkt_idx_byte_cnt,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+
+    settings.endGroup();
+    /*--------------------*/
+
     if(ret_str_ptr) *ret_str_ptr = ret_str;
     return ret;
 

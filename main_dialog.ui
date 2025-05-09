@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>880</width>
+    <width>912</width>
     <height>546</height>
    </rect>
   </property>
@@ -49,6 +49,13 @@
             <widget class="QPushButton" name="dataCollStopPbt">
              <property name="text">
               <string>停止采集</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="dataCollDispCurvPbt">
+             <property name="text">
+              <string>显示曲线</string>
              </property>
             </widget>
            </item>

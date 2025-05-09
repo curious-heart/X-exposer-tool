@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QMutexLocker>
 #include <QMessageBox>
+#include <QVector>
 
 #include "logger/logger.h"
 #include "main_dialog.h"
@@ -30,6 +31,20 @@ void Dialog::on_dataCollStartPbt_clicked()
     int packetCount = ui->dataCollRowCntSpinbox->value();
 
     emit start_collect_sc_data(ip, port, connTimeout, packetCount);
+
+    for (auto &window : m_plotWindows)
+    {
+        if (window)
+        {
+            window->clearAllSeries();
+            window->hide();
+        }
+    }
+}
+
+void Dialog::on_dataCollDispCurvPbt_clicked()
+{
+    show_pt_curves();
 }
 
 void Dialog::on_dataCollStopPbt_clicked()
@@ -62,4 +77,138 @@ void Dialog::handleNewDataReady()
 
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, data_str,
                                      m_txt_def_color, m_txt_def_font.weight());
+
+    if(NORMAL == packet.notes)
+    {
+        quint64 pkt_idx;
+        m_disp_curv_pt_cnt
+                = split_data_into_channels(packet.data, m_ch1_data_vec, m_ch2_data_vec, pkt_idx);
+    }
+}
+
+int Dialog::split_data_into_channels(QByteArray& ori_data,
+                              QVector<quint32> &dv_ch1, QVector<quint32> &dv_ch2,
+                              quint64 &pkt_idx)
+{
+    /*two channels, all_bytes_cnt_per_pt * 4 bits per point for each channel.*/
+    static const int all_bytes_cnt_per_pt = g_sys_configs_block.all_bytes_per_pt,
+            suffix_bytes_cnt = g_sys_configs_block.pkt_idx_byte_cnt;
+    static const int all_hbs_cnt_per_pt = all_bytes_cnt_per_pt * 2;
+    static const bool odd_hb_per_chpt = ((all_bytes_cnt_per_pt % 2) == 1);
+
+    int disp_pt_per_row = ui->dataCollDispRowPtCntSpinbox->value();
+    if(disp_pt_per_row > g_sys_configs_block.max_pt_number)
+    {//normally this branch would never be reached. just for assurance...
+        disp_pt_per_row = g_sys_configs_block.max_pt_number;
+    }
+
+    int disp_bytes_per_row = disp_pt_per_row * all_bytes_cnt_per_pt;
+    int ori_bytes_cnt = ori_data.count();
+
+    if(ori_bytes_cnt < suffix_bytes_cnt)
+    {
+        DIY_LOG(LOG_ERROR, QString("received bytes too few: %1").arg(ori_bytes_cnt));
+        return 0;
+    }
+    pkt_idx = 0;
+    for(int idx = ori_bytes_cnt - suffix_bytes_cnt; idx < ori_bytes_cnt; ++idx)
+    {
+        pkt_idx = (pkt_idx << 8) + (quint64)(ori_data.at(idx));
+    }
+
+    int ori_data_bytes_cnt = (ori_bytes_cnt - suffix_bytes_cnt);
+
+    if(dv_ch1.size() < disp_pt_per_row) dv_ch1.resize(disp_pt_per_row);
+    if(dv_ch2.size() < disp_pt_per_row) dv_ch2.resize(disp_pt_per_row);
+    dv_ch1.fill(0); dv_ch2.fill(0);
+
+    unsigned char byte;
+    QVector<quint32> * curr_dv = nullptr;
+    for(int idx = 0, hb_idx = 0, hb_idx_in_pt = 0, pt_idx = 0;
+        idx < disp_bytes_per_row; ++idx)
+    {
+        byte = idx < ori_data_bytes_cnt ? ori_data[idx] : 0xFF;
+        pt_idx = idx / all_bytes_cnt_per_pt;
+
+        hb_idx = idx * 2;
+        hb_idx_in_pt = hb_idx % all_hbs_cnt_per_pt;
+
+        curr_dv = (hb_idx_in_pt < all_bytes_cnt_per_pt) ? &dv_ch1 : &dv_ch2;
+
+        if(odd_hb_per_chpt)
+        {
+            if(hb_idx_in_pt < all_bytes_cnt_per_pt - 1 ||
+                    hb_idx_in_pt > all_bytes_cnt_per_pt) //whole byte
+            {
+                (*curr_dv)[pt_idx] <<= 8;
+                (*curr_dv)[pt_idx] += byte;
+            }
+            else //half byte
+            {
+                dv_ch1[pt_idx] <<= 4;
+                dv_ch1[pt_idx] += (byte >> 4);
+
+                dv_ch2[pt_idx] <<= 4;
+                dv_ch2[pt_idx] += (byte & 0x0F);
+            }
+        }
+        else
+        {
+            (*curr_dv)[pt_idx] <<= 8;
+            (*curr_dv)[pt_idx] += byte;
+        }
+    }
+
+    return disp_pt_per_row;
+}
+
+void Dialog::openOrActivatePlotWindow(const QString &id,
+                                      int pt_cnt, const QVector<quint32>& row_data,
+                                      quint32 range_max)
+{
+    CurvePlotWidget*window = nullptr;
+    if (m_plotWindows.contains(id))
+    {
+        window = m_plotWindows[id];
+        window->show();
+        window->raise();
+        window->activateWindow();
+    }
+    else
+    {
+        window = new CurvePlotWidget(this);
+        window->setWindowTitle(QString("Curve Plot [%1]").arg(id));
+        m_plotWindows[id] = window;
+        reset_pt_curves_wnd_pos_size(id);
+        window->show();
+    }
+    window->receiveData(pt_cnt, row_data, range_max);
+}
+
+void Dialog::reset_pt_curves_wnd_pos_size(QString wnd_id)
+{
+    static const float ls_size_w_ratio = (float)0.8, ls_size_h_ratio = (float)0.8;
+    static const float ls_pos_x_diff_ratio = 0, ls_pos_y_diff_ratio = (float)0.2;
+    static const float ls_x_diff_between_wnds_ratio = (float)0.2;
+    CurvePlotWidget *wnd =  m_plotWindows.contains(wnd_id) ? m_plotWindows[wnd_id] : nullptr;
+    if(!wnd) return;
+
+    QPoint parent_pos = this->pos();
+    QSize parent_size = this->size();
+    wnd->resize(parent_size.width() * ls_size_w_ratio, parent_size.height() * ls_size_h_ratio);
+
+    QPoint relativePos(parent_size.width() * ls_pos_x_diff_ratio,
+                       parent_size.height() * ls_pos_y_diff_ratio);
+    QPoint globalPos = this->mapToGlobal(relativePos);
+    if(wnd_id == m_ch2_wnd_str_id)
+    {
+        globalPos.setX(globalPos.x() + parent_size.width() * ls_x_diff_between_wnds_ratio);
+    }
+    wnd->move(globalPos);
+}
+
+void Dialog::show_pt_curves()
+{
+    openOrActivatePlotWindow(m_ch1_wnd_str_id, m_disp_curv_pt_cnt, m_ch1_data_vec, m_max_pt_value);
+    openOrActivatePlotWindow(m_ch2_wnd_str_id, m_disp_curv_pt_cnt, m_ch2_data_vec, m_max_pt_value);
 }

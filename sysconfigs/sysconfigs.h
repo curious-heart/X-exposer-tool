@@ -59,6 +59,8 @@ typedef struct
     int distance_group_disp, sw_ver_disp, hw_ver_disp, hv_ctrl_board_no_disp;
     ui_disp_tube_or_oilbox_str_e_t tube_or_oilbox_no_disp;
     int test_params_settings_disp, pause_test_disp;
+
+    int max_pt_number, all_bytes_per_pt, pkt_idx_byte_cnt;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

@@ -396,6 +396,12 @@ Dialog::Dialog(QWidget *parent)
             this, &Dialog::collect_data_disconn_timeout, Qt::QueuedConnection);
     recv_data_workerThread->start();
 
+    ui->dataCollDispRowPtCntSpinbox->setRange(1, g_sys_configs_block.max_pt_number);
+    m_ch1_data_vec.resize(g_sys_configs_block.max_pt_number);
+    m_ch1_data_vec.fill(0);
+    m_ch2_data_vec.resize(g_sys_configs_block.max_pt_number);
+    m_ch1_data_vec.fill(0);
+    m_max_pt_value = (1 << (g_sys_configs_block.all_bytes_per_pt * 4)) - 1;
 
     m_init_ok = true;
 }
@@ -427,6 +433,7 @@ Dialog::~Dialog()
     recv_data_workerThread->quit();
     recv_data_workerThread->wait();
     recv_data_workerThread->deleteLater();
+    m_plotWindows.clear();
 
     delete ui;
 }
@@ -1436,4 +1443,5 @@ void Dialog::on_dataCollConnSetPbt_clicked()
         ui->dataCollConnSetDispEdit->setText(m_sc_data_conn_params.info_str);
     }
 }
+
 
