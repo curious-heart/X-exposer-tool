@@ -117,6 +117,7 @@ private:
     QMutex queueMutex;
     RecvScannedData *recv_data_worker;
     QThread *recv_data_workerThread;
+    void setup_sig_hdlr_main_recv_worker();
 
     quint32 m_max_pt_value;
     int m_disp_curv_pt_cnt;
@@ -182,10 +183,11 @@ private slots:
     void on_dataCollStartPbt_clicked();
     void on_dataCollStopPbt_clicked();
     void handleNewDataReady();
-    void collect_data_conn_timeout();
-    void collect_data_disconn_timeout();
 
     void on_dataCollDispCurvPbt_clicked();
+
+    void recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,
+                                collect_rpt_evt_e_t evt = COLLECT_RPT_EVT_IGNORE);
 
 signals:
     void go_test_sig();
@@ -202,4 +204,7 @@ signals:
                                        bool from_timer = false);
     void get_test_proc_st_sig();
 };
+
+extern QColor g_log_lvl_fonts_arr[];
+
 #endif // DIALOG_H

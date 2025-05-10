@@ -71,6 +71,7 @@ void __emit_log_signal__(int level, QString loc_str, QString log);
 bool start_log_thread(QThread &th, LOG_LEVEL display_lvl = LOG_ERROR);
 void end_log_thread(QThread &th);
 
+extern const char* g_log_level_strs[];
 /*
  * Use example:
  *     DIY_LOG(LOG_LEVEL::LOG_INFO, "info str.");

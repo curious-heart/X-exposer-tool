@@ -5,6 +5,11 @@
 
 #include "logger/logger.h"
 
+#undef COLLECT_ST_E
+#define COLLECT_ST_E(e) #e
+
+static const char* gs_collect_st_strs[] = {COLLECT_ST_LIST};
+
 static const char gs_start_req_cmd[] = {'\x00', '\x00', '\x00', '\x02'};
 static const char gs_start_ack_cmd[] = {'\x00', '\x00', '\x00', '\x02'};
 static const char gs_stop_req_cmd[] = {'\x00', '\x00', '\x00', '\x03'};
@@ -51,7 +56,11 @@ void RecvScannedData::start_collect_sc_data(QString ip, quint16 port,
 {
     if (collectingState != ST_IDLE)
     {
-        DIY_LOG(LOG_WARN, "Current state is not idle.");
+        QString rpt_str = QString("Current state is %1 , expecting ST_IDLE."
+                                  " So ignore this instruction.")
+                                .arg(gs_collect_st_strs[collectingState]);
+        emit recv_worker_report_sig(LOG_WARN, rpt_str);
+        DIY_LOG(LOG_WARN, rpt_str);
         return;
     }
     m_connTimeout = connTimeout;
@@ -71,7 +80,12 @@ void RecvScannedData::start_collect_sc_data(QString ip, quint16 port,
 void RecvScannedData::stop_collect_sc_data()
 {
     if (collectingState != ST_COLLECTING)
-        return;
+    {
+        QString rpt_str = QString("Current state is %1 , no need  to stop."
+                                  " But still send stop cmd to peer.")
+                                .arg(gs_collect_st_strs[collectingState]);
+        emit recv_worker_report_sig(LOG_WARN, rpt_str);
+    }
 
     stopCollection();
 }
@@ -99,6 +113,10 @@ void RecvScannedData::stopCollection()
 
 void RecvScannedData::data_ready_hdlr()
 {
+    QString rpt_str;
+    LOG_LEVEL log_lvl;
+    collect_rpt_evt_e_t evt = COLLECT_RPT_EVT_IGNORE;
+
     while (udpSocket->hasPendingDatagrams())
     {
         QNetworkDatagram datagram = udpSocket->receiveDatagram();
@@ -107,20 +125,25 @@ void RecvScannedData::data_ready_hdlr()
 
         if(!is_from_proper_peer(rmt_addr, rmt_port))
         {
-            DIY_LOG(LOG_WARN, QString("receive data from %1:%2, discard it.")
-                                    .arg(rmt_addr.toString()));
+            rpt_str = QString("receive data from unexpected target %1:%2, discard it.")
+                            .arg(rmt_addr.toString()).arg(rmt_port);
+            DIY_LOG(LOG_WARN, rpt_str);
+            emit recv_worker_report_sig(LOG_WARN, rpt_str);
             continue;
         }
 
         recv_data_with_notes_s_t data_with_notes = {NORMAL, datagram.data()};
         QByteArray &data = data_with_notes.data;
 
+        log_lvl = (LOG_LEVEL)-1;
+        rpt_str = QString("receive data in %1 state. discard it.")
+                        .arg(gs_collect_st_strs[collectingState]);
         switch(collectingState)
         {
         case ST_IDLE:
             ENQUE_DATA(RECV_IN_IDLE);
-            DIY_LOG(LOG_WARN, "receive data in idle state. discard it.");
-            ;
+
+            log_lvl = LOG_WARN;
             break;
 
         case ST_WAIT_CONN_ACK:
@@ -129,12 +152,16 @@ void RecvScannedData::data_ready_hdlr()
                 ENQUE_DATA(START_ACK);
                 collectingState = ST_COLLECTING;
                 connTimer->stop();
+
+                rpt_str = "Data scanner connected.";
+                log_lvl = LOG_INFO;
+                evt = COLLECT_RPT_EVT_CONNECTED;
             }
             else
             {
                 ENQUE_DATA(UNEXPECTED_IN_START_WAIT);
-                DIY_LOG(LOG_WARN, "receive data in wait-conn-ack state. discard it.");
-                ;
+
+                log_lvl = LOG_WARN;
             }
             break;
 
@@ -153,37 +180,68 @@ void RecvScannedData::data_ready_hdlr()
                 ENQUE_DATA(STOP_ACK);
                 collectingState = ST_IDLE;
                 discTimer->stop();
+
+                rpt_str = "Data scanner dis-connected.";
+                log_lvl = LOG_INFO;
+                evt = COLLECT_RPT_EVT_DISCONNECTED;
             }
             else
             {
                 ENQUE_DATA(UNEXPECTED_IN_STOP_WAIT);
-                DIY_LOG(LOG_WARN, "receive data in ST_WAIT_DISCONN_ACK but it is not "
-                                  "expected ack. discard it");
+
+                log_lvl = LOG_WARN;
             }
             break;
         }
+
+        if(VALID_LOG_LVL(log_lvl))
+        {
+            emit recv_worker_report_sig(log_lvl, rpt_str, evt);
+            DIY_LOG(log_lvl, rpt_str);
+        }
+
     }
 }
 #undef ENQUE_DATA
 
 void RecvScannedData::conn_timeout_hdlr()
 {
+    QString rpt_str;
+    LOG_LEVEL log_lvl;
+
     if (collectingState == ST_WAIT_CONN_ACK)
     {
         collectingState = ST_IDLE;
-        emit conn_timeout();
-        DIY_LOG(LOG_WARN, "start collect: receive ack timeout.");
+
+        rpt_str = "start collect: connecting timeout.";
+        log_lvl = LOG_ERROR;
+        emit recv_worker_report_sig(log_lvl, rpt_str, COLLECT_RPT_EVT_CONN_TIMEOUT);
     }
+    else
+    {
+        rpt_str = "unexpected connecting-timeout signal.";
+        log_lvl = LOG_WARN;
+    }
+    DIY_LOG(log_lvl, rpt_str);
 }
 
 void RecvScannedData::disconn_timeout_hdlr()
 {
+    QString rpt_str;
+    LOG_LEVEL log_lvl = LOG_WARN;
+
     if (collectingState == ST_WAIT_DISCONN_ACK)
     {
         collectingState = ST_IDLE;
-        emit discconn_timeout();
-        DIY_LOG(LOG_WARN, "stop collect: receive ack timeout.");
+
+        rpt_str = "stop collect: disconnecting timeout.";
+        emit recv_worker_report_sig(log_lvl, rpt_str, COLLECT_RPT_EVT_DISCONN_TIMEOUT);
     }
+    else
+    {
+        rpt_str = "unexpected disconnecting-timeout signal.";
+    }
+    DIY_LOG(log_lvl, rpt_str);
 }
 
 bool RecvScannedData::is_from_proper_peer(QHostAddress &rmt_addr, quint16 rmt_port)

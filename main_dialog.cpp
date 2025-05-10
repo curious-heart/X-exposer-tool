@@ -74,7 +74,7 @@ static const hv_mb_reg_e_t gs_judge_result_disp_reg[] =
 {VoltSet, FilamentSet, ExposureTime, Voltmeter, Ammeter, EXT_MB_REG_DISTANCE, State,
  ExposureStatus};
 
-static QColor gs_log_lvl_fonts_arr[] =
+QColor g_log_lvl_fonts_arr[] =
 {
     Qt::gray, //DEBUG, gray
     Qt::black, //INFO, black
@@ -237,7 +237,7 @@ void Dialog::update_regs_to_rec_list()
     else\
     {\
         append_str_with_color_and_weight(ui->edit_ctrl, param_collet_ret_str,\
-                                         gs_log_lvl_fonts_arr[LOG_ERROR]);\
+                                         g_log_lvl_fonts_arr[LOG_ERROR]);\
     }\
 }
 
@@ -381,19 +381,9 @@ Dialog::Dialog(QWidget *parent)
     recv_data_worker = new RecvScannedData(&dataQueue, &queueMutex);
     recv_data_workerThread = new QThread(this);
     recv_data_worker->moveToThread(recv_data_workerThread);
-
     connect(recv_data_workerThread, &QThread::finished,
             recv_data_worker, &QObject::deleteLater);
-    connect(this, &Dialog::start_collect_sc_data,
-            recv_data_worker, &RecvScannedData::start_collect_sc_data, Qt::QueuedConnection);
-    connect(this, &Dialog::stop_collect_sc_data,
-            recv_data_worker, &RecvScannedData::stop_collect_sc_data, Qt::QueuedConnection);
-    connect(recv_data_worker, &RecvScannedData::new_data_ready,
-            this, &Dialog::handleNewDataReady, Qt::QueuedConnection);
-    connect(recv_data_worker, &RecvScannedData::conn_timeout,
-            this, &Dialog::collect_data_conn_timeout, Qt::QueuedConnection);
-    connect(recv_data_worker, &RecvScannedData::discconn_timeout,
-            this, &Dialog::collect_data_disconn_timeout, Qt::QueuedConnection);
+    setup_sig_hdlr_main_recv_worker();
     recv_data_workerThread->start();
 
     ui->dataCollDispRowPtCntSpinbox->setRange(1, g_sys_configs_block.max_pt_number);
@@ -910,7 +900,7 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
     }
 
     lvl = VALID_LOG_LVL(lvl) ? lvl : LOG_ERROR;
-    text_color = set_color.isValid() ? set_color : gs_log_lvl_fonts_arr[lvl];
+    text_color = set_color.isValid() ? set_color : g_log_lvl_fonts_arr[lvl];
     text_font_w = (set_font_w > 0) ? set_font_w : m_txt_def_font.weight();
 
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, line, text_color, text_font_w);

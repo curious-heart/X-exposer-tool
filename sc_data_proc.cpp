@@ -12,10 +12,26 @@
 #include "sc_data_proc.h"
 
 static const char* gs_str_please_set_valid_ip_and_port = "请设置有效的IP地址和端口";
+static const char* gs_str_connected = "连接";
+static const char* gs_str_disconnected = "断开";
 
 #undef RECV_DATA_NOTE_E
 #define RECV_DATA_NOTE_E(e) #e
 static const char* gs_recv_data_note_str [] = {RECV_DATA_NOTES};
+
+void Dialog::setup_sig_hdlr_main_recv_worker()
+{
+    qRegisterMetaType<collect_rpt_evt_e_t>();
+
+    connect(this, &Dialog::start_collect_sc_data,
+            recv_data_worker, &RecvScannedData::start_collect_sc_data, Qt::QueuedConnection);
+    connect(this, &Dialog::stop_collect_sc_data,
+            recv_data_worker, &RecvScannedData::stop_collect_sc_data, Qt::QueuedConnection);
+    connect(recv_data_worker, &RecvScannedData::new_data_ready,
+            this, &Dialog::handleNewDataReady, Qt::QueuedConnection);
+    connect(recv_data_worker, &RecvScannedData::recv_worker_report_sig,
+            this, &Dialog::recv_worker_report_sig_hdlr, Qt::QueuedConnection);
+}
 
 void Dialog::on_dataCollStartPbt_clicked()
 {
@@ -50,16 +66,6 @@ void Dialog::on_dataCollDispCurvPbt_clicked()
 void Dialog::on_dataCollStopPbt_clicked()
 {
     emit stop_collect_sc_data();
-}
-
-void Dialog::collect_data_conn_timeout()
-{
-    DIY_LOG(LOG_WARN, "connect to scanner timeout.");
-}
-
-void Dialog::collect_data_disconn_timeout()
-{
-    DIY_LOG(LOG_WARN, "disconnect from scanner timeout.");
 }
 
 void Dialog::handleNewDataReady()
@@ -193,7 +199,6 @@ void Dialog::reset_pt_curves_wnd_pos_size(QString wnd_id)
     CurvePlotWidget *wnd =  m_plotWindows.contains(wnd_id) ? m_plotWindows[wnd_id] : nullptr;
     if(!wnd) return;
 
-    QPoint parent_pos = this->pos();
     QSize parent_size = this->size();
     wnd->resize(parent_size.width() * ls_size_w_ratio, parent_size.height() * ls_size_h_ratio);
 
@@ -211,4 +216,31 @@ void Dialog::show_pt_curves()
 {
     openOrActivatePlotWindow(m_ch1_wnd_str_id, m_disp_curv_pt_cnt, m_ch1_data_vec, m_max_pt_value);
     openOrActivatePlotWindow(m_ch2_wnd_str_id, m_disp_curv_pt_cnt, m_ch2_data_vec, m_max_pt_value);
+}
+
+void Dialog::recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,
+                                         collect_rpt_evt_e_t evt )
+{
+    lvl = VALID_LOG_LVL(lvl) ? lvl : LOG_ERROR;
+
+    QString disp_str = log_disp_prepender_str() + QString(g_log_level_strs[lvl]) + ",";
+
+    disp_str += report_str;
+
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt, disp_str,
+                                     g_log_lvl_fonts_arr[lvl]);
+
+    switch(evt)
+    {
+    case COLLECT_RPT_EVT_CONNECTED:
+        ui->dataCollConnStDispLbl->setText(gs_str_connected);
+        break;
+
+    case COLLECT_RPT_EVT_DISCONNECTED:
+        ui->dataCollConnStDispLbl->setText(gs_str_disconnected);
+        break;
+
+    default:
+        break;
+    }
 }

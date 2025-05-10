@@ -77,7 +77,7 @@ static const int gs_def_cube_volt_kv_max = 90;
 static const float gs_def_cube_current_ma_min = 0.5;
 static const float gs_def_cube_current_ma_max = 5;
 static const float gs_def_dura_sec_min = 0.5;
-static const float gs_def_dura_sec_max = 1.4;
+static const float gs_def_dura_sec_max = (float)1.4;
 
 static const float gs_def_coil_current_a_min = 0;
 static const float gs_def_coil_current_a_max = 2;

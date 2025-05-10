@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>912</width>
+    <width>998</width>
     <height>546</height>
    </rect>
   </property>
@@ -96,38 +96,7 @@
           </layout>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_23">
-           <item>
-            <widget class="QLabel" name="dataCollWorkStLbl">
-             <property name="text">
-              <string>工作状态：</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="dataCollWorkStDispLbl">
-             <property name="frameShadow">
-              <enum>QFrame::Sunken</enum>
-             </property>
-             <property name="text">
-              <string>空闲</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_9">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
+          <layout class="QHBoxLayout" name="horizontalLayout_23"/>
          </item>
         </layout>
        </item>
