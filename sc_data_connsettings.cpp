@@ -16,9 +16,11 @@ sc_data_connsettings::sc_data_connsettings(QWidget *parent,
 {
     ui->setupUi(this);
 
+    /*
     QRegExp ipRegex("^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$");
     QRegExpValidator *ipValidator = new QRegExpValidator(ipRegex, this);
     ui->dataCollIPAddrLineEdit->setValidator(ipValidator);
+    */
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.clear();

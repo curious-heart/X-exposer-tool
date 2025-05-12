@@ -14,6 +14,13 @@
 static const char* gs_str_please_set_valid_ip_and_port = "请设置有效的IP地址和端口";
 static const char* gs_str_connected = "连接";
 static const char* gs_str_disconnected = "断开";
+static const char* gs_str_sc_data_test = "抓图测试";
+static const char* gs_str_sc_data_test_rec_file_type = ".txt";
+
+extern const char* g_str_create_file;
+extern const char* g_str_fail;
+extern const char* g_str_test_rec_name_sufx;
+extern const char* g_str_create_folder;
 
 #undef RECV_DATA_NOTE_E
 #define RECV_DATA_NOTE_E(e) #e
@@ -46,6 +53,40 @@ void Dialog::setup_sc_data_curv_wnd()
     }
 }
 
+void Dialog::setup_sc_data_rec_file(QString &curr_path, QString &curr_date_str)
+{
+    QString err_str, curr_file_path;
+
+    m_curr_sc_data_rec_file_name = curr_date_str + "-" + gs_str_sc_data_test + gs_str_sc_data_test_rec_file_type;
+    curr_file_path = curr_path + "/" + m_curr_sc_data_rec_file_name;
+    if(!mkpth_if_not_exists(curr_path))
+    {
+        err_str = QString("%1%2:%3").arg(g_str_create_folder, g_str_fail, curr_path);
+        DIY_LOG(LOG_ERROR, err_str);
+        QMessageBox::critical(this, "Error", err_str);
+        return;
+    }
+
+    m_curr_sc_data_rec_file.setFileName(curr_file_path);
+    if(!m_curr_sc_data_rec_file.open(QFile::WriteOnly | QFile::Append))
+    {
+        err_str = QString("%1%2:%3").arg(g_str_create_file, g_str_fail, curr_file_path);
+        DIY_LOG(LOG_ERROR, err_str);
+        QMessageBox::critical(this, "Error", err_str);
+        return;
+    }
+    m_curr_sc_data_txt_stream.setDevice(&m_curr_sc_data_rec_file);
+}
+
+void Dialog::close_sc_data_file_rec()
+{
+    if(m_curr_sc_data_rec_file.isOpen())
+    {
+        m_curr_sc_data_txt_stream.flush();
+        m_curr_sc_data_rec_file.close();
+    }
+}
+
 void Dialog::on_dataCollStartPbt_clicked()
 {
     if(!m_sc_data_conn_params.valid)
@@ -63,6 +104,11 @@ void Dialog::on_dataCollStartPbt_clicked()
         }
     }
 
+    QString curr_date_str = common_tool_get_curr_date_str();
+    QString curr_rec_folder_name = curr_date_str  + "-" + g_str_test_rec_name_sufx;
+    QString curr_path = QString("./") + curr_rec_folder_name;
+    setup_sc_data_rec_file(curr_path, curr_date_str);
+
     QString ip = m_sc_data_conn_params.ip_addr;
     quint16 port = m_sc_data_conn_params.port_no;
     int connTimeout = 3;
@@ -79,6 +125,8 @@ void Dialog::on_dataCollDispCurvPbt_clicked()
 void Dialog::on_dataCollStopPbt_clicked()
 {
     emit stop_collect_sc_data();
+
+    close_sc_data_file_rec();
 }
 
 void Dialog::handleNewDataReady()
@@ -99,6 +147,8 @@ void Dialog::handleNewDataReady()
                         m_txt_def_color : g_log_lvl_fonts_arr[LOG_WARN];
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, data_str,
                                      txt_color, m_txt_def_font.weight());
+    data_str += "\n";
+    if(m_curr_sc_data_rec_file.isOpen()) {m_curr_sc_data_txt_stream << data_str;}
 
     if(NORMAL == packet.notes)
     {
@@ -233,6 +283,8 @@ void Dialog::recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,
 
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, disp_str,
                                      g_log_lvl_fonts_arr[lvl]);
+    disp_str += "\n";
+    if(m_curr_sc_data_rec_file.isOpen()) {m_curr_sc_data_txt_stream << disp_str;}
 
     switch(evt)
     {

@@ -5,6 +5,7 @@
 #include <QComboBox>
 #include <QRadioButton>
 #include <QCheckBox>
+#include <QSpinBox>
 
 #include "uiconfigrecorder.h"
 #include "logger/logger.h"
@@ -27,7 +28,8 @@ UiConfigRecorder::UiConfigRecorder(QObject *parent, QString cfg_file_fpn)
     DEF_CTRL(QTextEdit)\
     DEF_CTRL(QComboBox)\
     DEF_CTRL(QRadioButton)\
-    DEF_CTRL(QCheckBox)
+    DEF_CTRL(QCheckBox)\
+    DEF_CTRL(QSpinBox)
 #define BOX_CHECKED 1
 #define BOX_UNCHECKED 0
 
@@ -73,6 +75,7 @@ void UiConfigRecorder::record_ui_configs(QWidget * ui_widget,
     CTRL_WRITE_TO_CFG(QComboBox, currentIndex())
     CTRL_WRITE_TO_CFG(QRadioButton, isChecked() ? BOX_CHECKED : BOX_UNCHECKED)
     CTRL_WRITE_TO_CFG(QCheckBox, isChecked() ? BOX_CHECKED : BOX_UNCHECKED)
+    CTRL_WRITE_TO_CFG(QSpinBox, value())
 
     cfg_setting.endGroup();
 }
@@ -137,6 +140,7 @@ void UiConfigRecorder::load_configs_to_ui(QWidget * ui_widget,
                   setCurrentIndex(int_val));
     READ_FROM_CFG(QLineEdit, ,(!str_val.isEmpty()), setText(str_val));
     READ_FROM_CFG(QTextEdit, ,(!str_val.isEmpty()), setText(str_val));
+    READ_FROM_CFG(QSpinBox, , true, setValue(str_val.toInt()));
 
     cfg_setting.endGroup();
 }

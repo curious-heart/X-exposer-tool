@@ -28,10 +28,11 @@ static const char* gs_str_sep_line = "========================================";
 static const char* gs_str_sep_short_line = "=================";
 static const char* gs_str_expo_tripple_set_ok = "曝光参数设置成功";
 
-static const char* gs_str_test_rec_name_sufx = "曝光测试结果";
-static const char* gs_str_test_rec_file_type = ".csv";
-static const char* gs_str_create_folder = "创建文件夹";
-static const char* gs_str_create_file = "创建文件";
+const char* g_str_test_rec_name_sufx = "测试结果"; //"曝光测试结果";
+static const char* gs_str_expo_test = "曝光测试";
+static const char* gs_str_expo_test_rec_file_type = ".csv";
+const char* g_str_create_folder = "创建文件夹";
+const char* g_str_create_file = "创建文件";
 extern const char* g_str_fail;
 
 static const char* gs_str_date = "日期";
@@ -301,7 +302,8 @@ Dialog::Dialog(QWidget *parent)
 
     select_modbus_device();
 
-    m_rec_ui_cfg_fin.insert(nullptr); //no items needs to record.
+    m_rec_ui_cfg_fin.insert(ui->dataCollRowCntSpinbox);
+    m_rec_ui_cfg_fin.insert(ui->dataCollDispRowPtCntSpinbox);
     m_rec_ui_cfg_fout.clear();
     m_cfg_recorder.load_configs_to_ui(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
 
@@ -387,6 +389,7 @@ Dialog::Dialog(QWidget *parent)
     setup_sc_data_curv_wnd();
     recv_data_workerThread->start();
 
+    ui->dataCollRowCntSpinbox->setMinimum(1);
     ui->dataCollDispRowPtCntSpinbox->setRange(1, g_sys_configs_block.max_pt_number);
     m_ch1_data_vec.resize(g_sys_configs_block.max_pt_number);
     m_ch1_data_vec.fill(0);
@@ -413,6 +416,8 @@ Dialog::~Dialog()
         m_curr_txt_stream.flush();
         m_curr_rec_file.close();
     }
+
+    close_sc_data_file_rec();
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.clear();
@@ -838,13 +843,14 @@ void Dialog::on_startTestBtn_clicked()
 
     QString err_str;
     QString curr_dt_str = common_tool_get_curr_dt_str();
-    m_curr_rec_folder_name = curr_dt_str  + "-" + gs_str_test_rec_name_sufx;
-    m_curr_rec_file_name = m_curr_rec_folder_name + gs_str_test_rec_file_type;
+    QString curr_date_str = common_tool_get_curr_date_str();
+    m_curr_rec_folder_name = curr_date_str  + "-" + g_str_test_rec_name_sufx;
+    m_curr_rec_file_name = curr_dt_str + "-" + gs_str_expo_test + gs_str_expo_test_rec_file_type;
     QString curr_path = QString("./") + m_curr_rec_folder_name;
     QString curr_file_path(curr_path + "/" + m_curr_rec_file_name);
     if(!mkpth_if_not_exists(curr_path))
     {
-        err_str = QString("%1%2:%3").arg(gs_str_create_folder, g_str_fail, curr_path);
+        err_str = QString("%1%2:%3").arg(g_str_create_folder, g_str_fail, curr_path);
         DIY_LOG(LOG_ERROR, err_str);
         QMessageBox::critical(this, "Error", err_str);
         return;
@@ -852,7 +858,7 @@ void Dialog::on_startTestBtn_clicked()
     m_curr_rec_file.setFileName(curr_file_path);
     if(!m_curr_rec_file.open(QFile::WriteOnly | QFile::Append))
     {
-        err_str = QString("%1%2:%3").arg(gs_str_create_file, g_str_fail, curr_file_path);
+        err_str = QString("%1%2:%3").arg(g_str_create_file, g_str_fail, curr_file_path);
         DIY_LOG(LOG_ERROR, err_str);
         QMessageBox::critical(this, "Error", err_str);
         return;

@@ -60,9 +60,9 @@ private:
     bool m_dso_connected = false;
     bool m_testing = false, m_test_paused = false, m_self_reconnecting = false, m_during_exposuring = false;
     bool m_asked_for_reconnecting = false;
-    QString m_curr_rec_folder_name, m_curr_rec_file_name;
-    QFile m_curr_rec_file;
-    QTextStream m_curr_txt_stream;
+    QString m_curr_rec_folder_name, m_curr_rec_file_name, m_curr_sc_data_rec_file_name;
+    QFile m_curr_rec_file, m_curr_sc_data_rec_file;
+    QTextStream m_curr_txt_stream, m_curr_sc_data_txt_stream;
     QList<hv_mb_reg_e_t> m_mbregs_rec_list, m_mbregs_monitor_list, mb_mbregs_result_disp_list;
     QColor m_txt_def_color;
     QFont m_txt_def_font;
@@ -131,6 +131,8 @@ private:
     void show_pt_curves();
     void reset_pt_curves_wnd_pos_size(QString wnd_id);
     QMap<QString, CurvePlotWidget*> m_plotWindows;
+    void setup_sc_data_rec_file(QString &curr_path, QString &curr_date_str);
+    void close_sc_data_file_rec();
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
