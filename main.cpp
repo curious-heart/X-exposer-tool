@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
     if(QT_VERSION>=QT_VERSION_CHECK(5,6,0))
             QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
-    static const char* ls_app_id_str = "x-exposer(a small tool for automatic test and aging test)";
+    static const char* ls_app_id_str = "X-scanner-tester(a small tool for scanning-data test).";
     static const char* ls_hint_str = "程序已经启动";
     QtSingleApplication a(QString(ls_app_id_str), argc, argv);
 
@@ -28,7 +28,8 @@ int main(int argc, char *argv[])
 
     start_log_thread(th, (LOG_LEVEL)(g_sys_configs_block.log_level));
 
-    QString title_str = QString("%1 %2").arg(a.applicationName(), APP_VER_STR);
+    QString disp_app_name = "X-scann-tester";
+    QString title_str = QString("%1 %2").arg(disp_app_name, APP_VER_STR);
     w.setWindowTitle(title_str);
 
     w.show();

@@ -118,6 +118,7 @@ private:
     RecvScannedData *recv_data_worker;
     QThread *recv_data_workerThread;
     void setup_sig_hdlr_main_recv_worker();
+    void setup_sc_data_curv_wnd();
 
     quint32 m_max_pt_value;
     int m_disp_curv_pt_cnt;
@@ -127,9 +128,6 @@ private:
     int split_data_into_channels(QByteArray& ori_data,
                               QVector<quint32> &dv_ch1, QVector<quint32> &dv_ch2,
                               quint64 &pkt_idx);
-    void openOrActivatePlotWindow(const QString &id,
-                                  int pt_cnt, const QVector<quint32>& row_data,
-                                  quint32 range_max);
     void show_pt_curves();
     void reset_pt_curves_wnd_pos_size(QString wnd_id);
     QMap<QString, CurvePlotWidget*> m_plotWindows;

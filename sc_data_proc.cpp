@@ -32,6 +32,19 @@ void Dialog::setup_sig_hdlr_main_recv_worker()
     connect(recv_data_worker, &RecvScannedData::recv_worker_report_sig,
             this, &Dialog::recv_worker_report_sig_hdlr, Qt::QueuedConnection);
 }
+void Dialog::setup_sc_data_curv_wnd()
+{
+    CurvePlotWidget*window = nullptr;
+    QString id_arr[] = {m_ch1_wnd_str_id, m_ch2_wnd_str_id};
+
+    for(int idx = 0; idx < ARRAY_COUNT(id_arr); ++idx)
+    {
+        window = new CurvePlotWidget(this);
+        window->setWindowTitle(QString("Curve Plot [%1]").arg(id_arr[idx]));
+        m_plotWindows[id_arr[idx]] = window;
+        reset_pt_curves_wnd_pos_size(id_arr[idx]);
+    }
+}
 
 void Dialog::on_dataCollStartPbt_clicked()
 {
@@ -41,13 +54,6 @@ void Dialog::on_dataCollStartPbt_clicked()
         return;
     }
 
-    QString ip = m_sc_data_conn_params.ip_addr;
-    quint16 port = m_sc_data_conn_params.port_no;
-    int connTimeout = 3;
-    int packetCount = ui->dataCollRowCntSpinbox->value();
-
-    emit start_collect_sc_data(ip, port, connTimeout, packetCount);
-
     for (auto &window : m_plotWindows)
     {
         if (window)
@@ -56,6 +62,13 @@ void Dialog::on_dataCollStartPbt_clicked()
             window->hide();
         }
     }
+
+    QString ip = m_sc_data_conn_params.ip_addr;
+    quint16 port = m_sc_data_conn_params.port_no;
+    int connTimeout = 3;
+    int packetCount = ui->dataCollRowCntSpinbox->value();
+
+    emit start_collect_sc_data(ip, port, connTimeout, packetCount);
 }
 
 void Dialog::on_dataCollDispCurvPbt_clicked()
@@ -81,14 +94,21 @@ void Dialog::handleNewDataReady()
     data_str += QString(gs_recv_data_note_str[packet.notes]) + ":";
     data_str += packet.data.toHex(' ').toUpper();
 
+    QColor txt_color = (NORMAL == packet.notes || START_ACK == packet.notes
+                        || STOP_ACK == packet.notes) ?
+                        m_txt_def_color : g_log_lvl_fonts_arr[LOG_WARN];
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, data_str,
-                                     m_txt_def_color, m_txt_def_font.weight());
+                                     txt_color, m_txt_def_font.weight());
 
     if(NORMAL == packet.notes)
     {
         quint64 pkt_idx;
         m_disp_curv_pt_cnt
                 = split_data_into_channels(packet.data, m_ch1_data_vec, m_ch2_data_vec, pkt_idx);
+
+
+        m_plotWindows[m_ch1_wnd_str_id]->receiveData(m_disp_curv_pt_cnt, m_ch1_data_vec, m_max_pt_value);
+        m_plotWindows[m_ch2_wnd_str_id]->receiveData(m_disp_curv_pt_cnt, m_ch2_data_vec, m_max_pt_value);
     }
 }
 
@@ -168,29 +188,6 @@ int Dialog::split_data_into_channels(QByteArray& ori_data,
     return disp_pt_per_row;
 }
 
-void Dialog::openOrActivatePlotWindow(const QString &id,
-                                      int pt_cnt, const QVector<quint32>& row_data,
-                                      quint32 range_max)
-{
-    CurvePlotWidget*window = nullptr;
-    if (m_plotWindows.contains(id))
-    {
-        window = m_plotWindows[id];
-        window->show();
-        window->raise();
-        window->activateWindow();
-    }
-    else
-    {
-        window = new CurvePlotWidget(this);
-        window->setWindowTitle(QString("Curve Plot [%1]").arg(id));
-        m_plotWindows[id] = window;
-        reset_pt_curves_wnd_pos_size(id);
-        window->show();
-    }
-    window->receiveData(pt_cnt, row_data, range_max);
-}
-
 void Dialog::reset_pt_curves_wnd_pos_size(QString wnd_id)
 {
     static const float ls_size_w_ratio = (float)0.8, ls_size_h_ratio = (float)0.8;
@@ -214,8 +211,15 @@ void Dialog::reset_pt_curves_wnd_pos_size(QString wnd_id)
 
 void Dialog::show_pt_curves()
 {
-    openOrActivatePlotWindow(m_ch1_wnd_str_id, m_disp_curv_pt_cnt, m_ch1_data_vec, m_max_pt_value);
-    openOrActivatePlotWindow(m_ch2_wnd_str_id, m_disp_curv_pt_cnt, m_ch2_data_vec, m_max_pt_value);
+    for (auto &window : m_plotWindows)
+    {
+        if (window)
+        {
+            window->show();
+            window->raise();
+            window->activateWindow();
+        }
+    }
 }
 
 void Dialog::recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,

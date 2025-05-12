@@ -384,6 +384,7 @@ Dialog::Dialog(QWidget *parent)
     connect(recv_data_workerThread, &QThread::finished,
             recv_data_worker, &QObject::deleteLater);
     setup_sig_hdlr_main_recv_worker();
+    setup_sc_data_curv_wnd();
     recv_data_workerThread->start();
 
     ui->dataCollDispRowPtCntSpinbox->setRange(1, g_sys_configs_block.max_pt_number);
