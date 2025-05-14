@@ -4,6 +4,7 @@
 #include <QMutexLocker>
 #include <QMessageBox>
 #include <QVector>
+#include <QTimer>
 
 #include "logger/logger.h"
 #include "main_dialog.h"
@@ -26,7 +27,7 @@ extern const char* g_str_create_folder;
 #define RECV_DATA_NOTE_E(e) #e
 static const char* gs_recv_data_note_str [] = {RECV_DATA_NOTES};
 
-void Dialog::setup_sig_hdlr_main_recv_worker()
+void Dialog::setup_sig_hdlr_for_sc_data()
 {
     qRegisterMetaType<collect_rpt_evt_e_t>();
 
@@ -38,7 +39,11 @@ void Dialog::setup_sig_hdlr_main_recv_worker()
             this, &Dialog::handleNewDataReady, Qt::QueuedConnection);
     connect(recv_data_worker, &RecvScannedData::recv_worker_report_sig,
             this, &Dialog::recv_worker_report_sig_hdlr, Qt::QueuedConnection);
+
+    connect(&m_expo_to_coll_delay_timer, &QTimer::timeout,
+            this, &Dialog::expo_to_coll_delay_timer_hdlr, Qt::QueuedConnection);
 }
+
 void Dialog::setup_sc_data_curv_wnd()
 {
     CurvePlotWidget*window = nullptr;
@@ -115,6 +120,8 @@ void Dialog::on_dataCollStartPbt_clicked()
     int packetCount = ui->dataCollRowCntSpinbox->value();
 
     emit start_collect_sc_data(ip, port, connTimeout, packetCount);
+
+    sc_data_btns_refresh(true);
 }
 
 void Dialog::on_dataCollDispCurvPbt_clicked()
@@ -127,6 +134,7 @@ void Dialog::on_dataCollStopPbt_clicked()
     emit stop_collect_sc_data();
 
     close_sc_data_file_rec();
+    sc_data_btns_refresh(false);
 }
 
 void Dialog::handleNewDataReady()
@@ -294,9 +302,22 @@ void Dialog::recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,
 
     case COLLECT_RPT_EVT_DISCONNECTED:
         ui->dataCollConnStDispLbl->setText(gs_str_disconnected);
+
+        sc_data_btns_refresh(false);
         break;
 
     default:
         break;
     }
+}
+
+void Dialog::sc_data_btns_refresh(bool start_collec)
+{
+    ui->dataCollStartPbt->setEnabled(!start_collec);
+    ui->dataCollStopPbt->setEnabled(start_collec);
+}
+
+void Dialog::expo_to_coll_delay_timer_hdlr()
+{
+    on_dataCollStartPbt_clicked();
 }

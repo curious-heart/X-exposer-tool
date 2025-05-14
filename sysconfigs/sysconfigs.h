@@ -61,6 +61,8 @@ typedef struct
     int test_params_settings_disp, pause_test_disp;
 
     int max_pt_number, all_bytes_per_pt, pkt_idx_byte_cnt;
+
+    int expo_to_coll_delay_def_ms, expo_to_coll_delay_max_ms;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

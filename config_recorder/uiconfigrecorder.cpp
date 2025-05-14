@@ -140,7 +140,8 @@ void UiConfigRecorder::load_configs_to_ui(QWidget * ui_widget,
                   setCurrentIndex(int_val));
     READ_FROM_CFG(QLineEdit, ,(!str_val.isEmpty()), setText(str_val));
     READ_FROM_CFG(QTextEdit, ,(!str_val.isEmpty()), setText(str_val));
-    READ_FROM_CFG(QSpinBox, , true, setValue(str_val.toInt()));
+    READ_FROM_CFG(QSpinBox, int_val = str_val.toInt(&tr_ret),
+                  (tr_ret), setValue(int_val));
 
     cfg_setting.endGroup();
 }

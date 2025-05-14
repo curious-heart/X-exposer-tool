@@ -53,6 +53,8 @@ static const char* gs_ini_grp_sc_data_cfg = "sc_data_cfg";
 static const char* gs_ini_key_max_pt_number = "max_pt_number";
 static const char* gs_ini_key_all_bytes_per_pt = "all_bytes_per_pt";
 static const char* gs_ini_key_pkt_idx_byte_cnt = "pkt_idx_byte_cnt";
+static const char* gs_ini_key_expo_to_coll_delay_def_ms = "expo_to_coll_delay_def_ms";
+static const char* gs_ini_key_expo_to_coll_delay_max_ms = "expo_to_coll_delay_max_ms";
 
 extern const char* g_str_cube_volt;
 extern const char* g_str_cube_current;
@@ -91,7 +93,6 @@ static const int gs_def_mb_reconnect_wait_sep_ms = 1000;
 static const int gs_def_test_time_stat_grain_sec = 3;
 static const int gs_def_mb_one_cmd_round_time_ms = 150;
 
-
 static const int gs_def_test_proc_monitor_period_ms = 1000;
 
 static const int gs_def_distance_group_disp = 1;
@@ -103,6 +104,7 @@ static const int gs_def_test_params_settings_disp = 0;
 static const int gs_def_pause_test_disp = 0;
 
 static const char* gs_str_cfg_param_limit_error = "参数门限配置错误";
+static const char* gs_str_param_in_cfg_file_error = "配置文件参数错误";
 static const char* gs_str_plz_check = "请检查！";
 static const char* gs_str_mb_intf_unit = "接口单位";
 static const char* gs_str_mb_intf_unit_error = "接口单位配置错误";
@@ -120,6 +122,8 @@ static const mb_dura_unit_e_t gs_def_hidden_ui_mb_dura_unit = MB_DURA_UNIT_MIN;
 
 static const int gs_def_max_pt_number = 200, gs_def_all_bytes_per_pt = 3,
                  gs_def_pkt_idx_byte_cnt = 2;
+static const int gs_def_expo_to_coll_delay_def_ms = 500,
+                 gs_def_expo_to_coll_delay_max_ms = 1000;
 
 static RangeChecker<int> gs_cfg_file_log_level_ranger((int)LOG_DEBUG, (int)LOG_ERROR, "",
                      EDGE_INCLUDED, EDGE_INCLUDED);
@@ -292,7 +296,7 @@ bool fill_sys_configs(QString * ret_str_ptr)
                 g_sys_configs_block.coil_current_a_min, g_sys_configs_block.coil_current_a_max,
                 &gs_cfg_file_value_ge0_float_ranger, g_str_current_unit_a)
 
-    if(!ret)  ret_str = QString(gs_str_cfg_param_limit_error) + "," + gs_str_plz_check + "\n" + ret_str;
+    if(!ret)  ret_str += QString(gs_str_cfg_param_limit_error) + "," + gs_str_plz_check + "\n" + ret_str;
 #undef CHECK_LIMIT_RANGE
 
 #define CHECK_ENUM(title_str, e_v, e_set, str_func) \
@@ -332,7 +336,7 @@ bool fill_sys_configs(QString * ret_str_ptr)
         if(g_sys_configs_block.hidden_ui_mb_dura_unit == g_sys_configs_block.mb_dura_intf_unit)
         {
             ret = false;
-            ret_str = QString(g_str_expo_dura) + gs_str_mb_intf_unit
+            ret_str += QString(g_str_expo_dura) + gs_str_mb_intf_unit
                     + " " + g_str_and + " "
                     + gs_str_hidden_ui_mb_dura_unit + " " + gs_str_cannot_be_the_same;
         }
@@ -387,7 +391,23 @@ bool fill_sys_configs(QString * ret_str_ptr)
                            g_sys_configs_block.pkt_idx_byte_cnt, gs_def_pkt_idx_byte_cnt,
                            1, &gs_cfg_file_value_gt0_int_ranger);
 
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_expo_to_coll_delay_def_ms, toInt,
+                           g_sys_configs_block.expo_to_coll_delay_def_ms, gs_def_expo_to_coll_delay_def_ms,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_expo_to_coll_delay_max_ms, toInt,
+                           g_sys_configs_block.expo_to_coll_delay_max_ms, gs_def_expo_to_coll_delay_max_ms,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
     settings.endGroup();
+
+    if(g_sys_configs_block.expo_to_coll_delay_def_ms >
+            g_sys_configs_block.expo_to_coll_delay_max_ms)
+    {
+        ret = false;
+        ret_str += QString(gs_str_param_in_cfg_file_error) + ": "
+                 + gs_ini_key_expo_to_coll_delay_def_ms + " > "
+                 + gs_ini_key_expo_to_coll_delay_max_ms;
+    }
     /*--------------------*/
 
     if(ret_str_ptr) *ret_str_ptr = ret_str;

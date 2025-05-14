@@ -117,8 +117,9 @@ private:
     QMutex queueMutex;
     RecvScannedData *recv_data_worker;
     QThread *recv_data_workerThread;
-    void setup_sig_hdlr_main_recv_worker();
+    void setup_sig_hdlr_for_sc_data();
     void setup_sc_data_curv_wnd();
+    QTimer m_expo_to_coll_delay_timer;
 
     quint32 m_max_pt_value;
     int m_disp_curv_pt_cnt;
@@ -133,6 +134,7 @@ private:
     QMap<QString, CurvePlotWidget*> m_plotWindows;
     void setup_sc_data_rec_file(QString &curr_path, QString &curr_date_str);
     void close_sc_data_file_rec();
+    void sc_data_btns_refresh(bool start_collec = true);
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
@@ -188,6 +190,7 @@ private slots:
 
     void recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,
                                 collect_rpt_evt_e_t evt = COLLECT_RPT_EVT_IGNORE);
+    void expo_to_coll_delay_timer_hdlr();
 
 signals:
     void go_test_sig();

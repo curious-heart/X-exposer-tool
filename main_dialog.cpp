@@ -300,10 +300,15 @@ Dialog::Dialog(QWidget *parent)
     INIT_SET_PARAMS_AND_DISP(hvConnParamDisplayTxt, m_hvConnSettingsDialog,
                              collect_conn_params, m_hv_conn_params);
 
+    ui->dataCollRowCntSpinbox->setMinimum(1);
+    ui->dataCollDispRowPtCntSpinbox->setRange(1, g_sys_configs_block.max_pt_number);
+    ui->expoToCollDelayLblSpinBox->setRange(1, g_sys_configs_block.expo_to_coll_delay_max_ms);
+    ui->expoToCollDelayLblSpinBox->setValue(g_sys_configs_block.expo_to_coll_delay_def_ms);
+
     select_modbus_device();
 
-    m_rec_ui_cfg_fin.insert(ui->dataCollRowCntSpinbox);
-    m_rec_ui_cfg_fin.insert(ui->dataCollDispRowPtCntSpinbox);
+    m_rec_ui_cfg_fin << ui->dataCollRowCntSpinbox << ui->dataCollDispRowPtCntSpinbox
+                     << ui->expoToCollDelayLblSpinBox;
     m_rec_ui_cfg_fout.clear();
     m_cfg_recorder.load_configs_to_ui(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
 
@@ -385,17 +390,16 @@ Dialog::Dialog(QWidget *parent)
     recv_data_worker->moveToThread(recv_data_workerThread);
     connect(recv_data_workerThread, &QThread::finished,
             recv_data_worker, &QObject::deleteLater);
-    setup_sig_hdlr_main_recv_worker();
+    setup_sig_hdlr_for_sc_data();
     setup_sc_data_curv_wnd();
     recv_data_workerThread->start();
 
-    ui->dataCollRowCntSpinbox->setMinimum(1);
-    ui->dataCollDispRowPtCntSpinbox->setRange(1, g_sys_configs_block.max_pt_number);
     m_ch1_data_vec.resize(g_sys_configs_block.max_pt_number);
     m_ch1_data_vec.fill(0);
     m_ch2_data_vec.resize(g_sys_configs_block.max_pt_number);
     m_ch1_data_vec.fill(0);
     m_max_pt_value = (1 << (g_sys_configs_block.all_bytes_per_pt * 4)) - 1;
+    m_expo_to_coll_delay_timer.setSingleShot(true);
 
     m_init_ok = true;
 }
@@ -405,6 +409,7 @@ Dialog::~Dialog()
     m_reconn_wait_timer.stop();
     m_time_stat_timer.stop();
     m_test_proc_monitor_timer.stop();
+    m_expo_to_coll_delay_timer.stop();
 
     if(QModbusDevice::ConnectedState == m_modbus_state)
     {
@@ -879,7 +884,7 @@ void Dialog::on_startTestBtn_clicked()
     m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
     m_test_proc_monitor_timer.start(g_sys_configs_block.test_proc_monitor_period_ms);
 
-    display_mb_regs_chart();
+    m_expo_to_coll_delay_timer.start(ui->expoToCollDelayLblSpinBox->value());
 }
 
 void Dialog::on_stopTestBtn_clicked()
@@ -887,6 +892,7 @@ void Dialog::on_stopTestBtn_clicked()
     m_reconn_wait_timer.stop();
     m_time_stat_timer.stop();
     m_test_proc_monitor_timer.stop();
+    m_expo_to_coll_delay_timer.stop();
 
     refresh_time_stat_display();
     emit stop_test_sig(TEST_END_ABORT_BY_USER);
@@ -1123,6 +1129,9 @@ void Dialog::reset_internal_flags()
 
 void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 {
+    m_expo_to_coll_delay_timer.stop();
+    on_dataCollStopPbt_clicked();
+
     m_test_proc_monitor_timer.stop();
 
     if(!m_testing)
