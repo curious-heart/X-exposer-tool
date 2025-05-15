@@ -1335,7 +1335,7 @@ void Dialog::on_manTestSettingBtn_clicked()
     else
     {
         ui->testParamDisplayTxt->setText(m_test_params.info_str);
-        if(TEST_CONTENT_NORMAL != m_test_params.test_content)
+        //if(TEST_CONTENT_NORMAL != m_test_params.test_content) //for scnanner, there is only normal test.
         {
             if(set_mb_expo_triple())
             {
