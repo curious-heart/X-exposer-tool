@@ -18,6 +18,8 @@ static const char* gs_str_disconnected = "断开";
 static const char* gs_str_sc_data_test = "抓图测试";
 static const char* gs_str_sc_data_test_rec_file_type = ".txt";
 
+const char* g_str_unkonw_st = "未知状态";
+
 extern const char* g_str_create_file;
 extern const char* g_str_fail;
 extern const char* g_str_test_rec_name_sufx;
@@ -324,5 +326,40 @@ void Dialog::expo_to_coll_delay_timer_hdlr()
 
 QString Dialog::hv_work_st_str(quint16 st_reg_val)
 {
-    return "";
+    static bool ls_first = true;
+    typedef struct
+    {
+        quint16 val; QString str;
+    }st_val_to_str_s_t;
+    static const st_val_to_str_s_t ls_st_val_to_str_arr[] =
+    {
+        {0x11, "空闲"},
+        {0x22, "散热"},
+        {0xE1, "input1状态反馈异常"},
+        {0xE2, "电流反馈异常"},
+        {0xE3, "电压反馈异常"},
+        {0xE4, "多个异常同时发生"},
+    };
+    static QMap<quint16, QString> ls_st_val_to_str_map;
+
+    if(ls_first)
+    {
+        for(int i = 0; i < ARRAY_COUNT(ls_st_val_to_str_arr); ++i)
+        {
+            ls_st_val_to_str_map.insert(ls_st_val_to_str_arr[i].val,
+                                        ls_st_val_to_str_arr[i].str);
+        }
+        ls_first = false;
+    }
+
+    QString st_str;
+    if(ls_st_val_to_str_map.contains(st_reg_val))
+    {
+        st_str = ls_st_val_to_str_map[st_reg_val];
+    }
+    else
+    {
+        st_str = QString(g_str_unkonw_st) + ":0x" + QString::number(st_reg_val, 16).toUpper();
+    }
+    return st_str;
 }

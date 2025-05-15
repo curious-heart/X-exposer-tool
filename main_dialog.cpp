@@ -692,8 +692,17 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
 
     refresh_butoons();
 
-    ui->hvConnStLbl->setText(QModbusDevice::ConnectedState== state ?
+    ui->hvConnStLbl->setText(QModbusDevice::ConnectedState == state ?
                                  g_str_connected : g_str_disconnected);
+    if(QModbusDevice::ConnectedState == state
+            && !m_test_proc_monitor_timer.isActive())
+    {
+        m_test_proc_monitor_timer.start(g_sys_configs_block.test_proc_monitor_period_ms);
+    }
+    else
+    {
+        m_test_proc_monitor_timer.stop();
+    }
 }
 
 void Dialog::on_hvConnBtn_clicked()
@@ -887,7 +896,6 @@ void Dialog::on_startTestBtn_clicked()
     refresh_time_stat_display(true, true);
 
     m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
-    m_test_proc_monitor_timer.start(g_sys_configs_block.test_proc_monitor_period_ms);
 
     m_expo_to_coll_delay_timer.start(ui->expoToCollDelayLblSpinBox->value());
 }
@@ -896,7 +904,6 @@ void Dialog::on_stopTestBtn_clicked()
 {
     m_reconn_wait_timer.stop();
     m_time_stat_timer.stop();
-    m_test_proc_monitor_timer.stop();
     m_expo_to_coll_delay_timer.stop();
 
     refresh_time_stat_display();
@@ -964,11 +971,27 @@ void Dialog::map_judge_result_to_style(judge_result_e_t judge_result, str_with_s
 void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_val_map,
                                  int loop_idx, int round_idx, bool proc_monitor)
 {
-    if(!m_testing)
+    if(reg_val_map.contains(State))
+    {
+        ui->hvWorkStLbl->setText(hv_work_st_str(reg_val_map[State]));
+    }
+
+    if(proc_monitor)
+    {
+        if(!m_testing || m_test_paused || !m_during_exposuring ||
+            (reg_val_map.contains(ExposureStatus) && reg_val_map[ExposureStatus] < EXPOSURE_ST_EXPOSURING))
+        {
+            DIY_LOG(LOG_INFO, "ignore regs monitor display when testing is not ongoing/paused "
+                              "or not in exposing.");
+            return;
+        }
+    }
+    else if(!m_testing)
     {
         DIY_LOG(LOG_WARN, QString("not in test, but still receive reported regs with"
                                   "option %1.").arg(op));
     }
+
 
     int idx = 0, base = 10;
     hv_mb_reg_e_t reg_no;
@@ -1063,7 +1086,6 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     if(proc_monitor)
     {
         append_line_with_styles(ui->testProcMonitorTxtEdit, style_line);
-        ui->hvWorkStLbl->setText(hv_work_st_str(reg_val_map[State]));
     }
     else
     {
@@ -1137,8 +1159,6 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
 {
     m_expo_to_coll_delay_timer.stop();
     on_dataCollStopPbt_clicked();
-
-    m_test_proc_monitor_timer.stop();
 
     if(!m_testing)
     {
@@ -1332,7 +1352,7 @@ void Dialog::begin_exposure_sig_handler(bool start)
 
 void Dialog::test_proc_report_timer_sig_handler()
 {
-    if(m_testing && !m_test_paused && m_during_exposuring) emit get_test_proc_st_sig();
+    emit get_test_proc_st_sig();
 }
 
 void Dialog::mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finished_sig_handler)(),
@@ -1365,10 +1385,7 @@ void Dialog::mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finishe
         {
             regs_read_result.insert(hv_mb_reg_e_t(st_addr + idx), rb_du.value(idx));
         }
-        if(regs_read_result[ExposureStatus] >= EXPOSURE_ST_EXPOSURING)
-        {
-            rec_mb_regs_sig_handler(TEST_OP_READ_REGS, regs_read_result, 0, 0, true);
-        }
+        rec_mb_regs_sig_handler(TEST_OP_READ_REGS, regs_read_result, 0, 0, true);
         if(EXPOSURE_ST_COOLING == regs_read_result[ExposureStatus])
         {
             m_during_exposuring = false;
@@ -1388,7 +1405,7 @@ void Dialog::get_test_proc_st_sig_handler()
     QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
     QModbusReply *mb_reply;
 
-    if(!m_testing || m_test_paused) return;
+    //if(!m_testing || m_test_paused) return;
 
     mb_du.setStartAddress(HSV);
     mb_du.setValueCount(MAX_HV_NORMAL_MB_REG_NUM);
