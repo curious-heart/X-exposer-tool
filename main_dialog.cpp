@@ -49,6 +49,8 @@ static const char* gs_str_test_end = "测试结束";
 
 static const char* gs_str_start_test = "开始测试";
 static const char* gs_str_testing = "正在测试";
+const char* g_str_connected ="连接";
+const char* g_str_disconnected ="断开";
 
 extern const char* g_str_loop;
 extern const char* g_str_time_ci;
@@ -689,6 +691,9 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     }
 
     refresh_butoons();
+
+    ui->hvConnStLbl->setText(QModbusDevice::ConnectedState== state ?
+                                 g_str_connected : g_str_disconnected);
 }
 
 void Dialog::on_hvConnBtn_clicked()
@@ -1058,6 +1063,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
     if(proc_monitor)
     {
         append_line_with_styles(ui->testProcMonitorTxtEdit, style_line);
+        ui->hvWorkStLbl->setText(hv_work_st_str(reg_val_map[State]));
     }
     else
     {

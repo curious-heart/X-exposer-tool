@@ -321,3 +321,8 @@ void Dialog::expo_to_coll_delay_timer_hdlr()
 {
     on_dataCollStartPbt_clicked();
 }
+
+QString Dialog::hv_work_st_str(quint16 st_reg_val)
+{
+    return "";
+}

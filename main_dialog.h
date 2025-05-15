@@ -191,6 +191,7 @@ private slots:
     void recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,
                                 collect_rpt_evt_e_t evt = COLLECT_RPT_EVT_IGNORE);
     void expo_to_coll_delay_timer_hdlr();
+    QString hv_work_st_str(quint16 st_reg_val);
 
 signals:
     void go_test_sig();
