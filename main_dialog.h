@@ -9,6 +9,7 @@
 #include <QTimer>
 #include <QDateTime>
 #include <QMutexLocker>
+#include <QSerialPort>
 
 #include "common_tools/common_tool_func.h"
 #include "test_param_settings.h"
@@ -75,6 +76,8 @@ private:
 
     serial_port_conn_params_struct_t m_pb_conn_params;
     sc_data_conn_params_struct_t m_sc_data_conn_params;
+    QSerialPort m_pb_sport;
+    bool m_pb_sport_open = false;
 
     void refresh_butoons();
 
@@ -119,7 +122,7 @@ private:
     QThread *recv_data_workerThread;
     void setup_sig_hdlr_for_sc_data();
     void setup_sc_data_curv_wnd();
-    QTimer m_expo_to_coll_delay_timer;
+    QTimer m_expo_to_coll_delay_timer, m_pb_monitor_timer;
 
     quint32 m_max_pt_value;
     int m_disp_curv_pt_cnt;
@@ -135,6 +138,9 @@ private:
     void setup_sc_data_rec_file(QString &curr_path, QString &curr_date_str);
     void close_sc_data_file_rec();
     void sc_data_btns_refresh(bool start_collec = true);
+
+    void setup_pb_set_and_monitor();
+    bool write_to_sport(char* data_arr, qint64 byte_cnt, bool silent = false);
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
@@ -192,6 +198,19 @@ private slots:
                                 collect_rpt_evt_e_t evt = COLLECT_RPT_EVT_IGNORE);
     void expo_to_coll_delay_timer_hdlr();
     QString hv_work_st_str(quint16 st_reg_val);
+    void pb_sport_data_received();
+    void pb_monitor_timer_hdlr();
+
+    void on_pbConnPbt_clicked();
+
+    void on_pbDisconnPbt_clicked();
+
+    void on_motorRPMSetPBtn_clicked();
+
+    void on_hostSleepPBtn_clicked();
+
+    void on_hostWakeupPBtn_clicked();
+    void pb_monitor_check_st_hdlr();
 
 signals:
     void go_test_sig();
@@ -207,6 +226,8 @@ signals:
     void refresh_time_stat_display_sig(bool total_dura = false, bool start_test = false,
                                        bool from_timer = false);
     void get_test_proc_st_sig();
+
+    void pb_monitor_check_st();
 };
 
 extern QColor g_log_lvl_fonts_arr[];

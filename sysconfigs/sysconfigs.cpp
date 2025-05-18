@@ -56,6 +56,9 @@ static const char* gs_ini_key_pkt_idx_byte_cnt = "pkt_idx_byte_cnt";
 static const char* gs_ini_key_expo_to_coll_delay_def_ms = "expo_to_coll_delay_def_ms";
 static const char* gs_ini_key_expo_to_coll_delay_max_ms = "expo_to_coll_delay_max_ms";
 
+static const char* gs_ini_grp_pb_set_and_monitor_cfg = "pb_set_and_monitor_cfg";
+static const char* gs_ini_key_pb_monitor_period_ms = "pb_monitor_period_ms";
+
 extern const char* g_str_cube_volt;
 extern const char* g_str_cube_current;
 extern const char* g_str_current;
@@ -123,7 +126,8 @@ static const mb_dura_unit_e_t gs_def_hidden_ui_mb_dura_unit = MB_DURA_UNIT_MIN;
 static const int gs_def_max_pt_number = 200, gs_def_all_bytes_per_pt = 3,
                  gs_def_pkt_idx_byte_cnt = 2;
 static const int gs_def_expo_to_coll_delay_def_ms = 500,
-                 gs_def_expo_to_coll_delay_max_ms = 1000;
+                 gs_def_expo_to_coll_delay_max_ms = 1000,
+                 gs_def_pb_monitor_period_ms = 1000;
 
 static RangeChecker<int> gs_cfg_file_log_level_ranger((int)LOG_DEBUG, (int)LOG_ERROR, "",
                      EDGE_INCLUDED, EDGE_INCLUDED);
@@ -408,6 +412,12 @@ bool fill_sys_configs(QString * ret_str_ptr)
                  + gs_ini_key_expo_to_coll_delay_def_ms + " > "
                  + gs_ini_key_expo_to_coll_delay_max_ms;
     }
+    /*--------------------*/
+    settings.beginGroup(gs_ini_grp_pb_set_and_monitor_cfg);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_pb_monitor_period_ms, toInt,
+                           g_sys_configs_block.pb_monitor_period_ms, gs_def_pb_monitor_period_ms,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+    settings.endGroup();
     /*--------------------*/
 
     if(ret_str_ptr) *ret_str_ptr = ret_str;

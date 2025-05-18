@@ -9,7 +9,7 @@
 #include "sysconfigs/sysconfigs.h"
 #include "mb_rtu_over_tcp/qmodbusrtuovertcpclient.h"
 
-static const char* gs_str_plz_set_valid_conn_params = "请首先设置有效的连接参数";
+const char* g_str_plz_set_valid_conn_params = "请首先设置有效的连接参数";
 static const char* gs_str_plz_set_valid_test_params = "请首先设置有效的测试参数";
 static const char* gs_str_mb_not_connect_param_not_written = "modbus未连接，参数未写入下位机";
 static const char* gs_str_init_fail = "初始化失败";
@@ -403,6 +403,8 @@ Dialog::Dialog(QWidget *parent)
     m_max_pt_value = (1 << (g_sys_configs_block.all_bytes_per_pt * 4)) - 1;
     m_expo_to_coll_delay_timer.setSingleShot(true);
 
+    setup_pb_set_and_monitor();
+
     m_init_ok = true;
 }
 
@@ -412,6 +414,7 @@ Dialog::~Dialog()
     m_time_stat_timer.stop();
     m_test_proc_monitor_timer.stop();
     m_expo_to_coll_delay_timer.stop();
+    m_pb_monitor_timer.stop();
 
     if(QModbusDevice::ConnectedState == m_modbus_state)
     {
@@ -709,7 +712,7 @@ void Dialog::on_hvConnBtn_clicked()
 {
     if(!m_hv_conn_params.valid)
     {
-        QMessageBox::critical(this, "Error", gs_str_plz_set_valid_conn_params);
+        QMessageBox::critical(this, "Error", g_str_plz_set_valid_conn_params);
         return;
     }
     if(QModbusDevice::UnconnectedState != m_modbus_state)
@@ -1444,6 +1447,14 @@ void Dialog::on_pbConnSetPbt_clicked()
     if(QDialog::Accepted == dlg_ret && m_pb_conn_params.valid)
     {
         ui->pbConnSetDispEdit->setText(m_pb_conn_params.info_str);
+
+        m_pb_sport.setPortName(m_pb_conn_params.com_port_s);
+        m_pb_sport.setBaudRate((QSerialPort::BaudRate)m_pb_conn_params.boudrate);
+        m_pb_sport.setDataBits((QSerialPort::DataBits)m_pb_conn_params.databits);
+        m_pb_sport.setParity((QSerialPort::Parity)m_pb_conn_params.parity);
+        m_pb_sport.setStopBits((QSerialPort::StopBits)m_pb_conn_params.stopbits);
+        m_pb_sport.setFlowControl(QSerialPort::NoFlowControl);
+
     }
 }
 
@@ -1472,5 +1483,3 @@ void Dialog::on_dataCollConnSetPbt_clicked()
         ui->dataCollConnSetDispEdit->setText(m_sc_data_conn_params.info_str);
     }
 }
-
-

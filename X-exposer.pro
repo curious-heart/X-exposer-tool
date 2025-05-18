@@ -22,6 +22,7 @@ SOURCES += \
     mb_regs_chart_display.cpp \
     mb_rtu_over_tcp/qmodbusrtuovertcpclient.cpp \
     modbus_regs/modbus_regs.cpp \
+    pb_set_and_monitor.cpp \
     qtsingleapplication/qtlocalpeer.cpp \
     qtsingleapplication/qtlockedfile.cpp \
     qtsingleapplication/qtlockedfile_unix.cpp \

@@ -13,8 +13,8 @@
 #include "sc_data_proc.h"
 
 static const char* gs_str_please_set_valid_ip_and_port = "请设置有效的IP地址和端口";
-static const char* gs_str_connected = "连接";
-static const char* gs_str_disconnected = "断开";
+extern const char* g_str_connected;
+extern const char* g_str_disconnected;
 static const char* gs_str_sc_data_test = "抓图测试";
 static const char* gs_str_sc_data_test_rec_file_type = ".txt";
 
@@ -299,11 +299,11 @@ void Dialog::recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,
     switch(evt)
     {
     case COLLECT_RPT_EVT_CONNECTED:
-        ui->dataCollConnStDispLbl->setText(gs_str_connected);
+        ui->dataCollConnStDispLbl->setText(g_str_connected);
         break;
 
     case COLLECT_RPT_EVT_DISCONNECTED:
-        ui->dataCollConnStDispLbl->setText(gs_str_disconnected);
+        ui->dataCollConnStDispLbl->setText(g_str_disconnected);
 
         sc_data_btns_refresh(false);
         break;
