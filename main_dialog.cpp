@@ -286,6 +286,7 @@ Dialog::Dialog(QWidget *parent)
                                                   gs_str_pb_conn_settings_dlg_id_str,
                                                   ui->pbConnSetPbt->text());
 
+    m_sc_data_conn_settings_dlg->setWindowTitle(ui->dataCollConnSetPbt->text());
     m_testParamSettingsDialog->setWindowTitle(ui->testParamSetBtn->text());
     m_hvConnSettingsDialog->setWindowTitle(ui->hvConnSetBtn->text());
 
@@ -1447,14 +1448,6 @@ void Dialog::on_pbConnSetPbt_clicked()
     if(QDialog::Accepted == dlg_ret && m_pb_conn_params.valid)
     {
         ui->pbConnSetDispEdit->setText(m_pb_conn_params.info_str);
-
-        m_pb_sport.setPortName(m_pb_conn_params.com_port_s);
-        m_pb_sport.setBaudRate((QSerialPort::BaudRate)m_pb_conn_params.boudrate);
-        m_pb_sport.setDataBits((QSerialPort::DataBits)m_pb_conn_params.databits);
-        m_pb_sport.setParity((QSerialPort::Parity)m_pb_conn_params.parity);
-        m_pb_sport.setStopBits((QSerialPort::StopBits)m_pb_conn_params.stopbits);
-        m_pb_sport.setFlowControl(QSerialPort::NoFlowControl);
-
     }
 }
 
@@ -1462,6 +1455,21 @@ void Dialog::arrange_ui_disp_according_to_syscfgs()
 {
     ui->testParamSetBtn->setVisible(g_sys_configs_block.test_params_settings_disp);
     ui->testParamDisplayTxt->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->startTestTimeLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->startTestTimeDisplayLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->exptTotalTestDuraLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->exptTotalTestDuraDisplayLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->exptRemainTestDuraLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->exptRemainTestDuraDisplayLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->actTestDuraLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->actTestDuraDisplayLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->pauseCntLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->pauseCntDisplayLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->pauseDuraLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->pauseDuraDisplayLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->testPsnLbl->setVisible(g_sys_configs_block.test_params_settings_disp);
+    ui->testPsnLEdit->setVisible(g_sys_configs_block.test_params_settings_disp);
+
     ui->pauseTestBtn->setVisible(g_sys_configs_block.pause_test_disp);
     ui->pauseCntDisplayLbl->setVisible(g_sys_configs_block.pause_test_disp);
     ui->pauseCntLbl->setVisible(g_sys_configs_block.pause_test_disp);

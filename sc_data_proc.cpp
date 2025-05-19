@@ -75,12 +75,15 @@ void Dialog::setup_sc_data_rec_file(QString &curr_path, QString &curr_date_str)
     }
 
     m_curr_sc_data_rec_file.setFileName(curr_file_path);
-    if(!m_curr_sc_data_rec_file.open(QFile::WriteOnly | QFile::Append))
+    if(!m_curr_sc_data_rec_file.isOpen())
     {
-        err_str = QString("%1%2:%3").arg(g_str_create_file, g_str_fail, curr_file_path);
-        DIY_LOG(LOG_ERROR, err_str);
-        QMessageBox::critical(this, "Error", err_str);
-        return;
+        if(!m_curr_sc_data_rec_file.open(QFile::WriteOnly | QFile::Append))
+        {
+            err_str = QString("%1%2:%3").arg(g_str_create_file, g_str_fail, curr_file_path);
+            DIY_LOG(LOG_ERROR, err_str);
+            QMessageBox::critical(this, "Error", err_str);
+            return;
+        }
     }
     m_curr_sc_data_txt_stream.setDevice(&m_curr_sc_data_rec_file);
 }

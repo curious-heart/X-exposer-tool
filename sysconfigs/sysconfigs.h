@@ -63,6 +63,7 @@ typedef struct
     int max_pt_number, all_bytes_per_pt, pkt_idx_byte_cnt;
 
     int expo_to_coll_delay_def_ms, expo_to_coll_delay_max_ms, pb_monitor_period_ms;
+    bool pb_monitor_log;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

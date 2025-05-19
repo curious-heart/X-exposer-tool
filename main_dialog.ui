@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>981</width>
+    <width>1014</width>
     <height>556</height>
    </rect>
   </property>
@@ -639,42 +639,49 @@
           </widget>
          </item>
          <item>
-          <spacer name="horizontalSpacer_12">
+          <widget class="Line" name="line_11">
            <property name="orientation">
-            <enum>Qt::Horizontal</enum>
+            <enum>Qt::Vertical</enum>
            </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="pwrSupLbl">
+           <property name="text">
+            <string>供电方式：</string>
            </property>
-          </spacer>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="pwrSupDispLbl">
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="text">
+            <string>电池</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_19">
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_25">
-           <item>
-            <widget class="QLabel" name="batLvlLbl">
-             <property name="text">
-              <string>电池电量：</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="batLvlDispLbl">
-             <property name="frameShadow">
-              <enum>QFrame::Sunken</enum>
-             </property>
-             <property name="text">
-              <string>100%</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <widget class="QLabel" name="batLvlLbl">
+           <property name="text">
+            <string>电量：</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="batLvlDispLbl">
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="text">
+            <string>0%</string>
+           </property>
+          </widget>
          </item>
          <item>
           <widget class="Line" name="line_5">
@@ -684,25 +691,39 @@
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_26">
-           <item>
-            <widget class="QLabel" name="pwrSupLbl">
-             <property name="text">
-              <string>供电方式：</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="pwrSupDispLbl">
-             <property name="frameShadow">
-              <enum>QFrame::Sunken</enum>
-             </property>
-             <property name="text">
-              <string>电池</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <widget class="QLabel" name="voltLbl">
+           <property name="text">
+            <string>电压：</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="voltDispLbl">
+           <property name="text">
+            <string>1</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="Line" name="line_10">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="currLbl">
+           <property name="text">
+            <string>电流：</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="currDispLbl">
+           <property name="text">
+            <string>1</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
@@ -754,7 +775,7 @@
            <item>
             <widget class="QLabel" name="label">
              <property name="text">
-              <string>测试过程监控</string>
+              <string>光机测试过程监控</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
