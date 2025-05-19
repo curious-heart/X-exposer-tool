@@ -140,7 +140,9 @@ private:
     void sc_data_btns_refresh(bool start_collec = true);
 
     void setup_pb_set_and_monitor();
+    void clear_pb_set_and_monitor();
     bool write_to_sport(char* data_arr, qint64 byte_cnt, bool silent = false, bool log_rw = true);
+    bool read_from_sport(char* read_data, qint64 buf_size);
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);

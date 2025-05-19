@@ -308,6 +308,7 @@ void Dialog::recv_worker_report_sig_hdlr(LOG_LEVEL lvl, QString report_str,
     case COLLECT_RPT_EVT_DISCONNECTED:
         ui->dataCollConnStDispLbl->setText(g_str_disconnected);
 
+        close_sc_data_file_rec();
         sc_data_btns_refresh(false);
         break;
 

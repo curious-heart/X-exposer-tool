@@ -442,6 +442,8 @@ Dialog::~Dialog()
     recv_data_workerThread->deleteLater();
     m_plotWindows.clear();
 
+    clear_pb_set_and_monitor();
+
     delete ui;
 }
 

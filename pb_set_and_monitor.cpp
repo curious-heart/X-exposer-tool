@@ -17,12 +17,19 @@ static const char* gs_str_slp = "休眠";
 static const char* gs_str_wkup = "唤醒";
 
 static const char gs_addr_byte = 0x01;
+
 static const char gs_dif_byte_motor_rpm = 0x03;
+static const qint64 gs_motor_rpm_msg_len = 4;
+
 static const char gs_dif_byte_pwr_st = 0x04;
-static const quint16 gs_pwr_chk_val = 0;
-static const char gs_dif_byte_wkup_slp = 0x02;
-static const quint16 gs_wkup_val = 0, gs_slp_val = 1;
 static const qint64 gs_pwr_st_msg_len = 8;
+static const quint16 gs_pwr_st_chk_val = 0;
+
+static const char gs_dif_byte_wkup_slp = 0x02;
+static const qint64 gs_wkup_slp_msg_len = 4;
+static const quint16 gs_wkup_val = 0, gs_slp_val = 1;
+
+static const int gs_sport_read_try_cnt = 3;
 
 #define CHECK_SPORT_OPEN(ret, silent) \
 if(!m_pb_sport_open)\
@@ -49,13 +56,22 @@ void Dialog::setup_pb_set_and_monitor()
     PB_CONN_BTN_REFRESH;
 }
 
+void Dialog::clear_pb_set_and_monitor()
+{
+    if(m_pb_sport_open)
+    {
+        m_pb_sport.close();
+        m_pb_sport_open = false;
+    }
+}
+
 void Dialog::pb_monitor_check_st_hdlr()
 {
     QString log_str;
     LOG_LEVEL log_lvl = LOG_INFO;
     bool set_ok;
     char data_arr[] = {gs_addr_byte,
-                    (char)((gs_pwr_chk_val >> 8) & 0xFF), (char)(gs_pwr_chk_val& 0xFF),
+                    (char)((gs_pwr_st_chk_val >> 8) & 0xFF), (char)(gs_pwr_st_chk_val& 0xFF),
                     gs_dif_byte_pwr_st};
     int byte_cnt = ARRAY_COUNT(data_arr);
 
@@ -65,29 +81,12 @@ void Dialog::pb_monitor_check_st_hdlr()
         quint16 volt_val, bat_pct;
         qint16 current_val;
         int val_byte_idx = 1;
-        int read_try_cnt = 3, idx = 0;
         char read_data[gs_pwr_st_msg_len];
-        qint64 bytes_read_this_op = 0, total_bytes_read = 0;
-        while(idx < read_try_cnt && total_bytes_read < gs_pwr_st_msg_len)
-        {
-            bytes_read_this_op = m_pb_sport.read(&read_data[total_bytes_read],
-                                                 gs_pwr_st_msg_len - total_bytes_read);
-            total_bytes_read += bytes_read_this_op;
-            ++idx;
-        }
-        log_str += QString("bytes read on monitor: ");
-        log_str += QByteArray::fromRawData(read_data,
-                                           total_bytes_read > gs_pwr_st_msg_len ?
-                                           gs_pwr_st_msg_len : total_bytes_read).toHex(' ').toUpper();
+        bool read_ret;
+        read_ret = read_from_sport(read_data, gs_pwr_st_msg_len);
+        if(!read_ret) return;
         do
         {
-            if(total_bytes_read < gs_pwr_st_msg_len)
-            {
-                log_lvl = LOG_ERROR;
-                log_str += QString("read power st %1 bytes, less than expected %2.\n")
-                            .arg(total_bytes_read).arg(gs_pwr_st_msg_len);
-                break;
-            }
             if(read_data[0] != gs_addr_byte
                     || read_data[gs_pwr_st_msg_len - 1] != gs_dif_byte_pwr_st)
             {
@@ -109,7 +108,6 @@ void Dialog::pb_monitor_check_st_hdlr()
             ui->batLvlDispLbl->setText(QString::number(bat_pct) + "%");
             break;
         }while(true);
-
 
         if(g_sys_configs_block.pb_monitor_log)
         {
@@ -216,6 +214,41 @@ bool Dialog::write_to_sport(char* data_arr, qint64 byte_cnt, bool silent, bool l
     return set_ok;
 }
 
+/*buf_size is also the expected read bytes cnt.*/
+bool Dialog::read_from_sport(char* read_data, qint64 buf_size)
+{
+    bool ret = true;
+    QString log_str;
+    LOG_LEVEL log_lvl = LOG_INFO;
+
+    int idx = 0;
+    qint64 bytes_read_this_op = 0, total_bytes_read = 0;
+    while(idx < gs_sport_read_try_cnt && total_bytes_read < buf_size)
+    {
+        bytes_read_this_op = m_pb_sport.read(&read_data[total_bytes_read], buf_size - total_bytes_read);
+        total_bytes_read += bytes_read_this_op;
+        ++idx;
+    }
+    log_str += QString("bytes read : ");
+    log_str += QByteArray::fromRawData(read_data, qMin(total_bytes_read, buf_size)).toHex(' ').toUpper();
+    if(total_bytes_read != buf_size)
+    {
+        log_lvl = LOG_ERROR;
+        log_str += QString("read from %1 %2 bytes, unequal to expected %3.\n")
+                    .arg(m_pb_conn_params.com_port_s).arg(total_bytes_read).arg(buf_size);
+        ret = false;
+    }
+
+    if(g_sys_configs_block.pb_monitor_log)
+    {
+        DIY_LOG(log_lvl, log_str);
+        log_str = log_disp_prepender_str() + log_str;
+        append_str_with_color_and_weight(ui->testInfoDisplayTxt, log_str,
+                                         g_log_lvl_fonts_arr[log_lvl]);
+    }
+    return ret;
+}
+
 void Dialog::on_motorRPMSetPBtn_clicked()
 {
     bool set_ok = true;
@@ -232,6 +265,10 @@ void Dialog::on_motorRPMSetPBtn_clicked()
     {
         /* updata motor run st on GUI. just set the st-display on write-ret.*/
         ui->motorRunStDispLbl->setText(rpm_val ? gs_str_running : gs_str_stopped);
+
+        char read_data[gs_motor_rpm_msg_len];
+        read_from_sport(read_data, gs_motor_rpm_msg_len);
+        /*currently does not parse the read-back.*/
     }
 }
 
@@ -251,6 +288,10 @@ void Dialog::on_hostSleepPBtn_clicked()
     {
         /* updata disp on GUI. just set the st-display on write-ret.*/
         ui->hostWorkStDispLbl->setText(gs_str_slp);
+
+        char read_data[gs_wkup_slp_msg_len];
+        read_from_sport(read_data, gs_wkup_slp_msg_len);
+        /*currently does not parse the read-back.*/
     }
 }
 
@@ -269,5 +310,9 @@ void Dialog::on_hostWakeupPBtn_clicked()
     {
         /* updata disp on GUI. just set the st-display on write-ret.*/
         ui->hostWorkStDispLbl->setText(gs_str_wkup);
+
+        char read_data[gs_wkup_slp_msg_len];
+        read_from_sport(read_data, gs_wkup_slp_msg_len);
+        /*currently does not parse the read-back.*/
     }
 }

@@ -13,8 +13,8 @@ extern const char* gs_str_data_item_invalid;
 
 const hvConnSettings::combobox_item_struct_t hvConnSettings::hv_conn_type_list[] =
 {
-    {CONN_TYPE_SERIAL, "串口"},
-    {CONN_TYPE_TCPIP, "TCPIP", true},
+    {CONN_TYPE_SERIAL, "串口", true},
+    {CONN_TYPE_TCPIP, "TCPIP"},
     {CONN_TYPE_RTU_OVER_TCP, "RTU-Over-TCP"},
 };
 
@@ -23,11 +23,11 @@ const hvConnSettings::combobox_item_struct_t hvConnSettings::baudrate_list[] =
     {QSerialPort::Baud1200 ,"1200"},
     {QSerialPort::Baud2400 ,"2400"},
     {QSerialPort::Baud4800 ,"4800"},
-    {QSerialPort::Baud9600 ,"9600", true},
+    {QSerialPort::Baud9600 ,"9600"},
     {QSerialPort::Baud19200 ,"19200"},
     {QSerialPort::Baud38400 ,"38400"},
     {QSerialPort::Baud57600 ,"57600"},
-    {QSerialPort::Baud115200 ,"115200"},
+    {QSerialPort::Baud115200 ,"115200", true},
 };
 
 const hvConnSettings::combobox_item_struct_t hvConnSettings::data_bits_list[] =

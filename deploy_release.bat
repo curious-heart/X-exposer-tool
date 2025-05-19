@@ -14,7 +14,7 @@ if %count% LSS 2 (
 set winrar_exe="C:\Program Files\WinRAR\winrar.exe"
 set QT_DEPLOY_EXE=D:\01.Prog\Qt5.15\5.15.2\msvc2019_64\bin\windeployqt.exe
 
-set exe_file_base_name=X-exposer
+set exe_file_base_name=X-scan-tester
 set exe_folder=..\build-X-exposer-Desktop_Qt_5_15_2_MSVC2019_64bit-Release\release
 set dest_folder=%1
 set ver_str=%2
