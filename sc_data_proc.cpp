@@ -113,6 +113,7 @@ void Dialog::on_dataCollStartPbt_clicked()
             window->hide();
         }
     }
+    clear_gray_img_lines();
 
     QString curr_date_str = common_tool_get_curr_date_str();
     QString curr_rec_folder_name = curr_date_str  + "-" + g_str_test_rec_name_sufx;
@@ -172,6 +173,8 @@ void Dialog::handleNewDataReady()
 
         m_plotWindows[m_ch1_wnd_str_id]->receiveData(m_disp_curv_pt_cnt, m_ch1_data_vec, m_max_pt_value);
         m_plotWindows[m_ch2_wnd_str_id]->receiveData(m_disp_curv_pt_cnt, m_ch2_data_vec, m_max_pt_value);
+
+        record_gray_img_line();
     }
 }
 
@@ -366,4 +369,28 @@ QString Dialog::hv_work_st_str(quint16 st_reg_val)
         st_str = QString(g_str_unkonw_st) + ":0x" + QString::number(st_reg_val, 16).toUpper();
     }
     return st_str;
+}
+
+void Dialog::clear_gray_img_lines()
+{
+    for (auto &line: m_gray_img_lines.lines) line.clear();
+
+    m_gray_img_lines.lines.clear();
+    m_gray_img_lines.max_line_len = 0;
+}
+
+void Dialog::record_gray_img_line()
+{
+    if(m_disp_curv_pt_cnt > m_gray_img_lines.max_line_len)
+    {
+        m_gray_img_lines.max_line_len = m_disp_curv_pt_cnt;
+    }
+
+    QVector<quint32> line;
+    line.resize(m_disp_curv_pt_cnt);
+    for(int idx = 0; idx < m_disp_curv_pt_cnt; ++idx)
+    {
+        line[idx] = (m_ch1_data_vec[idx] + m_ch2_data_vec[idx])/2;
+    }
+    m_gray_img_lines.lines.append(line);
 }

@@ -29,6 +29,12 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
 QT_END_NAMESPACE
 
+typedef struct
+{
+    QVector<QVector<quint32>> lines;
+    int max_line_len;
+}gray_lines_s_t;
+
 class Dialog : public QDialog
 {
     Q_OBJECT
@@ -143,6 +149,10 @@ private:
     void clear_pb_set_and_monitor();
     bool write_to_sport(char* data_arr, qint64 byte_cnt, bool silent = false, bool log_rw = true);
     bool read_from_sport(char* read_data, qint64 buf_size);
+
+    gray_lines_s_t m_gray_img_lines;
+    void record_gray_img_line();
+    void clear_gray_img_lines();
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);

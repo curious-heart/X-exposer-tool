@@ -55,6 +55,8 @@ static const char* gs_ini_key_all_bytes_per_pt = "all_bytes_per_pt";
 static const char* gs_ini_key_pkt_idx_byte_cnt = "pkt_idx_byte_cnt";
 static const char* gs_ini_key_expo_to_coll_delay_def_ms = "expo_to_coll_delay_def_ms";
 static const char* gs_ini_key_expo_to_coll_delay_max_ms = "expo_to_coll_delay_max_ms";
+static const char* gs_ini_key_scrn_w = "scrn_w";
+static const char* gs_ini_key_scrn_h = "scrn_h";
 
 static const char* gs_ini_grp_pb_set_and_monitor_cfg = "pb_set_and_monitor_cfg";
 static const char* gs_ini_key_pb_monitor_period_ms = "pb_monitor_period_ms";
@@ -129,6 +131,9 @@ static const int gs_def_max_pt_number = 200, gs_def_all_bytes_per_pt = 3,
 static const int gs_def_expo_to_coll_delay_def_ms = 500,
                  gs_def_expo_to_coll_delay_max_ms = 1000,
                  gs_def_pb_monitor_period_ms = 3000;
+static const int gs_def_scrn_w = 600;
+static const int gs_def_scrn_h = 800;
+
 static const int gs_def_pb_monitor_log = false;
 
 static RangeChecker<int> gs_cfg_file_log_level_ranger((int)LOG_DEBUG, (int)LOG_ERROR, "",
@@ -403,6 +408,13 @@ bool fill_sys_configs(QString * ret_str_ptr)
 
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_expo_to_coll_delay_max_ms, toInt,
                            g_sys_configs_block.expo_to_coll_delay_max_ms, gs_def_expo_to_coll_delay_max_ms,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_scrn_w, toInt,
+                           g_sys_configs_block.scrn_w, gs_def_scrn_w,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_scrn_h, toInt,
+                           g_sys_configs_block.scrn_h, gs_def_scrn_h,
                            1, &gs_cfg_file_value_gt0_int_ranger);
     settings.endGroup();
 

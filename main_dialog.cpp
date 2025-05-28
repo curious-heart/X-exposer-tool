@@ -443,6 +443,7 @@ Dialog::~Dialog()
     m_plotWindows.clear();
 
     clear_pb_set_and_monitor();
+    clear_gray_img_lines();
 
     delete ui;
 }

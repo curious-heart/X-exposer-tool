@@ -64,6 +64,8 @@ typedef struct
 
     int expo_to_coll_delay_def_ms, expo_to_coll_delay_max_ms, pb_monitor_period_ms;
     bool pb_monitor_log;
+
+    int scrn_w, scrn_h;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;
