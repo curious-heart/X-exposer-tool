@@ -406,6 +406,12 @@ Dialog::Dialog(QWidget *parent)
 
     setup_pb_set_and_monitor();
 
+    m_gray_img_display_real_wnd = new GrayImgDisplay(this);
+    m_gray_img_display_real_wnd->setAttribute(Qt::WA_DeleteOnClose, false);
+
+    m_gray_img_display_layfull_wnd = new GrayImgDisplay(this);
+    m_gray_img_display_layfull_wnd->setAttribute(Qt::WA_DeleteOnClose, false);
+
     m_init_ok = true;
 }
 

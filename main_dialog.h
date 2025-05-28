@@ -24,6 +24,7 @@
 #include "sc_data_proc.h"
 #include "recvscanneddata.h"
 #include "curveplotwidget.h"
+#include "grayimgdisplay.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
@@ -33,7 +34,14 @@ typedef struct
 {
     QVector<QVector<quint32>> lines;
     int max_line_len;
+    bool refreshed;
 }gray_lines_s_t;
+
+typedef enum
+{
+    DISPLAY_IMG_REAL,
+    DISPLAY_IMG_LAYFULL,
+}gray_img_disp_type_e_t;
 
 class Dialog : public QDialog
 {
@@ -153,6 +161,9 @@ private:
     gray_lines_s_t m_gray_img_lines;
     void record_gray_img_line();
     void clear_gray_img_lines();
+    GrayImgDisplay * m_gray_img_display_real_wnd, *m_gray_img_display_layfull_wnd;
+    QImage generate_gray_img(gray_img_disp_type_e_t disp_type);
+    void display_gray_img(gray_img_disp_type_e_t disp_type, QImage &img);
 
 private slots:
     void modbus_error_sig_handler(QModbusDevice::Error error);
@@ -223,6 +234,10 @@ private slots:
 
     void on_hostWakeupPBtn_clicked();
     void pb_monitor_check_st_hdlr();
+
+    void on_dataCollDispImgRealPbt_clicked();
+
+    void on_dataCollDispImgLayFullPbt_clicked();
 
 signals:
     void go_test_sig();

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1014</width>
+    <width>1026</width>
     <height>556</height>
    </rect>
   </property>
@@ -183,6 +183,24 @@
            </property>
            <property name="value">
             <number>5</number>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_25">
+         <item>
+          <widget class="QPushButton" name="dataCollDispImgRealPbt">
+           <property name="text">
+            <string>显示图像-真实</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="dataCollDispImgLayFullPbt">
+           <property name="text">
+            <string>显示图像-平铺</string>
            </property>
           </widget>
          </item>

@@ -17,6 +17,7 @@ SOURCES += \
     common_tools/common_tool_func.cpp \
     config_recorder/uiconfigrecorder.cpp \
     curveplotwidget.cpp \
+    grayimgdisplay.cpp \
     hv_connsettings.cpp \
     hv_tester/hvtester.cpp \
     logger/logger.cpp \
@@ -45,6 +46,7 @@ HEADERS += \
     common_tools/common_tool_func.h \
     config_recorder/uiconfigrecorder.h \
     curveplotwidget.h \
+    grayimgdisplay.h \
     hv_connsettings.h \
     hv_tester/hvtester.h \
     logger/logger.h \
@@ -70,6 +72,7 @@ HEADERS += \
     version_def/version_def.h
 
 FORMS += \
+    grayimgdisplay.ui \
     hv_connsettings.ui \
     main_dialog.ui \
     sc_data_connsettings.ui \
