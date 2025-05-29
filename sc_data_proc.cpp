@@ -419,77 +419,97 @@ static inline void pt_data_to_image(QVector<QVector<quint32>> &data, QImage &img
 QImage Dialog::generate_gray_img(gray_img_disp_type_e_t disp_type)
 {
     static quint32 append_val = (1 << g_sys_configs_block.all_bytes_per_pt * 4) - 1;
-    QImage img;
+    static QImage real_img, layfull_img;
+    static bool real_img_gened = false, layfull_img_gened = false;
+
+    if(m_gray_img_lines.refreshed)
+    {
+        real_img_gened = layfull_img_gened = false;
+    }
 
     if(DISPLAY_IMG_REAL == disp_type)
     {
-        for (auto &line: m_gray_img_lines.lines)
+        if(!real_img_gened && m_gray_img_lines.lines.size() > 0)
         {
-            int extra_cnt;
-            extra_cnt = m_gray_img_lines.max_line_len - line.size();
-            if(extra_cnt > 0)
+            gray_lines_s_t img_lines = m_gray_img_lines;
+            for (auto &line: img_lines.lines)
             {
-                int pos = line.size();
-                line.insert(pos, extra_cnt, append_val);
+                int extra_cnt;
+                extra_cnt = img_lines.max_line_len - line.size();
+                if(extra_cnt > 0)
+                {
+                    int pos = line.size();
+                    line.insert(pos, extra_cnt, append_val);
+                }
             }
-        }
-        int width = m_gray_img_lines.max_line_len,
-            height = m_gray_img_lines.lines.size();
-        QImage real_img(width, height, QImage::Format_Grayscale16);
-        pt_data_to_image(m_gray_img_lines.lines, real_img, width, height);
+            int width = img_lines.max_line_len,
+                height = img_lines.lines.size();
+            QImage img(width, height, QImage::Format_Grayscale16);
+            pt_data_to_image(img_lines.lines, img, width, height);
+            real_img = img;
 
-        img = real_img;
+            real_img_gened = true;
+        }
     }
     else
     {//DISPLAY_IMG_LAYFULL
-        int width = g_sys_configs_block.scrn_w,
-            height = g_sys_configs_block.scrn_h;
-        QImage layfull_img(width, height, QImage::Format_Grayscale16);
-
-        //fill each line with 0xFF so that they are all of lenth width.
-        for (auto &line: m_gray_img_lines.lines)
+        if(!layfull_img_gened && m_gray_img_lines.lines.size())
         {
-            int pre_cnt, post_cnt;
-            pre_cnt = (width - line.size())/2;
-            post_cnt = width - line.size() - pre_cnt;
-            if(pre_cnt <= 0)
+            int width = g_sys_configs_block.scrn_w,
+                height = g_sys_configs_block.scrn_h;
+            QImage img(width, height, QImage::Format_Grayscale16);
+
+            gray_lines_s_t img_lines = m_gray_img_lines;
+            //fill each line with 0xFF so that they are all of lenth width.
+            for (auto &line: img_lines.lines)
             {
-                if(pre_cnt < 0) line.remove(width, line.size() - width);
-                continue;
+                int pre_cnt, post_cnt;
+                pre_cnt = (width - line.size())/2;
+                post_cnt = width - line.size() - pre_cnt;
+                if(pre_cnt <= 0)
+                {
+                    if(pre_cnt < 0) line.remove(width, line.size() - width);
+                    continue;
+                }
+                line.insert(0, pre_cnt, append_val);
+                if(post_cnt > 0) line.insert(line.size(), post_cnt, append_val);
             }
-            line.insert(0, pre_cnt, append_val);
-            if(post_cnt > 0) line.insert(line.size(), post_cnt, append_val);
-        }
 
-        //strench vertically.
-        int total_extra_line_cnt = height - m_gray_img_lines.lines.size();
-        if(total_extra_line_cnt > 0)
-        {
-            int extra_line_cnt_per_line = total_extra_line_cnt / m_gray_img_lines.lines.size();
-            if(extra_line_cnt_per_line < 1) extra_line_cnt_per_line = 1;
-            for(int ori_idx = 0, added_cnt = 0; added_cnt < total_extra_line_cnt;)
+            //strench vertically.
+            int total_extra_line_cnt = height - img_lines.lines.size();
+            if(total_extra_line_cnt > 0)
             {
-                QVector<quint32> &ori_line = m_gray_img_lines.lines[ori_idx];
-                int added_cnt_this_line =
-                        added_cnt + extra_line_cnt_per_line <= total_extra_line_cnt ?
-                        extra_line_cnt_per_line : total_extra_line_cnt - added_cnt;
-                m_gray_img_lines.lines.insert(ori_idx + 1, added_cnt_this_line, ori_line);
+                int extra_line_cnt_per_line = total_extra_line_cnt / img_lines.lines.size();
+                QVector<int> added_cnt_v(img_lines.lines.size(), extra_line_cnt_per_line);
+                for(int idx = 0; idx < total_extra_line_cnt - extra_line_cnt_per_line * img_lines.lines.size();
+                    ++idx)
+                {
+                    added_cnt_v[idx] += 1;
+                }
+                for(int cnt_idx = 0, ori_idx = 0, added_cnt = 0; added_cnt < total_extra_line_cnt; ++cnt_idx)
+                {
+                    QVector<quint32> &ori_line = img_lines.lines[ori_idx];
+                    int added_cnt_this_line = added_cnt_v[cnt_idx];
+                    img_lines.lines.insert(ori_idx + 1, added_cnt_this_line, ori_line);
 
-                added_cnt += added_cnt_this_line;
-                ori_idx += added_cnt_this_line + 1;
+                    added_cnt += added_cnt_this_line;
+                    ori_idx += added_cnt_this_line + 1;
+                }
             }
-        }
-        else if(total_extra_line_cnt < 0)
-        {
-            m_gray_img_lines.lines.remove(height, m_gray_img_lines.lines.size() - height);
-        }
+            else if(total_extra_line_cnt < 0)
+            {
+                img_lines.lines.remove(height, img_lines.lines.size() - height);
+            }
 
-        pt_data_to_image(m_gray_img_lines.lines, layfull_img, width, height);
+            pt_data_to_image(img_lines.lines, img, width, height);
 
-        img = layfull_img;
+            layfull_img = img;
+
+            layfull_img_gened = true;
+        }
     }
     m_gray_img_lines.refreshed = false;
-    return img;
+    return (DISPLAY_IMG_REAL == disp_type) ? real_img : layfull_img;
 }
 
 void Dialog::display_gray_img(gray_img_disp_type_e_t disp_type, QImage &img)
@@ -503,13 +523,7 @@ void Dialog::display_gray_img(gray_img_disp_type_e_t disp_type, QImage &img)
         return;
     }
 
-    QLabel* label = new QLabel(disp_wnd);
-    label->setPixmap(QPixmap::fromImage(img));
-    label->setScaledContents(true);  // 允许缩放显示
-
-    QVBoxLayout* layout = new QVBoxLayout(disp_wnd);
-    layout->addWidget(label);
-    disp_wnd->setLayout(layout);
+    disp_wnd->update_img_display(img);
 
     disp_wnd->raise();
     disp_wnd->show();
@@ -518,16 +532,12 @@ void Dialog::display_gray_img(gray_img_disp_type_e_t disp_type, QImage &img)
 
 void Dialog::on_dataCollDispImgRealPbt_clicked()
 {
-    static QImage img;
-
-    if(m_gray_img_lines.refreshed) img = generate_gray_img(DISPLAY_IMG_REAL);
+    QImage img = generate_gray_img(DISPLAY_IMG_REAL);
     display_gray_img(DISPLAY_IMG_REAL, img);
 }
 
 void Dialog::on_dataCollDispImgLayFullPbt_clicked()
 {
-    static QImage img;
-
-    if(m_gray_img_lines.refreshed) img = generate_gray_img(DISPLAY_IMG_LAYFULL);
+    QImage img = generate_gray_img(DISPLAY_IMG_LAYFULL);
     display_gray_img(DISPLAY_IMG_LAYFULL, img);
 }

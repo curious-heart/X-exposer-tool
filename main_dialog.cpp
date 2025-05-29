@@ -406,11 +406,13 @@ Dialog::Dialog(QWidget *parent)
 
     setup_pb_set_and_monitor();
 
-    m_gray_img_display_real_wnd = new GrayImgDisplay(this);
+    m_gray_img_display_real_wnd = new GrayImgDisplay(this, &m_cfg_recorder, g_str_real_img_wnd_str);
     m_gray_img_display_real_wnd->setAttribute(Qt::WA_DeleteOnClose, false);
 
-    m_gray_img_display_layfull_wnd = new GrayImgDisplay(this);
+    m_gray_img_display_layfull_wnd = new GrayImgDisplay(this, &m_cfg_recorder, g_str_layfull_img_wnd_str);
     m_gray_img_display_layfull_wnd->setAttribute(Qt::WA_DeleteOnClose, false);
+
+    clear_gray_img_lines();
 
     m_init_ok = true;
 }
