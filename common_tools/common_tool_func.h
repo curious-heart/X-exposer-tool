@@ -7,6 +7,7 @@
 #include <QFont>
 #include <QSet>
 #include <QKeyEvent>
+#include <QImage>
 
 typedef enum
 {
@@ -123,5 +124,7 @@ public:
     void add_keys_to_filter(Qt::Key key);
     void add_keys_to_filter(const QSet<Qt::Key> & keys);
 };
+
+QImage convertGrayscale16To8(const QImage &img16);
 
 #endif // COMMON_TOOL_FUNC_H

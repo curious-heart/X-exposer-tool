@@ -523,11 +523,11 @@ void Dialog::display_gray_img(gray_img_disp_type_e_t disp_type, QImage &img)
         return;
     }
 
-    disp_wnd->update_img_display(img);
-
     disp_wnd->raise();
     disp_wnd->show();
     disp_wnd->activateWindow();
+
+    disp_wnd->update_img_display(img);
 }
 
 void Dialog::on_dataCollDispImgRealPbt_clicked()

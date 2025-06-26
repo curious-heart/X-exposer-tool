@@ -1,5 +1,6 @@
 ﻿#include <QFileDialog>
 
+#include "common_tools/common_tool_func.h"
 #include "grayimgdisplay.h"
 #include "ui_grayimgdisplay.h"
 
@@ -17,8 +18,10 @@ GrayImgDisplay::GrayImgDisplay(QWidget *parent, UiConfigRecorder * cfg_recorder,
     ui->setupUi(this);
 
     ui->hiddenDirRecLEdit->setVisible(false);
-    ui->grayImgLbl->setScaledContents(false);
+
     ui->grayImgLbl->setAlignment(Qt::AlignCenter);
+    ui->grayImgLbl->setScaledContents(false);
+    ui->grayImgLbl->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
 
 
     m_rec_ui_cfg_fin.clear();
@@ -35,27 +38,44 @@ GrayImgDisplay::~GrayImgDisplay()
     delete ui;
 }
 
+void GrayImgDisplay::set_img_to_lbl()
+{
+    if (!m_local_img.isNull())
+    {
+        QPixmap scaled = QPixmap::fromImage(m_local_img_8bit)
+                    .scaled(ui->grayImgLbl->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        ui->grayImgLbl->setPixmap(scaled);
+    }
+}
+
 void GrayImgDisplay::update_img_display(QImage &img)
 {
     m_local_img = img;
+    m_local_img_8bit = convertGrayscale16To8(m_local_img);
 
-    QPixmap scaledPixmap = QPixmap::fromImage(img).scaled(ui->grayImgLbl->size(),
-                                                          Qt::KeepAspectRatio, Qt::SmoothTransformation);
-    ui->grayImgLbl->setPixmap(scaledPixmap);
+    set_img_to_lbl();
 }
 
 void GrayImgDisplay::on_saveImgPbt_clicked()
 {
     static QString ls_img_file_filter = "Images (*.png *.bmp *.jpg)";
+    static QString ls_8bit_fpn_suffix = "-8bit";
+
     QString img_file_fpn;
     QString dir_str = ui->hiddenDirRecLEdit->text();
 
     if(dir_str.isEmpty()) dir_str = ".";
     img_file_fpn = QFileDialog::getSaveFileName(this, gs_str_save_file,
                                                 dir_str, ls_img_file_filter);
+
+    QFileInfo img_fpn_info(img_file_fpn);
+    QString img_8bit_file_fpn = img_fpn_info.path() + "/" +
+                                img_fpn_info.baseName() + ls_8bit_fpn_suffix + "." + img_fpn_info.suffix();
+
     if(!img_file_fpn.isEmpty())
     {
         m_local_img.save(img_file_fpn);
+        m_local_img_8bit.save(img_8bit_file_fpn);
 
         ui->hiddenDirRecLEdit->setText(QFileInfo(img_file_fpn).path());
         if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this,
@@ -69,10 +89,5 @@ void GrayImgDisplay::resizeEvent(QResizeEvent *event)
 {
     QMainWindow::resizeEvent(event);
 
-    if (!m_local_img.isNull())
-    {
-        QPixmap scaled = QPixmap::fromImage(m_local_img).scaled(ui->grayImgLbl->size(),
-                                                                Qt::KeepAspectRatio, Qt::SmoothTransformation);
-        ui->grayImgLbl->setPixmap(scaled);
-    }
+    set_img_to_lbl();
 }

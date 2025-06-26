@@ -822,3 +822,53 @@ bool CToolKeyFilter::eventFilter(QObject * obj, QEvent * evt)
     }
     return QObject::eventFilter(obj, evt);
 }
+
+
+QImage convertGrayscale16To8(const QImage &img16)
+{
+    if (img16.format() != QImage::Format_Grayscale16)
+    {
+        qWarning("Input image is not Grayscale16");
+        return QImage();
+    }
+
+    int w = img16.width();
+    int h = img16.height();
+    QImage img8(w, h, QImage::Format_Grayscale8);
+
+    // 找最小和最大像素值
+    quint16 minV = 0xFFFF;
+    quint16 maxV = 0;
+
+    for (int y = 0; y < h; ++y)
+    {
+        const quint16 *line16 = reinterpret_cast<const quint16 *>(img16.constScanLine(y));
+        for (int x = 0; x < w; ++x)
+        {
+            quint16 v = line16[x];
+            if (v < minV) minV = v;
+            if (v > maxV) maxV = v;
+        }
+    }
+
+    if(minV == maxV)
+    {
+        // 所有像素一样，直接置为0或255
+        img8.fill( (minV > 0) ? 255 : 0 );
+        return img8;
+    }
+
+    // 映射像素
+    for (int y = 0; y < h; ++y)
+    {
+        const quint16 *line16 = reinterpret_cast<const quint16 *>(img16.constScanLine(y));
+        uchar *line8 = img8.scanLine(y);
+        for (int x = 0; x < w; ++x)
+        {
+            quint16 v = line16[x];
+            line8[x] = (v - minV) * 255 / (maxV - minV);
+        }
+    }
+
+    return img8;
+}

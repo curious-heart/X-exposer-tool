@@ -23,6 +23,9 @@ public:
 protected:
     void resizeEvent(QResizeEvent *event) override;
 
+private:
+    void set_img_to_lbl();
+
 private slots:
     void on_saveImgPbt_clicked();
 
@@ -32,7 +35,7 @@ private:
     UiConfigRecorder * m_cfg_recorder = nullptr;
     qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
 
-    QImage m_local_img;
+    QImage m_local_img, m_local_img_8bit;
     QString m_wnd_str;
 };
 
