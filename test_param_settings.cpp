@@ -238,6 +238,13 @@ void testParamSettingsDialog::arrange_ui_according_to_syscfgs(QRadioButton * &hi
 
     ui->oilBoxNoLbl->setText(UI_DISP_TUBE_NO == g_sys_configs_block.tube_or_oilbox_no_disp ?
                 gs_str_tube_no : gs_str_oilbox_no);
+
+    ui->testContentNormalRButton->setVisible(!g_sys_configs_block.test_content_only_normal);
+    ui->testContentCoolHVRButton->setVisible(!g_sys_configs_block.test_content_only_normal);
+    ui->testContentOnlyCoilRButton->setVisible(!g_sys_configs_block.test_content_only_normal);
+    ui->testContentDecoupleRButton->setVisible(!g_sys_configs_block.test_content_only_normal);
+
+    if(g_sys_configs_block.test_content_only_normal) ui->testContentNormalRButton->setChecked(true);
 }
 
 #define SAVE_EXPO_DURA_UI_TO_SW(ui_to_sw_f) \
@@ -1185,6 +1192,12 @@ void testParamSettingsDialog::set_ui_dura_rb_according_to_file()
 
 test_content_enum_t testParamSettingsDialog::get_test_content(QString *content_str)
 {
+    if(g_sys_configs_block.test_content_only_normal)
+    {
+        if(content_str) *content_str = ui->testContentNormalRButton->text();
+        return TEST_CONTENT_NORMAL;
+    }
+
     if(ui->testContentCoolHVRButton->isChecked())
     {
         if(content_str) *content_str = ui->testContentCoolHVRButton->text();
