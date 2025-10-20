@@ -59,6 +59,7 @@ typedef struct
     QString oil_box_number_str, hv_ctrl_board_number_str;
     QString sw_ver_str, hw_ver_str;
     bool read_dist;
+    QString pdt_code, pdt_name, pdt_model;
 }other_test_params_struct_t;
 
 typedef struct

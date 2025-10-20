@@ -12,6 +12,7 @@
 #include <QDoubleSpinBox>
 #include <QLabel>
 #include <QRadioButton>
+#include <QList>
 
 #include "common_tools/common_tool_func.h"
 #include "test_params_struct.h"
@@ -107,6 +108,12 @@ private slots:
     void on_testContentOnlyCoilRButton_toggled(bool checked);
 
     void on_testContentNormalRButton_toggled(bool checked);
+
+    void on_pdtCodeCBox_currentIndexChanged(int index);
+
+    void on_pdtNameCBox_currentIndexChanged(int index);
+
+    void on_pdtMdlCBox_currentIndexChanged(int index);
 
 private:
     typedef struct
@@ -215,6 +222,22 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
      */
     void update_current_range_checker();
     void update_expo_dura_unit(bool from_rb_toggle, QString u_str = "");
+
+    typedef enum
+    {
+        PDT_CODE = 0,
+        PDT_NAME,
+        PDT_MODEL,
+    }pdt_info_idx_e_t;
+
+    typedef struct
+    {
+        QComboBox* cbox;
+        int col;
+    }cbox_col_pair_s_t;
+    QList<cbox_col_pair_s_t> m_pdt_cboxes;
+    void setup_pdt_cboxes();
+    bool load_pdt_info();
 
 public:
     QString collect_test_params();

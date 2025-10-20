@@ -101,12 +101,9 @@
          <item>
           <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
-            <widget class="QLabel" name="label">
+            <widget class="QCheckBox" name="testProcMonitorChkBox">
              <property name="text">
               <string>测试过程监控</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
              </property>
             </widget>
            </item>

@@ -3,18 +3,19 @@
 #include <QTextStream>
 #include <QFileDialog>
 #include <QtMath>
+#include <QAxObject>
 #include "common_tools/common_tool_func.h"
 #include "logger/logger.h"
 #include "test_param_settings.h"
 #include "ui_test_param_settings.h"
 #include "version_def/version_def.h"
 
-static RangeChecker<int> gs_valid_cube_volt_kv_range;
-static RangeChecker<float> gs_valid_cube_current_ma_range;
-static RangeChecker<float> gs_valid_expo_dura_ms_range;
+static RangeChecker<int> gs_valid_cube_volt_kv_range(0, 1);
+static RangeChecker<float> gs_valid_cube_current_ma_range(0, 1);
+static RangeChecker<float> gs_valid_expo_dura_ms_range(0, 1);
 static RangeChecker<int> gs_valid_expo_cnt_range(1, 0, "", EDGE_INCLUDED, EDGE_INFINITE);
-static RangeChecker<float> gs_valid_cool_dura_range;
-static RangeChecker<float> gs_valid_cool_dura_factor;
+static RangeChecker<float> gs_valid_cool_dura_range(0, 1);
+static RangeChecker<float> gs_valid_cool_dura_factor(0, 1);
 
 static const char* gs_str_test_mode = "测试模式";
 static const char* gs_str_test_content = "测试内容";
@@ -342,6 +343,8 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     }
 
     /*------------------------------------------*/
+    setup_pdt_cboxes();
+    /*------------------------------------------*/
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.insert(ui->custExpoParamFileNoteEdit);
@@ -420,7 +423,7 @@ get_one_expo_param(QLineEdit * ctrl, common_data_type_enum_t d_type, float ui_to
     {
         ret_str = QString("%1%2 ").arg(ctrl_str, gs_str_exceeds_valid_range);
 
-        ret_str += range->range_str(d_type, 1/ui_to_sw_factor, new_unit_str);
+        ret_str += range->range_str(1/ui_to_sw_factor, new_unit_str);
         ret_str += "\n";
 
         ret = false;
@@ -821,11 +824,11 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   g_str_cube_volt, item_str, gs_str_exceeds_valid_range,
-                                  gs_valid_cube_volt_kv_range.range_str(INT_DATA));
+                                  gs_valid_cube_volt_kv_range.range_str());
                         DIY_LOG(LOG_ERROR, QString("%1%2%3%4%5").arg(file_fpn,
                                            ":the ", QString::number(line_no),
                                            "cube volt exceeds valid range:",
-                                           gs_valid_cube_volt_kv_range.range_str(INT_DATA)));
+                                           gs_valid_cube_volt_kv_range.range_str()));
                         break;
                     }
                 }
@@ -854,13 +857,13 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   gs_str_current_name, item_str, gs_str_exceeds_valid_range,
-                              gs_valid_cube_current_ma_range.range_str(FLOAT_DATA,
+                              gs_valid_cube_current_ma_range.range_str(
                                                        1/cube_current_file_to_sw_factor,
                                                        file_current_unit_str));
                         DIY_LOG(LOG_ERROR, QString("%1%2%3%4%5").arg(file_fpn,
                                        ":the ", QString::number(line_no),
                                        "cube current exceeds valid range:",
-                               gs_valid_cube_current_ma_range.range_str(FLOAT_DATA,
+                               gs_valid_cube_current_ma_range.range_str(
                                                        1/cube_current_file_to_sw_factor,
                                                        file_current_unit_str)));
                         break;
@@ -892,12 +895,12 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust_file(QString file_fp
                                   g_str_the_line_pron, QString::number(line_no), gs_str_line,
                                   gs_str_data_item_invalid,
                                   g_str_expo_dura, item_str, gs_str_exceeds_valid_range,
-                                  gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA, 1/expo_dura_file_to_sw_factor,
+                                  gs_valid_expo_dura_ms_range.range_str(1/expo_dura_file_to_sw_factor,
                                                                         file_dura_unit_str));
                         DIY_LOG(LOG_ERROR, QString("%1%2%3%4%5").arg(file_fpn,
                                        ":the ", QString::number(line_no),
                                        "expo duration exceeds valid range:",
-                                       gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA, 1/expo_dura_file_to_sw_factor,
+                                       gs_valid_expo_dura_ms_range.range_str(1/expo_dura_file_to_sw_factor,
                                                                              file_dura_unit_str)));
                         break;
                     }
@@ -1037,7 +1040,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
             if(!gs_valid_cube_volt_kv_range.range_check(kv))
                 CUST_FILE_ITEM_FORMAT_ERROR(line_items[item_idx]
                                             + gs_str_exceeds_valid_range
-                                            + gs_valid_cube_volt_kv_range.range_str(INT_DATA));
+                                            + gs_valid_cube_volt_kv_range.range_str());
             cube_volt_kv_v.append(kv);
         }
         volt_cnt = cube_volt_kv_v.count();
@@ -1073,7 +1076,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
             if(!gs_valid_cube_current_ma_range.range_check(ma))
                 CUST_FILE_ITEM_FORMAT_ERROR(line_items[item_idx]
                                             + gs_str_exceeds_valid_range
-                                            + gs_valid_cube_current_ma_range.range_str(FLOAT_DATA,
+                                            + gs_valid_cube_current_ma_range.range_str(
                                                                1/cube_current_file_to_sw_factor,
                                                                file_current_unit_str));
             cube_current_ma_v.append(ma);
@@ -1110,7 +1113,7 @@ bool testParamSettingsDialog::get_expo_param_vals_from_cust2_file(QString file_f
             if(!gs_valid_expo_dura_ms_range.range_check(file_dura_v * expo_dura_file_to_sw_factor))
                 CUST_FILE_ITEM_FORMAT_ERROR(line_items[item_idx]
                                             + gs_str_exceeds_valid_range
-                                            + gs_valid_expo_dura_ms_range.range_str(FLOAT_DATA,
+                                            + gs_valid_expo_dura_ms_range.range_str(
                                                                                   1/expo_dura_file_to_sw_factor,
                                                                                   file_dura_unit_str));
             ms = file_dura_v * expo_dura_file_to_sw_factor;
@@ -1599,6 +1602,10 @@ QString testParamSettingsDialog::collect_test_params()
     m_test_params->test_mode
             = (test_mode_enum_t)(ui->testModeComboBox->currentData().toInt());
 
+    m_test_params->other_param_block.pdt_code = ui->pdtCodeCBox->currentText();
+    m_test_params->other_param_block.pdt_name = ui->pdtNameCBox->currentText();
+    m_test_params->other_param_block.pdt_model = ui->pdtMdlCBox->currentText();
+
     return ret_str;
 }
 
@@ -1897,13 +1904,21 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
     {
         info_str += g_str_no_bu;
     }
-    info_str += ui->readDistChBox->text() + "\n";
+    QString tmp_txt = ui->readDistChBox->text();
+    tmp_txt.remove("\n");
+    info_str += tmp_txt + "\n";
     info_str += QString(gs_info_str_seperator) + "\n";
 
     info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
     info_str += ui->hvCtrlBoardNoLbl->text() + ":" + ui->hvCtrlBoardNoEdit->text() + "\n";
     info_str += ui->swVerStrLbl->text() + ":" + ui->swVerStrEdit->text() + "\n";
     info_str += ui->hwVerStrLbl->text() + ":" + ui->hwVerStrEdit->text() + "\n";
+    info_str += QString(gs_info_str_seperator) + "\n";
+
+    info_str += ui->pdtCodeLbl->text() + ":" + ui->pdtCodeCBox->currentText() + "\n";
+    info_str += ui->pdtNameLbl->text() + ":" + ui->pdtNameCBox->currentText() + "\n";
+    info_str += ui->pdtMdlLbl->text() + ":" + ui->pdtMdlCBox->currentText() + "\n";
+    info_str += QString(gs_info_str_seperator) + "\n";
 
     info_str += QCoreApplication::applicationName() + ":" + APP_VER_STR;
 }
@@ -2415,4 +2430,114 @@ void testParamSettingsDialog::get_current_info_for_chart(QString &name_str, QStr
             * gs_valid_cube_current_ma_range.range_min();
     up = m_test_params->expo_param_block.sw_to_mb_current_factor
             * gs_valid_cube_current_ma_range.range_max();
+}
+
+#define EXCEL_OP_CHECK(obj, fn, next_op) \
+if(!(obj) || (obj)->isNull())\
+{\
+    DIY_LOG(LOG_WARN, QString("读取 %1 失败").arg(fn));\
+    next_op;\
+}
+
+bool testParamSettingsDialog::load_pdt_info()
+{
+    QString fn = g_sys_configs_block.dev_code_infos.pdt_file_name;
+    QString f_path = QDir::current().absoluteFilePath(fn);
+    QVariantList params;
+    params << f_path              // Filename
+       << QVariant(0)       // UpdateLinks
+       << QVariant(true);   // ReadOnly = true
+
+    QAxObject excel("Excel.Application");
+    excel.setProperty("Visible", false);
+    QAxObject *workbooks = excel.querySubObject("Workbooks");
+    EXCEL_OP_CHECK(workbooks, fn, {return false;});
+
+    QAxObject *workbook = workbooks->querySubObject(
+                                    "Open(const QString&, QVariant, QVariant)",
+                                    params.at(0), params.at(1), params.at(2)
+                                );
+    EXCEL_OP_CHECK(workbook, fn, {return false;});
+
+    bool ret = true;
+    do
+    {
+        QAxObject *worksheet = workbook->querySubObject("Worksheets(int)", 1);
+        EXCEL_OP_CHECK(worksheet, fn, {ret = false; break;});
+
+        QAxObject *usedRange = worksheet->querySubObject("UsedRange");
+        EXCEL_OP_CHECK(usedRange, fn, {ret = false; break;});
+
+        QAxObject *rows = usedRange->querySubObject("Rows");
+        EXCEL_OP_CHECK(rows, fn, {ret = false; break;});
+
+        int rowCount = rows->property("Count").toInt();
+
+        int data_start_row = g_sys_configs_block.dev_code_infos.pdt_title_start_row + 1;
+        for (int i = data_start_row; i < data_start_row + rowCount - 1; i++)
+        {
+            for(int c = 1; c <= m_pdt_cboxes.count(); c++)
+            {
+                QAxObject *cell = worksheet->querySubObject("Cells(int,int)", i, m_pdt_cboxes[c-1].col);
+                EXCEL_OP_CHECK(cell, fn, {ret = false; break;});
+
+                QString value = cell->property("Value").toString();
+
+                m_pdt_cboxes[c-1].cbox->addItem(value);
+            }
+            if(!ret) break;
+        }
+        break;
+    }while(true);
+
+    workbook->dynamicCall("Close()");
+    excel.dynamicCall("Quit()");
+    return ret;
+}
+
+void testParamSettingsDialog::setup_pdt_cboxes()
+{
+    m_pdt_cboxes.append({ui->pdtCodeCBox, g_sys_configs_block.dev_code_infos.pdt_code_col});
+    m_pdt_cboxes.append({ui->pdtNameCBox, g_sys_configs_block.dev_code_infos.pdt_name_col});
+    m_pdt_cboxes.append({ui->pdtMdlCBox, g_sys_configs_block.dev_code_infos.pdt_model_col});
+    if(!load_pdt_info())
+    {
+        QString fn = g_sys_configs_block.dev_code_infos.pdt_file_name;
+        QMessageBox::warning(this, "", QString("读取 %1 失败").arg(fn));
+    }
+}
+
+void testParamSettingsDialog::on_pdtCodeCBox_currentIndexChanged(int index)
+{
+    if((m_pdt_cboxes[PDT_NAME].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_NAME].cbox->count()))
+        m_pdt_cboxes[PDT_NAME].cbox->setCurrentIndex(index);
+
+    if((m_pdt_cboxes[PDT_MODEL].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_MODEL].cbox->count()))
+        m_pdt_cboxes[PDT_MODEL].cbox->setCurrentIndex(index);
+}
+
+
+void testParamSettingsDialog::on_pdtNameCBox_currentIndexChanged(int index)
+{
+    if((m_pdt_cboxes[PDT_CODE].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_CODE].cbox->count()))
+        m_pdt_cboxes[PDT_CODE].cbox->setCurrentIndex(index);
+
+    if((m_pdt_cboxes[PDT_MODEL].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_MODEL].cbox->count()))
+        m_pdt_cboxes[PDT_MODEL].cbox->setCurrentIndex(index);
+}
+
+
+void testParamSettingsDialog::on_pdtMdlCBox_currentIndexChanged(int index)
+{
+    if((m_pdt_cboxes[PDT_CODE].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_CODE].cbox->count()))
+        m_pdt_cboxes[PDT_CODE].cbox->setCurrentIndex(index);
+
+    if((m_pdt_cboxes[PDT_NAME].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_NAME].cbox->count()))
+        m_pdt_cboxes[PDT_NAME].cbox->setCurrentIndex(index);
 }

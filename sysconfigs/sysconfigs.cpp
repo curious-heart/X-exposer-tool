@@ -46,9 +46,17 @@ static const char* gs_ini_key_sw_ver_disp = "sw_ver_disp";
 static const char* gs_ini_key_hw_ver_disp = "hw_ver_disp";
 static const char* gs_ini_key_hv_ctrl_board_no_disp = "hv_ctrl_board_no_disp";
 static const char* gs_ini_key_tube_or_oilbox_no_disp = "tube_or_oilbox_no_disp";
+static const char* gs_ini_key_disp_mb_regs_chart_at_start = "disp_mb_regs_chart_at_start";
 
 static const char* gs_ini_grp_test_cfg = "test_cfg";
 static const char* gs_ini_key_test_content_only_normal = "test_content_only_normal";
+
+static const char* gs_ini_grp_dev_code_infos = "dev_code_infos";
+static const char* gs_ini_key_pdt_file_name = "pdt_file_name";
+static const char* gs_ini_key_pdt_title_start_row = "pdt_title_start_row";
+static const char* gs_ini_key_pdt_code_col = "pdt_code_col";
+static const char* gs_ini_key_pdt_name_col = "pdt_name_col";
+static const char* gs_ini_key_pdt_model_col = "pdt_model_col";
 
 extern const char* g_str_cube_volt;
 extern const char* g_str_cube_current;
@@ -97,6 +105,13 @@ static const int gs_def_hv_ctrl_board_no_disp = 1;
 static const ui_disp_tube_or_oilbox_str_e_t gs_def_tube_or_oilbox_no_disp = UI_DISP_OILBOX_NO;
 
 static const bool gs_def_test_content_only_normal = true;
+static const bool gs_def_disp_mb_regs_chart_at_start = false;
+
+static const char* gs_def_pdt_file_name = "PD list.xls";
+static const int gs_def_pdt_title_start_row= 1;
+static const int gs_def_pdt_code_col = 1;
+static const int gs_def_pdt_name_col = 2;
+static const int gs_def_pdt_model_col = 3;
 
 static const char* gs_str_cfg_param_limit_error = "参数门限配置错误";
 static const char* gs_str_plz_check = "请检查！";
@@ -132,20 +147,59 @@ static RangeChecker<int> gs_cfg_file_value_01_int_ranger(0, 1, "",
 static RangeChecker<float> gs_cfg_file_value_gt0_float_ranger(0, 0, "",
                        EDGE_EXCLUDED, EDGE_INFINITE);
 
+const char* g_str_param_in_cfg_file = "配置文件参数";
+const char* g_str_error = "错误";
+const char* g_str_should_be_in_range = "应在如下范围内";
+#define REC_CFG_RET_ERR(key, var) \
+        cfg_ret = false;\
+        ret_str += (ret_str.isEmpty() ? "" : "\n"); \
+        ret_str += QString("%1 %2 %3: %4").arg(g_str_param_in_cfg_file, (key), g_str_error)\
+                                            .arg(var);
+
 /*the __VA_ARGS__ should be empty or a type converter like (cust_type).*/
-#define GET_INF_CFG_NUMBER_VAL(settings, key, type_func, var, def, factor, checker, ...)\
+#define GET_INF_CFG_NUMBER_VAL(settings, key, val_func, var, def, factor, checker, ...) \
 {\
-    (var) = __VA_ARGS__((factor) * ((settings).value((key), (def)).type_func()));\
-    if((checker) && !((checker)->range_check((var))))\
+    cfg_ret = true; \
+    if((settings).contains(key)) \
     {\
-        (var) = (def);\
+        (var) = __VA_ARGS__((factor) * ((settings).value(key).val_func()));\
     }\
+    else \
+    {\
+        (var) = __VA_ARGS__((factor) * (def));\
+    }\
+    if((checker) && !((checker)->range_check(var)))\
+    {\
+        REC_CFG_RET_ERR(key, var) \
+        ret_str += QString("\n%1 %2").arg(g_str_should_be_in_range, (checker)->range_str()); \
+    }\
+    ret = ret && cfg_ret;\
 }
 
 #define BEGIN_INT_RANGE_CHECK(low, up, low_inc, up_inc)\
 {\
     RangeChecker<int> int_range_checker((low), (up), "", low_inc, up_inc);
 #define END_INT_RANGE_CHECK \
+}
+
+
+//var SHOULD be for type QString
+#define GET_INF_CFG_STRING_VAL(settings, key, var, def, validate) \
+{\
+    cfg_ret = true; \
+    if((settings).contains(key)) \
+    {\
+        (var) = (settings).value(key).toString();\
+    }\
+    else \
+    {\
+        (var) = (def);\
+    }\
+    if(!(validate))\
+    {\
+        REC_CFG_RET_ERR(key, var)\
+    }\
+    ret = ret && cfg_ret;\
 }
 
 bool fill_sys_configs(QString * ret_str_ptr)
@@ -355,6 +409,12 @@ bool fill_sys_configs(QString * ret_str_ptr)
     CHECK_ENUM(QString(gs_ini_key_tube_or_oilbox_no_disp),
                g_sys_configs_block.tube_or_oilbox_no_disp, tube_or_oilbox_no_disp_set,
                QString::number)
+
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_disp_mb_regs_chart_at_start, toInt,
+                           g_sys_configs_block.disp_mb_regs_chart_at_start, gs_def_disp_mb_regs_chart_at_start,
+                           1, &gs_cfg_file_value_01_int_ranger, (bool));
+
     settings.endGroup();
 
     /*--------------------*/
@@ -368,6 +428,28 @@ bool fill_sys_configs(QString * ret_str_ptr)
     settings.endGroup();
 
     /*--------------------*/
+
+    /*--------------------*/
+    settings.beginGroup(gs_ini_grp_dev_code_infos);
+    GET_INF_CFG_STRING_VAL(settings, gs_ini_key_pdt_file_name,
+                           g_sys_configs_block.dev_code_infos.pdt_file_name, gs_def_pdt_file_name,
+                           (!g_sys_configs_block.dev_code_infos.pdt_file_name.isEmpty()));
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_pdt_title_start_row, toInt,
+                           g_sys_configs_block.dev_code_infos.pdt_title_start_row, gs_def_pdt_title_start_row,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_pdt_code_col, toInt,
+                           g_sys_configs_block.dev_code_infos.pdt_code_col, gs_def_pdt_code_col,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_pdt_name_col, toInt,
+                           g_sys_configs_block.dev_code_infos.pdt_name_col, gs_def_pdt_name_col,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_pdt_model_col, toInt,
+                           g_sys_configs_block.dev_code_infos.pdt_model_col, gs_def_pdt_model_col,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+
+    settings.endGroup();
+    /*--------------------*/
+
     if(ret_str_ptr) *ret_str_ptr = ret_str;
     return ret;
 

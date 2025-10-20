@@ -1,6 +1,4 @@
-﻿#include <windows.h>
-
-#include "common_tool_func.h"
+﻿#include "common_tool_func.h"
 #include "logger/logger.h"
 
 #include <QDateTime>
@@ -12,12 +10,17 @@
 #include <QColor>
 #include <QFont>
 #include <QtMath>
+#include <QRegularExpression>
 
+#ifdef Q_OS_WIN
+#include <windows.h>
+#endif
 static bool exec_external_process(QString cmd, QString cmd_args, bool as_admin = false)
 {
     DIY_LOG(LOG_INFO, QString("exec_external_process: %1 %2, as_admin: %3")
                       .arg(cmd, cmd_args).arg((int)as_admin));
     bool ret = false;
+#ifdef Q_OS_WIN
     if(!cmd.isEmpty())
     {
         SHELLEXECUTEINFO shellInfo;
@@ -58,6 +61,9 @@ static bool exec_external_process(QString cmd, QString cmd_args, bool as_admin =
     {
         DIY_LOG(LOG_WARN, QString("ShellExecuteEx, cmd is empty!"));
     }
+#elif defined(Q_OS_UNIX)
+#else
+#endif
     return ret;
 }
 
@@ -542,6 +548,14 @@ bool mkpth_if_not_exists(const QString &pth_str)
 
 QString shutdown_system(QString reason_str,int wait_time)
 {
+#ifdef Q_OS_UNIX
+    if(wait_time > 0) QThread::sleep(wait_time);
+
+    QProcess::execute("sync", {});
+    QProcess::execute("systemctl", {"poweroff"});
+
+    return "";
+#else
     QString s_c = "shutdown";
     QStringList ps_a;
     QProcess ps;
@@ -551,6 +565,7 @@ QString shutdown_system(QString reason_str,int wait_time)
     ps.setArguments(ps_a);
     ps.startDetached();
     return s_c + " " + ps_a.join(QChar(' '));
+#endif
 }
 
 /*begin of RangeChecker------------------------------*/
@@ -632,20 +647,16 @@ template <typename T> T RangeChecker<T>::range_max()
 }
 
 template <typename T> QString RangeChecker<T>::
-range_str(common_data_type_enum_t d_type, double factor, QString new_unit_str )
+range_str(double factor, QString new_unit_str )
 {
     QString ret_str;
 
     if(!valid) return ret_str;
 
     ret_str = (EDGE_INCLUDED == low_edge ? "[" : "(");
-    ret_str += (EDGE_INFINITE == low_edge) ? "" :
-                ((INT_DATA == d_type) ? QString::number((int)(min * factor)) :
-                                        QString::number((float)(min * factor)));
+    ret_str += (EDGE_INFINITE == low_edge) ? "" : QString::number((T)(min * factor));
     ret_str += ", ";
-    ret_str += (EDGE_INFINITE == up_edge) ? "" :
-                ((INT_DATA == d_type) ? QString::number((int)(max * factor)) :
-                                        QString::number((float)(max * factor)));
+    ret_str += (EDGE_INFINITE == up_edge) ? "" : QString::number((T)(max * factor));
     ret_str += (EDGE_INCLUDED == up_edge) ? "]" : ")";
     //ret_str += ((1 == factor) || new_unit_str.isEmpty()) ? QString(unit_str) : new_unit_str;
     ret_str += (new_unit_str.isEmpty()) ? QString(unit_str) : new_unit_str;
@@ -673,6 +684,7 @@ template <typename T> void RangeChecker<T>::set_unit_str(QString unit_s)
 
 template class RangeChecker<int>;
 template class RangeChecker<float>;
+template class RangeChecker<double>;
 /*end of RangeChecker------------------------------*/
 
 const char* g_prop_name_def_color = "def_color";
@@ -821,4 +833,10 @@ bool CToolKeyFilter::eventFilter(QObject * obj, QEvent * evt)
         }
     }
     return QObject::eventFilter(obj, evt);
+}
+
+void trans_to_valid_fpn_str(QString &fpn)
+{
+    QRegularExpression re(R"([\\\/:\*\?"<>\|])");
+    fpn.replace(re, "_");
 }

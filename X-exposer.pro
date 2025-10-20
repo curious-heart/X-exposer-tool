@@ -1,4 +1,4 @@
-QT       += core gui serialbus serialport network charts
+QT       += core gui serialbus serialport network charts axcontainer
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 

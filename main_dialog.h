@@ -142,6 +142,10 @@ private slots:
     bool set_mb_expo_triple();
     void on_dispChartBtn_clicked();
 
+    void endisable_test_proc_monitor_btns();
+
+    void on_testProcMonitorChkBox_stateChanged(int arg1);
+
 signals:
     void go_test_sig();
     void stop_test_sig(tester_end_code_enum_t code);

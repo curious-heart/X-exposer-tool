@@ -43,6 +43,7 @@ static const char* gs_str_resume = "恢复";
 
 static const char* gs_str_test_judge_result = "测试结果判定";
 static const char* gs_str_test_pass = "测试通过";
+static const char* gs_str_below_fails = "存在如下失败的项目";
 static const char* gs_str_test_begin = "测试开始";
 static const char* gs_str_test_end = "测试结束";
 
@@ -262,14 +263,9 @@ Dialog::Dialog(QWidget *parent)
     m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params,
                                                             &m_cfg_recorder,
                                                             &m_test_judge);
-    m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params, &m_cfg_recorder);
+    m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params,
+                                                &m_cfg_recorder);
 
-    if(!m_testParamSettingsDialog || !m_hvConnSettingsDialog)
-    {
-        DIY_LOG(LOG_ERROR, "new setting dialog fail!");
-        QMessageBox::critical(this, "Error", gs_str_init_fail);
-        return;
-    }
     m_testParamSettingsDialog->setWindowTitle(ui->testParamSetBtn->text());
     m_hvConnSettingsDialog->setWindowTitle(ui->hvConnSetBtn->text());
 
@@ -374,6 +370,8 @@ Dialog::Dialog(QWidget *parent)
 
     m_mbRegsChartWnd = new MbRegsChartDisp(this);
     m_mbRegsChartWnd->setAttribute(Qt::WA_DeleteOnClose, false);
+
+    endisable_test_proc_monitor_btns();
 
     m_init_ok = true;
 }
@@ -815,7 +813,12 @@ void Dialog::on_startTestBtn_clicked()
     QString err_str;
     QString curr_dt_str = common_tool_get_curr_dt_str();
     m_curr_rec_folder_name = curr_dt_str  + "-" + gs_str_test_rec_name_sufx;
-    m_curr_rec_file_name = m_curr_rec_folder_name + gs_str_test_rec_file_type;
+    m_curr_rec_file_name = m_curr_rec_folder_name
+            + "-" + m_test_params.other_param_block.pdt_code
+            + "-" + m_test_params.other_param_block.pdt_name
+            + "-" + m_test_params.other_param_block.pdt_model;
+    trans_to_valid_fpn_str(m_curr_rec_file_name);
+    m_curr_rec_file_name += gs_str_test_rec_file_type;
     QString curr_path = QString("./") + m_curr_rec_folder_name;
     QString curr_file_path(curr_path + "/" + m_curr_rec_file_name);
     if(!mkpth_if_not_exists(curr_path))
@@ -847,9 +850,12 @@ void Dialog::on_startTestBtn_clicked()
     refresh_time_stat_display(true, true);
 
     m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
-    m_test_proc_monitor_timer.start(g_sys_configs_block.test_proc_monitor_period_ms);
 
-    display_mb_regs_chart();
+    if(ui->testProcMonitorChkBox->isChecked())
+    {
+        m_test_proc_monitor_timer.start(g_sys_configs_block.test_proc_monitor_period_ms);
+        if(g_sys_configs_block.disp_mb_regs_chart_at_start) display_mb_regs_chart();
+    }
 }
 
 void Dialog::on_stopTestBtn_clicked()
@@ -1061,6 +1067,10 @@ void Dialog::rec_judge_result(tester_end_code_enum_t code)
                                          QString(gs_str_test_pass) + "\n", Qt::green);
         return;
     }
+
+    REC_INFO_IN_FILE(QString(gs_str_below_fails) << "\n");
+    append_str_with_color_and_weight(ui->testInfoDisplayTxt,
+                                     QString(gs_str_below_fails) + "\n", Qt::red);
 
     m_test_judge.get_result_disp_header_str(header_str);
     header_str.prepend(",,,"); //date,time and number
@@ -1373,5 +1383,17 @@ void Dialog::on_testPromMonitorClrBtn_clicked()
 void Dialog::on_dispChartBtn_clicked()
 {
     display_mb_regs_chart();
+}
+
+void Dialog::endisable_test_proc_monitor_btns()
+{
+    bool enable = ui->testProcMonitorChkBox->isChecked();
+    ui->dispChartBtn->setEnabled(enable);
+    ui->testPromMonitorClrBtn->setEnabled(enable);
+}
+
+void Dialog::on_testProcMonitorChkBox_stateChanged(int /*arg1*/)
+{
+    endisable_test_proc_monitor_btns();
 }
 

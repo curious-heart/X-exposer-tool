@@ -32,6 +32,13 @@ typedef enum
 
 typedef struct
 {
+    QString pdt_file_name;
+    int pdt_title_start_row;
+    int pdt_code_col, pdt_name_col, pdt_model_col;
+}dev_code_infos_s_t;
+
+typedef struct
+{
     int log_level;
 
     float cool_dura_factor;
@@ -59,6 +66,10 @@ typedef struct
     int distance_group_disp, sw_ver_disp, hw_ver_disp, hv_ctrl_board_no_disp;
     ui_disp_tube_or_oilbox_str_e_t tube_or_oilbox_no_disp;
     bool test_content_only_normal;
+
+    bool disp_mb_regs_chart_at_start;
+
+    dev_code_infos_s_t dev_code_infos;
 }sys_configs_struct_t;
 
 extern sys_configs_struct_t g_sys_configs_block;

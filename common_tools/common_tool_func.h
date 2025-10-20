@@ -12,7 +12,7 @@ typedef enum
 {
     IP_SET_TYPE_IPV4_DYNAMIC = 0,
     IP_SET_TYPE_IPV4_FIXED,
-}ip_set_type_t;;
+}ip_set_type_t;
 
 typedef enum
 {
@@ -74,7 +74,7 @@ private:
     range_edge_enum_t low_edge, up_edge;
     QString unit_str;
 public:
-    RangeChecker(T min = -1, T max = 1, QString unit_str = "",
+    RangeChecker(T min, T max, QString unit_str = "",
                  range_edge_enum_t low_edge = EDGE_INCLUDED, range_edge_enum_t up_edge = EDGE_INCLUDED);
 public:
     bool range_check(T val);
@@ -86,7 +86,7 @@ public:
     range_edge_enum_t range_up_edge();
     T range_min();
     T range_max();
-    QString range_str(common_data_type_enum_t d_type, double factor = 1, QString new_unit_str = "");
+    QString range_str(double factor = 1, QString new_unit_str = "");
 };
 
 int count_discrete_steps(double low_edge, double up_edge, double step);
@@ -123,5 +123,7 @@ public:
     void add_keys_to_filter(Qt::Key key);
     void add_keys_to_filter(const QSet<Qt::Key> & keys);
 };
+
+void trans_to_valid_fpn_str(QString &fpn);
 
 #endif // COMMON_TOOL_FUNC_H
