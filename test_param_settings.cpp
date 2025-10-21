@@ -2432,10 +2432,10 @@ void testParamSettingsDialog::get_current_info_for_chart(QString &name_str, QStr
             * gs_valid_cube_current_ma_range.range_max();
 }
 
-#define EXCEL_OP_CHECK(obj, fn, next_op) \
+#define EXCEL_OP_CHECK(obj, obj_name, fn, next_op) \
 if(!(obj) || (obj)->isNull())\
 {\
-    DIY_LOG(LOG_WARN, QString("读取 %1 失败").arg(fn));\
+    DIY_LOG(LOG_WARN, QString("读取 %1 失败. obj_name: %2").arg(fn, (obj_name)));\
     next_op;\
 }
 
@@ -2451,25 +2451,25 @@ bool testParamSettingsDialog::load_pdt_info()
     QAxObject excel("Excel.Application");
     excel.setProperty("Visible", false);
     QAxObject *workbooks = excel.querySubObject("Workbooks");
-    EXCEL_OP_CHECK(workbooks, fn, {return false;});
+    EXCEL_OP_CHECK(workbooks, "workbooks", fn, {return false;});
 
     QAxObject *workbook = workbooks->querySubObject(
                                     "Open(const QString&, QVariant, QVariant)",
                                     params.at(0), params.at(1), params.at(2)
                                 );
-    EXCEL_OP_CHECK(workbook, fn, {return false;});
+    EXCEL_OP_CHECK(workbook, "workbook", fn, {return false;});
 
     bool ret = true;
     do
     {
         QAxObject *worksheet = workbook->querySubObject("Worksheets(int)", 1);
-        EXCEL_OP_CHECK(worksheet, fn, {ret = false; break;});
+        EXCEL_OP_CHECK(worksheet, "worksheet", fn, {ret = false; break;});
 
         QAxObject *usedRange = worksheet->querySubObject("UsedRange");
-        EXCEL_OP_CHECK(usedRange, fn, {ret = false; break;});
+        EXCEL_OP_CHECK(usedRange, "usedRange", fn, {ret = false; break;});
 
         QAxObject *rows = usedRange->querySubObject("Rows");
-        EXCEL_OP_CHECK(rows, fn, {ret = false; break;});
+        EXCEL_OP_CHECK(rows, "rows", fn, {ret = false; break;});
 
         int rowCount = rows->property("Count").toInt();
 
@@ -2478,8 +2478,10 @@ bool testParamSettingsDialog::load_pdt_info()
         {
             for(int c = 1; c <= m_pdt_cboxes.count(); c++)
             {
-                QAxObject *cell = worksheet->querySubObject("Cells(int,int)", i, m_pdt_cboxes[c-1].col);
-                EXCEL_OP_CHECK(cell, fn, {ret = false; break;});
+                int col = m_pdt_cboxes[c-1].col;
+                QAxObject *cell = worksheet->querySubObject("Cells(int,int)", i, col);
+                EXCEL_OP_CHECK(cell, QString("cells: %1,%2").arg(i).arg(col),
+                               fn, {ret = false; break;});
 
                 QString value = cell->property("Value").toString();
 
