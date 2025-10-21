@@ -65,7 +65,10 @@ typedef struct
 
     int distance_group_disp, sw_ver_disp, hw_ver_disp, hv_ctrl_board_no_disp;
     ui_disp_tube_or_oilbox_str_e_t tube_or_oilbox_no_disp;
+
     bool test_content_only_normal;
+    int test_no_pass_retry_cnt;
+    bool test_rec_all_fail_results;
 
     bool disp_mb_regs_chart_at_start;
 

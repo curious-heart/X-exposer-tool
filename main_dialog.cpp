@@ -46,6 +46,7 @@ static const char* gs_str_test_pass = "测试通过";
 static const char* gs_str_below_fails = "存在如下失败的项目";
 static const char* gs_str_test_begin = "测试开始";
 static const char* gs_str_test_end = "测试结束";
+static const char* gs_str_fail = "失败";
 
 static const char* gs_str_start_test = "开始测试";
 static const char* gs_str_testing = "正在测试";
@@ -845,6 +846,8 @@ void Dialog::on_startTestBtn_clicked()
 
     m_test_judge.clear_judge_resut_strs();
 
+    m_hv_tester.reset_test_retry_cnt();
+    m_hv_tester.set_last_judge_result(true);
     emit go_test_sig();
 
     refresh_time_stat_display(true, true);
@@ -951,7 +954,7 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
 
     if((0 == round_idx) && (0 != loop_idx) && (TEST_OP_SET_EXPO_TRIPLE == op))
     {//a new round, leave a blank line.
-        line += "\n";
+        if(!m_hv_tester.is_retrying()) line += "\n";
     }
 
     line += disp_prefix_str;
@@ -967,15 +970,22 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
         line += QString::number(reg_val_map.value(VoltSet)) + ",";
         line += QString::number(reg_val_map.value(FilamentSet)) + ",";
         line += QString::number(reg_val_map.value(ExposureTime)) + ",";
-        REC_INFO_IN_FILE(line << "\n");
+        if(!m_hv_tester.is_retrying()) REC_INFO_IN_FILE(line << "\n");
         append_str_with_color_and_weight(ui->testInfoDisplayTxt, line,
                                          m_txt_def_color, m_txt_def_font.weight());
 
         return;
     }
 
+    m_hv_tester.increase_test_retry_cnt();
+    bool is_last_retry = m_hv_tester.is_last_test_retry();
+    bool rec_fails = g_sys_configs_block.test_rec_all_fail_results
+                    || is_last_retry;
     mb_reg_judge_result_list_t judge_result;
-    m_test_judge.judge_mb_regs(reg_val_map, judge_result, disp_prefix_str, proc_monitor);
+    bool judge_pass
+        = m_test_judge.judge_mb_regs(reg_val_map, judge_result, disp_prefix_str,
+                                     rec_fails, proc_monitor);
+    m_hv_tester.set_last_judge_result(judge_pass);
     reset_judge_reg_ret_map();
     for(int idx = 0; idx < judge_result.count(); ++idx)
     {
@@ -1026,13 +1036,26 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
             last_style.color = style_str.color; last_style.weight = style_str.weight;
         }
     }
+
+    if(!judge_pass)
+    {
+        line += gs_str_fail;
+
+        style_str.str = gs_str_fail;
+        style_str.color = m_txt_def_color;
+        style_str.weight = m_txt_def_font.weight();
+        style_line.append(style_comma);
+        style_line.append(style_str);
+    }
+
     if(proc_monitor)
     {
         append_line_with_styles(ui->testProcMonitorTxtEdit, style_line);
     }
     else
     {
-        REC_INFO_IN_FILE(line << "\n");
+        if(judge_pass || rec_fails) REC_INFO_IN_FILE(line << "\n");
+
         append_line_with_styles(ui->testInfoDisplayTxt, style_line);
     }
 

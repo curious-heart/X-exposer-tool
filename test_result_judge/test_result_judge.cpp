@@ -84,14 +84,15 @@ void TestResultJudge::clear_judge_result_disp_items()
     m_result_display_items.clear();
 }
 
-void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
-                   mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str,
-                                    bool only_judge)
+bool TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
+               mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str,
+               bool rec_fails, bool only_judge)
 {
     float val, ref_val, low_limit, up_limit;
     QString bad_str;
     const char* reg_cn_name_str = nullptr;
     judge_result_e_t e_result = JUDGE_RESULT_OK;
+    bool ret = false;
 
     for(int idx = 0; idx < m_judge_list.count(); ++ idx)
     {
@@ -155,10 +156,11 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
         bad_val_list.append({m_judge_list[idx].ref_reg_no, m_judge_list[idx].val_reg_no, e_result});
     }
 
-    if(bad_str.isEmpty() || only_judge)
+    if(bad_str.isEmpty()) ret = true;  /*No bad value.*/
+
+    if(ret || only_judge || !rec_fails)
     {
-        /*No bad value.*/
-        return;
+        return ret;
     }
 
     /*construct the report string.*/
@@ -184,6 +186,8 @@ void TestResultJudge::judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
     ret_line_str += bad_str;
 
     m_judge_result_strs.append(ret_line_str);
+
+    return ret;
 }
 
 const QStringList & TestResultJudge::get_judge_result_strs()

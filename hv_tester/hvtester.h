@@ -80,6 +80,10 @@ private:
     tester_simple_handler_t m_curr_timer_handler = nullptr;
     QDateTime m_dt_checkpoint_for_pause;
 
+
+    bool m_last_jdg_ret = true;
+    int m_last_test_retry_cnt = 0;
+
     bool is_the_last_one_test(test_params_struct_t * ctrl_struct,
                                                 expo_param_triple_struct_t &curr_triple,
                                                 int &idx_in_loop, int &idx_in_round);
@@ -93,6 +97,11 @@ public:
     bool init(test_params_struct_t *test_params, QModbusClient * modbus_device, int srvr_addr);
     void init_for_time_stat(test_params_struct_t *test_params);
     float expect_remaining_test_dura_ms(bool total = false);
+    void set_last_judge_result(bool jdg_ret);
+    void increase_test_retry_cnt();
+    void reset_test_retry_cnt();
+    bool is_last_test_retry();
+    bool is_retrying();
 
 private:
     void reset_internal_state();

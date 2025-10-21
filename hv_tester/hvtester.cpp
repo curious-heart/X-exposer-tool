@@ -518,8 +518,15 @@ void HVTester::go_test_sig_handler()
         end_test_due_to_exception(gs_str_not_init);
         return;
     }
-    hv_tester_proc = update_tester_state(hv_test_params, hv_curr_expo_param_triple,
-                        hv_test_idx_in_loop, hv_test_idx_in_round);
+
+    if(m_last_jdg_ret
+            || m_last_test_retry_cnt >= g_sys_configs_block.test_no_pass_retry_cnt)
+    {
+        reset_test_retry_cnt();
+
+        hv_tester_proc = update_tester_state(hv_test_params, hv_curr_expo_param_triple,
+                            hv_test_idx_in_loop, hv_test_idx_in_round);
+    }
 
     if(hv_tester_proc != TESTER_IDLE && hv_tester_proc != TESTER_COMPLETE)
     {
@@ -1003,4 +1010,29 @@ void HVTester::post_test_info_message(LOG_LEVEL lvl, QString msg, bool always_re
     {
         DIY_LOG(LOG_WARN, QString("tester is idle, so the msg is not posted: %1").arg(msg));
     }
+}
+
+void HVTester::set_last_judge_result(bool jdg_ret)
+{
+    m_last_jdg_ret = jdg_ret;
+}
+
+void HVTester::reset_test_retry_cnt()
+{
+    m_last_test_retry_cnt = 0;
+}
+
+void HVTester::increase_test_retry_cnt()
+{
+    ++m_last_test_retry_cnt;
+}
+
+bool HVTester::is_last_test_retry()
+{
+    return (m_last_test_retry_cnt >= g_sys_configs_block.test_no_pass_retry_cnt);
+}
+
+bool HVTester::is_retrying()
+{
+    return (m_last_test_retry_cnt > 0);
 }

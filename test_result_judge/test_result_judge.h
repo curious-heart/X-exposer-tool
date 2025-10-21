@@ -68,10 +68,12 @@ public:
     /* reg_val_map: input. the reg values to be judged.
      * bad_val_list: output. the reg numbers whose val can't pass the judge.
      * result_disp_prefix_str: in. for judge result display.
+     *
+     * return: true or false indicating if all reg values pass judge.
      */
-    void judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
-                   mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str,
-                       bool only_judge = false);
+    bool judge_mb_regs(const mb_reg_val_map_t &reg_val_map,
+               mb_reg_judge_result_list_t &bad_val_list, QString &result_disp_prefix_str,
+               bool rec_fails, bool only_judge = false);
 
     const QStringList & get_judge_result_strs();
     void get_result_disp_header_str(QString &header_str);

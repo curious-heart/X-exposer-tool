@@ -50,6 +50,8 @@ static const char* gs_ini_key_disp_mb_regs_chart_at_start = "disp_mb_regs_chart_
 
 static const char* gs_ini_grp_test_cfg = "test_cfg";
 static const char* gs_ini_key_test_content_only_normal = "test_content_only_normal";
+static const char* gs_ini_key_test_no_pass_retry_cnt = "test_no_pass_retry_cnt";
+static const char* gs_ini_key_test_rec_all_fail_results = "test_rec_all_fail_results";
 
 static const char* gs_ini_grp_dev_code_infos = "dev_code_infos";
 static const char* gs_ini_key_pdt_file_name = "pdt_file_name";
@@ -81,7 +83,7 @@ static const int gs_def_cube_volt_kv_max = 90;
 static const float gs_def_cube_current_ma_min = 0.5;
 static const float gs_def_cube_current_ma_max = 5;
 static const float gs_def_dura_sec_min = 0.5;
-static const float gs_def_dura_sec_max = 1.4;
+static const float gs_def_dura_sec_max = (float)1.4;
 
 static const float gs_def_coil_current_a_min = 0;
 static const float gs_def_coil_current_a_max = 2;
@@ -105,6 +107,9 @@ static const int gs_def_hv_ctrl_board_no_disp = 1;
 static const ui_disp_tube_or_oilbox_str_e_t gs_def_tube_or_oilbox_no_disp = UI_DISP_OILBOX_NO;
 
 static const bool gs_def_test_content_only_normal = true;
+static const int gs_def_test_no_pass_retry_cnt = 3;
+static const bool gs_def_test_rec_all_fail_results = false;
+
 static const bool gs_def_disp_mb_regs_chart_at_start = false;
 
 static const char* gs_def_pdt_file_name = "PD list.xls";
@@ -423,6 +428,16 @@ bool fill_sys_configs(QString * ret_str_ptr)
     GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_test_content_only_normal, toInt,
                            g_sys_configs_block.test_content_only_normal,
                            gs_def_test_content_only_normal,
+                           1, (RangeChecker<int>*)0, (bool));
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_test_no_pass_retry_cnt, toInt,
+                           g_sys_configs_block.test_no_pass_retry_cnt,
+                           gs_def_test_no_pass_retry_cnt,
+                           1, &gs_cfg_file_value_gt0_int_ranger);
+
+    GET_INF_CFG_NUMBER_VAL(settings, gs_ini_key_test_rec_all_fail_results, toInt,
+                           g_sys_configs_block.test_rec_all_fail_results,
+                           gs_def_test_rec_all_fail_results,
                            1, (RangeChecker<int>*)0, (bool));
 
     settings.endGroup();
