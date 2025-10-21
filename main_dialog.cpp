@@ -236,9 +236,6 @@ Dialog::Dialog(QWidget *parent)
     , m_hv_tester(this)
     , m_cfg_recorder(this), m_key_filter(this, this)
 {
-    QString ret_str;
-    bool ret;
-
     ui->setupUi(this);
     ui->app_logo->setPixmap(QPixmap("./app_images/logo.png"));
 
@@ -253,13 +250,6 @@ Dialog::Dialog(QWidget *parent)
         /*.cube_current_unit = */ui->manTestcubeCurrentUnitLbl,
         /*.expo_dura_unit = */ui->manTestexpoDuraUnitLbl,
     };
-
-    ret = fill_sys_configs(&ret_str);
-    if(!ret)
-    {
-        QMessageBox::critical(this, "", ret_str);
-        return;
-    }
 
     m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params,
                                                             &m_cfg_recorder,
