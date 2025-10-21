@@ -10,7 +10,7 @@
 
 LogSigEmitter *g_LogSigEmitter = nullptr;
 static Logger * g_LogWorker = nullptr;
-static LOG_LEVEL gs_log_display_levle = LOG_ERROR;
+static LOG_LEVEL gs_log_display_levle = LOG_INFO;
 Logger::Logger(QObject *parent) : QObject(parent)
 {
 
@@ -43,8 +43,24 @@ Logger *Logger::instance()
  * @param log 日志内容
  */
 const char* log_dir_str = "./log", *log_file_str = "log";
-void Logger::writeLog(QString level_str, QString loc_str, QString msg)
+void writeLog(int level, QString loc_str, QString msg)
 {
+    QString level_str;
+
+    if(level < gs_log_display_levle)
+    {
+        return;
+    }
+
+    if(!VALID_LOG_LVL(level))
+    {
+        level_str = QString("[%1]").arg("Unknown Level");
+    }
+    else
+    {
+        level_str = QString("[%1]").arg(g_log_level_strs[level]);
+    }
+
     QFileInfo info(log_dir_str);
     QString path = info.absoluteFilePath();
     QDir dir(path);
@@ -69,28 +85,13 @@ void Logger::writeLog(QString level_str, QString loc_str, QString msg)
 //void Logger::receive_log(LOG_LEVEL level, QString loc_str, QString log_str)
 #undef LOG_LEVEL_ITEM
 #define LOG_LEVEL_ITEM(lvl) #lvl
-static const char* gs_log_level_strs[] =
+const char* g_log_level_strs[] =
 {
     LOG_LEVEL_LIST
 };
 void Logger::receive_log(int level, QString loc_str, QString log_str)
 {
-    QString level_str;
-
-    if(level < gs_log_display_levle)
-    {
-        return;
-    }
-
-    if(!VALID_LOG_LVL(level))
-    {
-        level_str = QString("[%1]").arg("Unknown Level");
-    }
-    else
-    {
-        level_str = QString("[%1]").arg(gs_log_level_strs[level]);
-    }
-    writeLog(level_str, loc_str, log_str);
+    writeLog(level, loc_str, log_str);
 }
 
 bool start_log_thread(QThread &th, LOG_LEVEL display_lvl)
@@ -134,6 +135,11 @@ void end_log_thread(QThread &th)
     {
         delete g_LogSigEmitter; g_LogSigEmitter = nullptr;
     }
+}
+
+void update_log_level(LOG_LEVEL display_lvl)
+{
+    gs_log_display_levle = display_lvl;
 }
 
 //void __emit_log_signal__(LOG_LEVEL level, QString loc_str, QString log)

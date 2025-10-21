@@ -1,19 +1,19 @@
 ﻿#ifndef LOGGER_H
 #define LOGGER_H
 
-/*
- * 从条纹相机上位机程序拷贝修改。
- */
-
 #include <QObject>
 #include <QThread>
+#include <QDateTime>
+
+#include "common_tools/common_macros.h"
+#include "version_def/version_def.h"
 
 #define LOG_LEVEL_ITEM(lvl) LOG_##lvl
 #define LOG_LEVEL_LIST \
-    LOG_LEVEL_ITEM(DEBUG),\
-    LOG_LEVEL_ITEM(INFO),\
-    LOG_LEVEL_ITEM(WARN),\
-    LOG_LEVEL_ITEM(ERROR)
+    ENUM_NAME_DEF(LOG_LEVEL_ITEM(DEBUG))\
+    ENUM_NAME_DEF(LOG_LEVEL_ITEM(INFO))\
+    ENUM_NAME_DEF(LOG_LEVEL_ITEM(WARN))\
+    ENUM_NAME_DEF(LOG_LEVEL_ITEM(ERROR))
 
 enum LOG_LEVEL {
     LOG_LEVEL_LIST
@@ -30,9 +30,6 @@ public:
 public slots:
     //void receive_log(LOG_LEVEL level, QString loc_str, QString log_str);
     void receive_log(int level, QString loc_str, QString log_str);
-
-private:
-    void writeLog(QString level_str, QString loc_str, QString msg);
 };
 
 class LogSigEmitter: public QObject
@@ -68,8 +65,14 @@ void __emit_log_signal__(int level, QString loc_str, QString log);
  * program.
  *
 */
-bool start_log_thread(QThread &th, LOG_LEVEL display_lvl = LOG_ERROR);
+bool start_log_thread(QThread &th, LOG_LEVEL display_lvl = LOG_INFO);
 void end_log_thread(QThread &th);
+void update_log_level(LOG_LEVEL display_lvl);
+
+extern const char* g_log_level_strs[];
+
+/*DO NOT call this function, just use DIY_LOG macro.*/
+void writeLog(int level, QString loc_str, QString msg);
 
 /*
  * Use example:
@@ -83,6 +86,10 @@ void end_log_thread(QThread &th);
         if(g_LogSigEmitter)\
         {\
             __emit_log_signal__((int)level, loc_str, (log));\
+        }\
+        else\
+        {\
+            writeLog((level), loc_str, (log));\
         }\
     }
 

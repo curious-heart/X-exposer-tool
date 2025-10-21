@@ -2435,7 +2435,7 @@ void testParamSettingsDialog::get_current_info_for_chart(QString &name_str, QStr
 #define EXCEL_OP_CHECK(obj, obj_name, fn, next_op) \
 if(!(obj) || (obj)->isNull())\
 {\
-    DIY_LOG(LOG_WARN, QString("读取 %1 失败. obj_name: %2").arg(fn, (obj_name)));\
+    DIY_LOG(LOG_WARN, QString("read %1 fail. obj_name: %2").arg(fn, (obj_name)));\
     next_op;\
 }
 

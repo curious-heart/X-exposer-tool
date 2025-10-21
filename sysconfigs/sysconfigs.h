@@ -3,7 +3,7 @@
 
 #include <QString>
 
-#define ENUM_NAME_DEF(e) e,
+#include "logger/logger.h"
 #define MB_CUBE_CURRENT_UNIT_E \
     ENUM_NAME_DEF(MB_CUBE_CURRENT_UNIT_UA)\
     ENUM_NAME_DEF(MB_CUBE_CURRENT_UNIT_MA)\

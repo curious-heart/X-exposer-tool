@@ -3,11 +3,12 @@
 #include "logger/logger.h"
 #include "common_tools/common_tool_func.h"
 #include "sysconfigs/sysconfigs.h"
+#include "common_tools/common_tool_func.h"
 
 #undef ENUM_NAME_DEF
-#define ENUM_NAME_DEF(e) <<e
+#define ENUM_NAME_DEF(e, ...) <<(e)
 
-static const char* gs_sysconfigs_file_fpn = "configs/configs.ini";
+static const char* gs_sysconfigs_file_fpn = "./configs/configs.ini";
 
 static const char* gs_ini_grp_sys_cfgs = "sys_cfgs";
 static const char* gs_ini_key_log_level = "log_level";
