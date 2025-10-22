@@ -257,14 +257,9 @@ void testParamSettingsDialog::arrange_ui_according_to_syscfgs(QRadioButton * &hi
 
 #define LOAD_EXPO_DUAR_SW_TO_UI(sw_to_ui_f) \
 {\
-    static bool init = true; \
-    if(init) init = false; \
-    else\
-    {\
     ui->expoDuraStartEdit->setText(QString::number(m_ui_dura_start_in_ms * (sw_to_ui_f))); \
     ui->expoDuraEndEdit->setText(QString::number(m_ui_dura_end_in_ms * (sw_to_ui_f))); \
     ui->expoDuraStepEdit->setText(QString::number(m_ui_dura_step_in_ms * (sw_to_ui_f))); \
-    }\
 }
 
 testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
@@ -333,6 +328,12 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     ui->readDistChBox->setChecked(true);
 
     ui->testContentNormalRButton->setChecked(true);
+
+    /*------------------------------------------*/
+    m_ui_dura_start_in_ms = g_sys_configs_block.dura_ms_min;
+    m_ui_dura_end_in_ms = g_sys_configs_block.dura_ms_max;
+    m_ui_dura_step_in_ms = 200;
+    /*------------------------------------------*/
 
     m_test_params->test_content = get_test_content(nullptr); //default value
     QRadioButton *hidden_dura_rb, *mb_intf_dura_rb;
@@ -2505,7 +2506,15 @@ void testParamSettingsDialog::setup_pdt_cboxes()
     if(!load_pdt_info())
     {
         QString fn = g_sys_configs_block.dev_code_infos.pdt_file_name;
-        QMessageBox::warning(this, "", QString("读取 %1 失败").arg(fn));
+        QMessageBox::warning(this, "", QString("读取 %1 失败。需要手动输入产品编码信息").arg(fn));
+
+        QString cbox_editor_name_str = "_editor";
+        ui->pdtCodeCBox->setEditable(true);
+        ui->pdtCodeCBox->lineEdit()->setObjectName(ui->pdtCodeCBox->objectName() + cbox_editor_name_str);
+        ui->pdtNameCBox->setEditable(true);
+        ui->pdtNameCBox->lineEdit()->setObjectName(ui->pdtNameCBox->objectName() + cbox_editor_name_str);
+        ui->pdtMdlCBox->setEditable(true);
+        ui->pdtMdlCBox->lineEdit()->setObjectName(ui->pdtMdlCBox->objectName() + cbox_editor_name_str);
     }
 }
 

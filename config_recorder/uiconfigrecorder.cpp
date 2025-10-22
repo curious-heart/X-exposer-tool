@@ -47,10 +47,9 @@ UiConfigRecorder::UiConfigRecorder(QObject *parent, QString cfg_file_fpn)
             do_it = !filter_out.contains(LIST_VAR_NAME(ctrl_type)[idx]);\
         if(!do_it) continue;\
                             \
-        cfg_setting.setValue(key_pre_str \
-                             + LIST_VAR_NAME(ctrl_type)[idx]->objectName() \
-                             + key_post_str, \
-                             LIST_VAR_NAME(ctrl_type)[idx]->value);  \
+        QString key_str = key_pre_str + LIST_VAR_NAME(ctrl_type)[idx]->objectName() + key_post_str;\
+        if(key_str.isEmpty()) continue;\
+        cfg_setting.setValue(key_str, LIST_VAR_NAME(ctrl_type)[idx]->value);  \
     }
 
 void UiConfigRecorder::record_ui_configs(QWidget * ui_widget,
@@ -100,7 +99,7 @@ void UiConfigRecorder::record_ui_configs(QWidget * ui_widget,
         QString key_str = key_pre_str + LIST_VAR_NAME(ctrl_type)[idx]->objectName() \
                                     + key_post_str; \
                                                                                     \
-        if(!cfg_setting.contains(key_str)) continue; \
+        if(!key_str.isEmpty() && !cfg_setting.contains(key_str)) continue; \
                                                                                     \
         str_val = cfg_setting.value(key_str, "").toString();\
         val;\
@@ -144,7 +143,7 @@ void UiConfigRecorder::load_configs_to_ui(QWidget * ui_widget,
                   (tr_ret && (BOX_CHECKED == int_val || BOX_UNCHECKED == int_val)),
                   setChecked(int_val));
     READ_FROM_CFG(QComboBox, int_val = str_val.toInt(&tr_ret),
-                  (tr_ret && (int_val < LIST_VAR_NAME(QComboBox)[idx]->count())),
+                  (tr_ret && (0 <= int_val && int_val < LIST_VAR_NAME(QComboBox)[idx]->count())),
                   setCurrentIndex(int_val));
     READ_FROM_CFG(QLineEdit, ,(!str_val.isEmpty()), setText(str_val));
     READ_FROM_CFG(QTextEdit, ,(!str_val.isEmpty()), setText(str_val));

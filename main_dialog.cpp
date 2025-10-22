@@ -1171,7 +1171,8 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     reset_internal_flags();
     refresh_butoons();
 
-    ui->testProcMonitorTxtEdit->append(gs_str_sep_short_line);
+    if(ui->testProcMonitorChkBox->isChecked())
+        ui->testProcMonitorTxtEdit->append(gs_str_sep_short_line);
 }
 
 void Dialog::mb_op_err_req_reconnect_sig_handler()
