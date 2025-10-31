@@ -254,8 +254,10 @@ Dialog::Dialog(QWidget *parent)
     m_testParamSettingsDialog = new testParamSettingsDialog(this, &m_test_params,
                                                             &m_cfg_recorder,
                                                             &m_test_judge);
-    m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params,
-                                                &m_dev_info_block, &m_cfg_recorder);
+
+    m_dev_and_conn_info_vec.clear();
+    m_hvConnSettingsDialog = new hvConnSettings(this, &m_dev_and_conn_info_vec,
+                                                &m_cfg_recorder);
 
     m_testParamSettingsDialog->setWindowTitle(ui->testParamSetBtn->text());
     m_hvConnSettingsDialog->setWindowTitle(ui->hvConnSetBtn->text());
@@ -276,10 +278,10 @@ Dialog::Dialog(QWidget *parent)
 
     m_txt_def_color = ui->hvConnParamDisplayTxt->textColor();
     ui->hvConnParamDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
-    param_collet_ret_str = m_hvConnSettingsDialog->collect_conn_params();
-    if(m_hv_conn_params.valid)
+    m_hvConnSettingsDialog->add_one_dev(&param_collet_ret_str);
+    if(m_dev_and_conn_info_vec.count() > 0)
     {
-        ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
+        ui->hvConnParamDisplayTxt->setText(m_hvConnSettingsDialog->get_all_dev_info_strs());
     }
     else
     {
@@ -435,9 +437,9 @@ void Dialog::on_hvConnSetBtn_clicked()
 {
     int dialog_ret = m_hvConnSettingsDialog->exec();
 
-    if((QDialog::Accepted == dialog_ret) && m_hv_conn_params.valid)
+    if(QDialog::Accepted == dialog_ret)
     {
-        ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
+        ui->hvConnParamDisplayTxt->setText(m_hvConnSettingsDialog->get_all_dev_info_strs());
         select_modbus_device();
     }
 }

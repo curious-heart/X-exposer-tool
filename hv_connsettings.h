@@ -5,6 +5,7 @@
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QPushButton>
+#include <QVector>
 
 #include "config_recorder/uiconfigrecorder.h"
 
@@ -42,7 +43,6 @@ typedef struct
     tcpip_conn_params_struct_t tcpip_params;
     int resp_wait_time_ms;
     int srvr_address;
-    QString info_str;
 }modbus_conn_parameters_struct_t;
 
 typedef struct
@@ -52,14 +52,29 @@ typedef struct
     QString pdt_code, pdt_name, pdt_model;
 }dev_info_struct_t;
 
+typedef struct
+{
+    modbus_conn_parameters_struct_t mb_conn_parameters;
+    dev_info_struct_t dev_infos;
+    QString info_str;
+}dev_and_conn_info_s_t;
+
+typedef QVector<dev_and_conn_info_s_t> dev_and_conn_info_vec_t;
+
+typedef enum
+{
+    CONN_COLLET_OK,
+    CONN_COLLET_DUP,
+    CONN_COLLET_ERR,
+}conn_collect_ret_e_t;
+
 class hvConnSettings : public QDialog
 {
     Q_OBJECT
 
 public:
     explicit hvConnSettings(QWidget *parent = nullptr,
-                            modbus_conn_parameters_struct_t* param_ptr = nullptr,
-                            dev_info_struct_t *dev_info_ptr = nullptr,
+                            dev_and_conn_info_vec_t * dev_and_conn_vec = nullptr,
                             UiConfigRecorder * cfg_recorder = nullptr);
     ~hvConnSettings();
 
@@ -71,6 +86,12 @@ private slots:
     void on_pdtCodeCBox_currentIndexChanged(int index);
     void on_pdtNameCBox_currentIndexChanged(int index);
     void on_pdtMdlCBox_currentIndexChanged(int index);
+
+    void on_addDevPBtn_clicked();
+
+    void on_delDevPBtn_clicked();
+
+    void on_devListWidget_currentRowChanged(int currentRow);
 
 private:
     Ui::hvConnSettings *ui;
@@ -85,11 +106,19 @@ private:
     static const combobox_item_struct_t baudrate_list[], data_bits_list[], check_parity_list[],
                                         stop_bit_list[];
 
-    modbus_conn_parameters_struct_t * modbus_conn_params;
-    dev_info_struct_t * dev_info_block;
+    dev_and_conn_info_vec_t * dev_and_conn_info_vec;
+    modbus_conn_parameters_struct_t curr_modbus_conn_params;
+    dev_info_struct_t curr_dev_info_block;
 
+    conn_collect_ret_e_t collect_conn_params(QString &ret_str);
     void select_conn_type_param_block();
-    void format_hv_conn_info_str();
+    void format_hv_conn_info_str(QString &info_str);
+    bool curr_conn_id_in_vec(const modbus_conn_parameters_struct_t conn_params,
+                             const dev_and_conn_info_vec_t &vect);
+    QString get_conn_id_str(const modbus_conn_parameters_struct_t &conn_params);
+    QString get_dev_id_str(const dev_and_conn_info_s_t &dev);
+    void update_dev_conn_info_disp();
+    bool load_params_to_ui(const dev_and_conn_info_s_t &dev);
 
     UiConfigRecorder * m_cfg_recorder = nullptr;
     qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
@@ -111,7 +140,8 @@ private:
     bool load_pdt_info();
 
 public:
-    QString collect_conn_params();
+    bool add_one_dev(QString *ret_str_ptr = nullptr);
+    QString get_all_dev_info_strs();
 };
 
 #endif // HV_CONNSETTINGS_H

@@ -3,6 +3,7 @@
 #include <QMessageBox>
 #include <QAxObject>
 #include <QDir>
+#include <QListWidget>
 
 #include "common_tools/common_tool_func.h"
 #include "logger/logger.h"
@@ -16,6 +17,13 @@ extern const char* gs_str_data_item_invalid;
 
 static const char* gs_str_tube_no = "射线管编号";
 static const char* gs_str_oilbox_no = "油盒编号";
+
+const char* g_str_dev_already_added = "设备信息已在列表中";
+
+static const char* gs_str_minus_sep_line = "--------";
+static const char* gs_str_equ_sep_line = "==========";
+static const char* gs_str_at_least_1_dev_should_be_selected = "至少需要选择一个设备";
+static const char* gs_str_plz_sel_dev = "请选择设备";
 
 const hvConnSettings::combobox_item_struct_t hvConnSettings::hv_conn_type_list[] =
 {
@@ -56,13 +64,10 @@ const hvConnSettings::combobox_item_struct_t hvConnSettings::stop_bit_list[] =
 };
 
 
-hvConnSettings::hvConnSettings(QWidget *parent, modbus_conn_parameters_struct_t* param_ptr,
-                               dev_info_struct_t *dev_info_ptr,
+hvConnSettings::hvConnSettings(QWidget *parent, dev_and_conn_info_vec_t * dev_and_conn_vec,
                                UiConfigRecorder * cfg_recorder) :
     QDialog(parent),
     ui(new Ui::hvConnSettings),
-    modbus_conn_params(param_ptr),
-    dev_info_block(dev_info_ptr),
     m_cfg_recorder(cfg_recorder)
 {
     ui->setupUi(this);
@@ -152,108 +157,125 @@ void hvConnSettings::on_modBusConnTypeComboBox_currentIndexChanged(int /*index*/
     select_conn_type_param_block();
 }
 
-QString hvConnSettings::collect_conn_params()
+QString hvConnSettings::get_conn_id_str(const modbus_conn_parameters_struct_t &conn_params)
 {
-    QString ret_str;
-    hv_conn_type_enum_t conn_type
-            = (hv_conn_type_enum_t)(ui->modBusConnTypeComboBox->currentData().toInt());
-
-    if(!modbus_conn_params)
+    if(CONN_TYPE_SERIAL == conn_params.type)
     {
-        DIY_LOG(LOG_ERROR, "conn params ptr is NULL.");
-        return ret_str;
-    }
-
-    modbus_conn_params->valid = false;
-    modbus_conn_params->info_str.clear();
-    bool tr_ok;
-    modbus_conn_params->resp_wait_time_ms = ui->modBusRespTimeoutEdit->text().toInt(&tr_ok);
-    if(!tr_ok || modbus_conn_params->resp_wait_time_ms <= 0)
-    {
-        ret_str += ui->modBusRespTimeoutLbl->text() + gs_str_should_be_p_int;
-        return ret_str;
-    }
-    modbus_conn_params->srvr_address = ui->modBusSrvrAddrEdit->text().toUInt(&tr_ok);
-    if(!tr_ok)
-    {
-        ret_str += ui->modBusSrvrAddrLbl->text() + gs_str_should_be_p_int;
-        return ret_str;
-    }
-
-    modbus_conn_params->type = conn_type;
-    if(CONN_TYPE_SERIAL == conn_type)
-    {
-        modbus_conn_params->serial_params.com_port_s = ui->COMNumComBox->currentText();
-        if(modbus_conn_params->serial_params.com_port_s.isEmpty())
-        {
-            ret_str += gs_str_no_available_com;
-            return ret_str;
-        }
-        modbus_conn_params->serial_params.boudrate
-                = ui->COMBaudrateComBox->currentData().toInt();
-        modbus_conn_params->serial_params.data_bits
-                = ui->COMDataBitsComBox->currentData().toInt();
-        modbus_conn_params->serial_params.check_parity
-                = ui->COMCheckBitComBox->currentData().toInt();
-        modbus_conn_params->serial_params.stop_bit
-                = ui->COMStopBitComBox->currentData().toInt();
-
-        modbus_conn_params->valid = true;
+        return conn_params.serial_params.com_port_s;
     }
     else
     {
-        modbus_conn_params->tcpip_params.port_no = ui->srvrPortEdit->text().toUInt(&tr_ok);
-        if(!tr_ok || modbus_conn_params->tcpip_params.port_no < 0 ||
-                     modbus_conn_params->tcpip_params.port_no > 65535)
+        return QString("%1:%2").arg(conn_params.tcpip_params.ip_addr)
+                               .arg(conn_params.tcpip_params.port_no);
+    }
+}
+
+QString hvConnSettings::get_dev_id_str(const dev_and_conn_info_s_t &dev)
+{
+    QString id_str = get_conn_id_str(dev.mb_conn_parameters);
+
+    id_str += QString("-") + dev.dev_infos.oil_box_number_str
+            + "-" + dev.dev_infos.hv_ctrl_board_number_str
+            + "-" + dev.dev_infos.sw_ver_str + "-" + dev.dev_infos.hw_ver_str
+            + "-" + dev.dev_infos.pdt_code + "-" + dev.dev_infos.pdt_name
+            + "-" + dev.dev_infos.pdt_model;
+    return id_str;
+}
+
+bool hvConnSettings::curr_conn_id_in_vec(const modbus_conn_parameters_struct_t conn_params,
+                                         const dev_and_conn_info_vec_t &vect)
+{
+    const QString &curr_conn_id = get_conn_id_str(conn_params);
+    for(const dev_and_conn_info_s_t &info : vect)
+    {
+        const QString &conn_id = get_conn_id_str(info.mb_conn_parameters);
+        if(conn_id == curr_conn_id) return true;
+    }
+    return false;
+}
+
+conn_collect_ret_e_t hvConnSettings::collect_conn_params(QString &ret_str)
+{
+    conn_collect_ret_e_t ret = CONN_COLLET_ERR;
+
+    hv_conn_type_enum_t conn_type
+            = (hv_conn_type_enum_t)(ui->modBusConnTypeComboBox->currentData().toInt());
+
+    curr_modbus_conn_params.valid = false;
+    bool tr_ok;
+    curr_modbus_conn_params.resp_wait_time_ms = ui->modBusRespTimeoutEdit->text().toInt(&tr_ok);
+    if(!tr_ok || curr_modbus_conn_params.resp_wait_time_ms <= 0)
+    {
+        ret_str += ui->modBusRespTimeoutLbl->text() + gs_str_should_be_p_int;
+        return ret;
+    }
+    curr_modbus_conn_params.srvr_address = ui->modBusSrvrAddrEdit->text().toUInt(&tr_ok);
+    if(!tr_ok)
+    {
+        ret_str += ui->modBusSrvrAddrLbl->text() + gs_str_should_be_p_int;
+        return ret;
+    }
+
+    curr_modbus_conn_params.type = conn_type;
+    if(CONN_TYPE_SERIAL == conn_type)
+    {
+        curr_modbus_conn_params.serial_params.com_port_s = ui->COMNumComBox->currentText();
+        if(curr_modbus_conn_params.serial_params.com_port_s.isEmpty())
+        {
+            ret_str += gs_str_no_available_com;
+            return ret;
+        }
+        curr_modbus_conn_params.serial_params.boudrate
+                = ui->COMBaudrateComBox->currentData().toInt();
+        curr_modbus_conn_params.serial_params.data_bits
+                = ui->COMDataBitsComBox->currentData().toInt();
+        curr_modbus_conn_params.serial_params.check_parity
+                = ui->COMCheckBitComBox->currentData().toInt();
+        curr_modbus_conn_params.serial_params.stop_bit
+                = ui->COMStopBitComBox->currentData().toInt();
+
+        curr_modbus_conn_params.valid = true;
+    }
+    else
+    {
+        curr_modbus_conn_params.tcpip_params.port_no = ui->srvrPortEdit->text().toUInt(&tr_ok);
+        if(!tr_ok || curr_modbus_conn_params.tcpip_params.port_no < 0 ||
+                     curr_modbus_conn_params.tcpip_params.port_no > 65535)
         {
             ret_str += ui->srvrPortLbl->text() + gs_str_data_item_invalid;
-            return ret_str;
+            return ret;
         }
 
-        modbus_conn_params->tcpip_params.expire_time_ms
+        curr_modbus_conn_params.tcpip_params.expire_time_ms
                 = ui->connSrvrTimeoutEdit->text().toInt(&tr_ok);
         if(!tr_ok)
         {
             ret_str += ui->connSrvrTimeoutLbl->text() + gs_str_should_be_p_int;
-            return ret_str;
+            return ret;
         }
 
-        modbus_conn_params->tcpip_params.ip_addr = ui->srvrIPEdit->text();
+        curr_modbus_conn_params.tcpip_params.ip_addr = ui->srvrIPEdit->text();
 
-        modbus_conn_params->valid = true;
+        curr_modbus_conn_params.valid = true;
     }
 
-    if(modbus_conn_params->valid)
-    {
-        format_hv_conn_info_str();
-    }
+    curr_dev_info_block.oil_box_number_str = ui->oilBoxNoEdit->text();
+    curr_dev_info_block.hv_ctrl_board_number_str = ui->hvCtrlBoardNoEdit->text();
+    curr_dev_info_block.sw_ver_str = ui->swVerStrEdit->text();
+    curr_dev_info_block.hw_ver_str = ui->hwVerStrEdit->text();
+    curr_dev_info_block.pdt_code = ui->pdtCodeCBox->currentText();
+    curr_dev_info_block.pdt_name = ui->pdtNameCBox->currentText();
+    curr_dev_info_block.pdt_model = ui->pdtMdlCBox->currentText();
 
-    if(dev_info_block)
-    {
-        dev_info_block->oil_box_number_str = ui->oilBoxNoEdit->text();
-        dev_info_block->hv_ctrl_board_number_str = ui->hvCtrlBoardNoEdit->text();
-        dev_info_block->sw_ver_str = ui->swVerStrEdit->text();
-        dev_info_block->hw_ver_str = ui->hwVerStrEdit->text();
-        dev_info_block->pdt_code = ui->pdtCodeCBox->currentText();
-        dev_info_block->pdt_name = ui->pdtNameCBox->currentText();
-        dev_info_block->pdt_model = ui->pdtMdlCBox->currentText();
-    }
+    ret = CONN_COLLET_OK;
 
-    return ret_str;
+    return ret;
 }
 
-void hvConnSettings::format_hv_conn_info_str()
+void hvConnSettings::format_hv_conn_info_str(QString &info_str)
 {
-    if(!modbus_conn_params)
-    {
-        DIY_LOG(LOG_ERROR, "conn params ptr is NULL.");
-        return;
-    }
-
     hv_conn_type_enum_t conn_type
             = (hv_conn_type_enum_t)(ui->modBusConnTypeComboBox->currentData().toInt());
-
-    QString &info_str = modbus_conn_params->info_str;
 
     info_str.clear();
 
@@ -275,7 +297,7 @@ void hvConnSettings::format_hv_conn_info_str()
     }
     info_str += ui->modBusRespTimeoutLbl->text() + ":" + ui->modBusRespTimeoutEdit->text() + "\n";
 
-    info_str += "\n";
+    info_str += QString(gs_str_minus_sep_line) + "\n";
     info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
     info_str += ui->hvCtrlBoardNoLbl->text() + ":" + ui->hvCtrlBoardNoEdit->text() + "\n";
     info_str += ui->swVerStrLbl->text() + ":" + ui->swVerStrEdit->text() + "\n";
@@ -287,25 +309,27 @@ void hvConnSettings::format_hv_conn_info_str()
 
 void hvConnSettings::on_buttonBox_clicked(QAbstractButton *button)
 {
-    if(!modbus_conn_params)
+    if(!dev_and_conn_info_vec)
     {
-        DIY_LOG(LOG_ERROR, "conn params ptr is NULL.");
+        DIY_LOG(LOG_ERROR, "dev_and_conn_info_vec params ptr is NULL.");
         return;
     }
+
     if(button == ui->buttonBox->button(QDialogButtonBox::Ok))
     {
-        QString ret_str;
-        ret_str = collect_conn_params();
-        if(modbus_conn_params->valid)
+        if(dev_and_conn_info_vec->count() <= 0)
         {
-            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this,
-                                                                 m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
-            accept();
+            QString ret_str;
+            add_one_dev(&ret_str);
+            if(dev_and_conn_info_vec->count() <= 0)
+            {
+                QMessageBox::critical(this, "", ret_str);
+                return;
+            }
         }
-        else
-        {
-            QMessageBox::critical(this, "Error", ret_str);
-        }
+        if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this,
+                                                             m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+        accept();
     }
 }
 
@@ -426,4 +450,131 @@ void hvConnSettings::on_pdtMdlCBox_currentIndexChanged(int index)
     if((m_pdt_cboxes[PDT_NAME].cbox->currentIndex() != index)
             && (0 <= index) && (index < m_pdt_cboxes[PDT_NAME].cbox->count()))
         m_pdt_cboxes[PDT_NAME].cbox->setCurrentIndex(index);
+}
+
+QString hvConnSettings::get_all_dev_info_strs()
+{
+    if(!dev_and_conn_info_vec) return "";
+
+    QString strs;
+    for(const dev_and_conn_info_s_t &info : *dev_and_conn_info_vec)
+    {
+        strs += info.info_str + gs_str_equ_sep_line + "\n";
+    }
+    return strs;
+}
+
+void hvConnSettings::update_dev_conn_info_disp()
+{
+    QString strs = get_all_dev_info_strs();
+
+    ui->devAndConnInfoTEdit->setText(strs);
+    ui->hvDevHintLbl->clear();
+}
+
+bool hvConnSettings::add_one_dev(QString *ret_str_ptr)
+{
+    QString ret_str;
+
+    if(!dev_and_conn_info_vec)
+    {
+        ret_str = "dev_and_conn_info_vec params ptr is NULL.";
+        DIY_LOG(LOG_ERROR, ret_str);
+        if(ret_str_ptr) *ret_str_ptr = ret_str;
+        return false;
+    }
+
+    conn_collect_ret_e_t ret;
+
+    ret = collect_conn_params(ret_str);
+    if(CONN_COLLET_OK != ret)
+    {
+        QMessageBox::critical(this, "Error", ret_str);
+        if(ret_str_ptr) *ret_str_ptr = ret_str;
+        return false;
+    }
+
+    if(curr_conn_id_in_vec(curr_modbus_conn_params, *dev_and_conn_info_vec))
+    {
+        ui->hvDevHintLbl->setText(g_str_dev_already_added);
+        if(!ret_str.isEmpty()) ret_str += "\n";
+        ret_str += g_str_dev_already_added;
+        if(ret_str_ptr) *ret_str_ptr = ret_str;
+        return false;
+    }
+
+    QString info_str;
+    format_hv_conn_info_str(info_str);
+    dev_and_conn_info_vec->append({curr_modbus_conn_params, curr_dev_info_block,
+                                   info_str});
+
+    QString conn_id_str = get_conn_id_str(curr_modbus_conn_params);
+    ui->devListWidget->addItem(conn_id_str);
+    ui->devListWidget->setCurrentRow(ui->devListWidget->count() - 1);
+
+    update_dev_conn_info_disp();
+
+    if(ret_str_ptr) *ret_str_ptr = ret_str;
+}
+
+void hvConnSettings::on_addDevPBtn_clicked()
+{
+    add_one_dev();
+}
+
+void hvConnSettings::on_delDevPBtn_clicked()
+{
+    if(!dev_and_conn_info_vec) return;
+
+    if(ui->devListWidget->count() <= 0) return;
+
+    if(ui->devListWidget->count() == 1)
+    {
+        QMessageBox::warning(this, "", gs_str_at_least_1_dev_should_be_selected);
+        return;
+    }
+
+    if(ui->devListWidget->currentRow() < 0)
+    {
+        QMessageBox::information(this, "", gs_str_plz_sel_dev);
+        return;
+    }
+    int curr_row = ui->devListWidget->currentRow();
+    ui->devListWidget->removeItemWidget(ui->devListWidget->currentItem());
+    dev_and_conn_info_vec->removeAt(curr_row);
+
+    if(curr_row > 0) curr_row -= 1;
+    ui->devListWidget->setCurrentRow(curr_row);
+
+    curr_modbus_conn_params = dev_and_conn_info_vec->at(curr_row).mb_conn_parameters;
+    curr_dev_info_block = dev_and_conn_info_vec->at(curr_row).dev_infos;
+
+    load_params_to_ui(dev_and_conn_info_vec->at(curr_row));
+    update_dev_conn_info_disp();
+}
+
+bool hvConnSettings::load_params_to_ui(const dev_and_conn_info_s_t &dev)
+{
+    if(!dev.mb_conn_parameters.valid)
+    {
+        DIY_LOG(LOG_ERROR, "load params contain invalid item.");
+        return false;
+    }
+
+    for(int idx = 0; idx < ARRAY_COUNT(hvConnSettings::hv_conn_type_list); ++idx)
+    {
+        if(dev.mb_conn_parameters.type
+                == (hv_conn_type_enum_t)hvConnSettings::hv_conn_type_list[idx].val)
+        {
+            ui->modBusConnTypeComboBox->setCurrentIndex(idx);
+            break;
+        }
+    }
+}
+
+void hvConnSettings::on_devListWidget_currentRowChanged(int currentRow)
+{
+    if(!dev_and_conn_info_vec) return;
+
+    load_params_to_ui(dev_and_conn_info_vec->at(currentRow));
 }
