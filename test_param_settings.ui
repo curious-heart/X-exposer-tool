@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>636</width>
-    <height>567</height>
+    <height>509</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -31,7 +31,7 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_8">
+  <layout class="QVBoxLayout" name="verticalLayout_6">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
@@ -580,223 +580,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_14" stretch="5,3,1,1">
-     <property name="sizeConstraint">
-      <enum>QLayout::SetDefaultConstraint</enum>
-     </property>
-     <item>
-      <widget class="QGroupBox" name="groupBox_2">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="title">
-        <string>设备参数</string>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <property name="sizeConstraint">
-         <enum>QLayout::SetMinimumSize</enum>
-        </property>
-        <property name="leftMargin">
-         <number>2</number>
-        </property>
-        <property name="topMargin">
-         <number>2</number>
-        </property>
-        <property name="rightMargin">
-         <number>2</number>
-        </property>
-        <property name="bottomMargin">
-         <number>2</number>
-        </property>
-        <property name="spacing">
-         <number>2</number>
-        </property>
-        <item row="0" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_2">
-          <item>
-           <widget class="QLabel" name="oilBoxNoLbl">
-            <property name="text">
-             <string>油盒编号</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="oilBoxNoEdit">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>23</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="0" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLabel" name="swVerStrLbl">
-            <property name="text">
-             <string>软件版本</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="swVerStrEdit">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>23</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_4">
-          <item>
-           <widget class="QLabel" name="hvCtrlBoardNoLbl">
-            <property name="text">
-             <string>电源驱动板编号</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="hvCtrlBoardNoEdit">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>23</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_5">
-          <item>
-           <widget class="QLabel" name="hwVerStrLbl">
-            <property name="text">
-             <string>硬件版本</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="hwVerStrEdit">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>23</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="devCodInfoGrpBox">
-       <property name="title">
-        <string>设备编码信息</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_9">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_24">
-          <item>
-           <widget class="QLabel" name="pdtCodeLbl">
-            <property name="text">
-             <string>产品编码</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="pdtCodeCBox"/>
-          </item>
-          <item>
-           <widget class="QLabel" name="pdtNameLbl">
-            <property name="text">
-             <string>产品名称</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="pdtNameCBox"/>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_27">
-          <item>
-           <widget class="QLabel" name="pdtMdlLbl">
-            <property name="text">
-             <string>型号规格</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="pdtMdlCBox"/>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_3">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-     </item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
@@ -811,35 +595,11 @@
       </spacer>
      </item>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_6">
-       <property name="spacing">
-        <number>0</number>
+      <widget class="QCheckBox" name="readDistChBox">
+       <property name="text">
+        <string>读取测距数据</string>
        </property>
-       <item>
-        <widget class="QCheckBox" name="readDistChBox">
-         <property name="text">
-          <string>读取测
-距数据</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeType">
-          <enum>QSizePolicy::Maximum</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-      </layout>
+      </widget>
      </item>
     </layout>
    </item>

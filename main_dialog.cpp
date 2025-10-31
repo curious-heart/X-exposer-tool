@@ -255,7 +255,7 @@ Dialog::Dialog(QWidget *parent)
                                                             &m_cfg_recorder,
                                                             &m_test_judge);
     m_hvConnSettingsDialog = new hvConnSettings(this, &m_hv_conn_params,
-                                                &m_cfg_recorder);
+                                                &m_dev_info_block, &m_cfg_recorder);
 
     m_testParamSettingsDialog->setWindowTitle(ui->testParamSetBtn->text());
     m_hvConnSettingsDialog->setWindowTitle(ui->hvConnSetBtn->text());
@@ -805,9 +805,9 @@ void Dialog::on_startTestBtn_clicked()
     QString curr_dt_str = common_tool_get_curr_dt_str();
     m_curr_rec_folder_name = curr_dt_str  + "-" + gs_str_test_rec_name_sufx;
     m_curr_rec_file_name = m_curr_rec_folder_name
-            + "-" + m_test_params.other_param_block.pdt_code
-            + "-" + m_test_params.other_param_block.pdt_name
-            + "-" + m_test_params.other_param_block.pdt_model;
+            + "-" + m_dev_info_block.pdt_code
+            + "-" + m_dev_info_block.pdt_name
+            + "-" + m_dev_info_block.pdt_model;
     trans_to_valid_fpn_str(m_curr_rec_file_name);
     m_curr_rec_file_name += gs_str_test_rec_file_type;
     QString curr_path = QString("./") + m_curr_rec_folder_name;

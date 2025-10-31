@@ -45,6 +45,13 @@ typedef struct
     QString info_str;
 }modbus_conn_parameters_struct_t;
 
+typedef struct
+{
+    QString oil_box_number_str, hv_ctrl_board_number_str;
+    QString sw_ver_str, hw_ver_str;
+    QString pdt_code, pdt_name, pdt_model;
+}dev_info_struct_t;
+
 class hvConnSettings : public QDialog
 {
     Q_OBJECT
@@ -52,6 +59,7 @@ class hvConnSettings : public QDialog
 public:
     explicit hvConnSettings(QWidget *parent = nullptr,
                             modbus_conn_parameters_struct_t* param_ptr = nullptr,
+                            dev_info_struct_t *dev_info_ptr = nullptr,
                             UiConfigRecorder * cfg_recorder = nullptr);
     ~hvConnSettings();
 
@@ -59,6 +67,10 @@ private slots:
     void on_modBusConnTypeComboBox_currentIndexChanged(int index);
 
     void on_buttonBox_clicked(QAbstractButton *button);
+
+    void on_pdtCodeCBox_currentIndexChanged(int index);
+    void on_pdtNameCBox_currentIndexChanged(int index);
+    void on_pdtMdlCBox_currentIndexChanged(int index);
 
 private:
     Ui::hvConnSettings *ui;
@@ -74,12 +86,29 @@ private:
                                         stop_bit_list[];
 
     modbus_conn_parameters_struct_t * modbus_conn_params;
+    dev_info_struct_t * dev_info_block;
 
     void select_conn_type_param_block();
     void format_hv_conn_info_str();
 
     UiConfigRecorder * m_cfg_recorder = nullptr;
     qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
+
+    typedef enum
+    {
+        PDT_CODE = 0,
+        PDT_NAME,
+        PDT_MODEL,
+    }pdt_info_idx_e_t;
+
+    typedef struct
+    {
+        QComboBox* cbox;
+        int col;
+    }cbox_col_pair_s_t;
+    QList<cbox_col_pair_s_t> m_pdt_cboxes;
+    void setup_pdt_cboxes();
+    bool load_pdt_info();
 
 public:
     QString collect_conn_params();

@@ -48,6 +48,7 @@ private:
 
     test_params_struct_t m_test_params;
     modbus_conn_parameters_struct_t m_hv_conn_params;
+    dev_info_struct_t m_dev_info_block;
     QModbusDevice::State m_modbus_state = QModbusDevice::UnconnectedState;
     bool m_dso_connected = false;
     bool m_testing = false, m_test_paused = false, m_self_reconnecting = false, m_during_exposuring = false;

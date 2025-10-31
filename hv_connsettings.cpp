@@ -1,15 +1,21 @@
 ﻿#include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QMessageBox>
+#include <QAxObject>
+#include <QDir>
 
 #include "common_tools/common_tool_func.h"
 #include "logger/logger.h"
+#include "sysconfigs/sysconfigs.h"
 #include "hv_connsettings.h"
 #include "ui_hv_connsettings.h"
 
 static const char* gs_str_no_available_com = "无可用串口";
 static const char* gs_str_should_be_p_int = "应为正整数";
 extern const char* gs_str_data_item_invalid;
+
+static const char* gs_str_tube_no = "射线管编号";
+static const char* gs_str_oilbox_no = "油盒编号";
 
 const hvConnSettings::combobox_item_struct_t hvConnSettings::hv_conn_type_list[] =
 {
@@ -51,10 +57,12 @@ const hvConnSettings::combobox_item_struct_t hvConnSettings::stop_bit_list[] =
 
 
 hvConnSettings::hvConnSettings(QWidget *parent, modbus_conn_parameters_struct_t* param_ptr,
+                               dev_info_struct_t *dev_info_ptr,
                                UiConfigRecorder * cfg_recorder) :
     QDialog(parent),
     ui(new Ui::hvConnSettings),
     modbus_conn_params(param_ptr),
+    dev_info_block(dev_info_ptr),
     m_cfg_recorder(cfg_recorder)
 {
     ui->setupUi(this);
@@ -91,6 +99,23 @@ hvConnSettings::hvConnSettings(QWidget *parent, modbus_conn_parameters_struct_t*
         ui->COMNumComBox->addItem(info.portName());
     }
     ui->COMNumComBox->setCurrentIndex(0);
+
+    /*------------------------------------------*/
+    ui->swVerStrLbl->setVisible(g_sys_configs_block.sw_ver_disp);
+    ui->swVerStrEdit->setVisible(g_sys_configs_block.sw_ver_disp);
+
+    ui->hwVerStrLbl->setVisible(g_sys_configs_block.hw_ver_disp);
+    ui->hwVerStrEdit->setVisible(g_sys_configs_block.hw_ver_disp);
+
+    ui->hvCtrlBoardNoLbl->setVisible(g_sys_configs_block.hv_ctrl_board_no_disp);
+    ui->hvCtrlBoardNoEdit->setVisible(g_sys_configs_block.hv_ctrl_board_no_disp);
+
+    ui->oilBoxNoLbl->setText(UI_DISP_TUBE_NO == g_sys_configs_block.tube_or_oilbox_no_disp ?
+                gs_str_tube_no : gs_str_oilbox_no);
+
+    /*------------------------------------------*/
+    setup_pdt_cboxes();
+    /*------------------------------------------*/
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.clear();
@@ -203,6 +228,17 @@ QString hvConnSettings::collect_conn_params()
         format_hv_conn_info_str();
     }
 
+    if(dev_info_block)
+    {
+        dev_info_block->oil_box_number_str = ui->oilBoxNoEdit->text();
+        dev_info_block->hv_ctrl_board_number_str = ui->hvCtrlBoardNoEdit->text();
+        dev_info_block->sw_ver_str = ui->swVerStrEdit->text();
+        dev_info_block->hw_ver_str = ui->hwVerStrEdit->text();
+        dev_info_block->pdt_code = ui->pdtCodeCBox->currentText();
+        dev_info_block->pdt_name = ui->pdtNameCBox->currentText();
+        dev_info_block->pdt_model = ui->pdtMdlCBox->currentText();
+    }
+
     return ret_str;
 }
 
@@ -238,6 +274,15 @@ void hvConnSettings::format_hv_conn_info_str()
         info_str += ui->connSrvrTimeoutLbl->text() + ":" + ui->connSrvrTimeoutEdit->text() + "\n";
     }
     info_str += ui->modBusRespTimeoutLbl->text() + ":" + ui->modBusRespTimeoutEdit->text() + "\n";
+
+    info_str += "\n";
+    info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
+    info_str += ui->hvCtrlBoardNoLbl->text() + ":" + ui->hvCtrlBoardNoEdit->text() + "\n";
+    info_str += ui->swVerStrLbl->text() + ":" + ui->swVerStrEdit->text() + "\n";
+    info_str += ui->hwVerStrLbl->text() + ":" + ui->hwVerStrEdit->text() + "\n";
+    info_str += ui->pdtCodeLbl->text() + ":" + ui->pdtCodeCBox->currentText() + "\n";
+    info_str += ui->pdtNameLbl->text() + ":" + ui->pdtNameCBox->currentText() + "\n";
+    info_str += ui->pdtMdlLbl->text() + ":" + ui->pdtMdlCBox->currentText() + "\n";
 }
 
 void hvConnSettings::on_buttonBox_clicked(QAbstractButton *button)
@@ -264,3 +309,121 @@ void hvConnSettings::on_buttonBox_clicked(QAbstractButton *button)
     }
 }
 
+#define EXCEL_OP_CHECK(obj, obj_name, fn, next_op) \
+if(!(obj) || (obj)->isNull())\
+{\
+    DIY_LOG(LOG_WARN, QString("read %1 fail. obj_name: %2").arg(fn, (obj_name)));\
+    next_op;\
+}
+bool hvConnSettings::load_pdt_info()
+{
+    QString fn = g_sys_configs_block.dev_code_infos.pdt_file_name;
+    QString f_path = QDir::current().absoluteFilePath(fn);
+    QVariantList params;
+    params << f_path              // Filename
+       << QVariant(0)       // UpdateLinks
+       << QVariant(true);   // ReadOnly = true
+
+    QAxObject excel("Excel.Application");
+    excel.setProperty("Visible", false);
+    QAxObject *workbooks = excel.querySubObject("Workbooks");
+    EXCEL_OP_CHECK(workbooks, "workbooks", fn, {return false;});
+
+    QAxObject *workbook = workbooks->querySubObject(
+                                    "Open(const QString&, QVariant, QVariant)",
+                                    params.at(0), params.at(1), params.at(2)
+                                );
+    EXCEL_OP_CHECK(workbook, "workbook", fn, {return false;});
+
+    bool ret = true;
+    do
+    {
+        QAxObject *worksheet = workbook->querySubObject("Worksheets(int)", 1);
+        EXCEL_OP_CHECK(worksheet, "worksheet", fn, {ret = false; break;});
+
+        QAxObject *usedRange = worksheet->querySubObject("UsedRange");
+        EXCEL_OP_CHECK(usedRange, "usedRange", fn, {ret = false; break;});
+
+        QAxObject *rows = usedRange->querySubObject("Rows");
+        EXCEL_OP_CHECK(rows, "rows", fn, {ret = false; break;});
+
+        int rowCount = rows->property("Count").toInt();
+
+        int data_start_row = g_sys_configs_block.dev_code_infos.pdt_title_start_row + 1;
+        for (int i = data_start_row; i < data_start_row + rowCount - 1; i++)
+        {
+            for(int c = 1; c <= m_pdt_cboxes.count(); c++)
+            {
+                int col = m_pdt_cboxes[c-1].col;
+                QAxObject *cell = worksheet->querySubObject("Cells(int,int)", i, col);
+                EXCEL_OP_CHECK(cell, QString("cells: %1,%2").arg(i).arg(col),
+                               fn, {ret = false; break;});
+
+                QString value = cell->property("Value").toString();
+
+                m_pdt_cboxes[c-1].cbox->addItem(value);
+            }
+            if(!ret) break;
+        }
+        break;
+    }while(true);
+
+    workbook->dynamicCall("Close()");
+    excel.dynamicCall("Quit()");
+    return ret;
+}
+
+void hvConnSettings::setup_pdt_cboxes()
+{
+    m_pdt_cboxes.append({ui->pdtCodeCBox, g_sys_configs_block.dev_code_infos.pdt_code_col});
+    m_pdt_cboxes.append({ui->pdtNameCBox, g_sys_configs_block.dev_code_infos.pdt_name_col});
+    m_pdt_cboxes.append({ui->pdtMdlCBox, g_sys_configs_block.dev_code_infos.pdt_model_col});
+    if(!load_pdt_info())
+    {
+        QString fn = g_sys_configs_block.dev_code_infos.pdt_file_name;
+        QMessageBox::warning(this, "", QString("读取 %1 失败。需要手动输入产品编码信息").arg(fn));
+
+        QString cbox_editor_name_str = "_editor";
+        ui->pdtCodeCBox->setEditable(true);
+        ui->pdtCodeCBox->lineEdit()->setObjectName(ui->pdtCodeCBox->objectName() + cbox_editor_name_str);
+        ui->pdtNameCBox->setEditable(true);
+        ui->pdtNameCBox->lineEdit()->setObjectName(ui->pdtNameCBox->objectName() + cbox_editor_name_str);
+        ui->pdtMdlCBox->setEditable(true);
+        ui->pdtMdlCBox->lineEdit()->setObjectName(ui->pdtMdlCBox->objectName() + cbox_editor_name_str);
+    }
+}
+
+void hvConnSettings::on_pdtCodeCBox_currentIndexChanged(int index)
+{
+    if((m_pdt_cboxes[PDT_NAME].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_NAME].cbox->count()))
+        m_pdt_cboxes[PDT_NAME].cbox->setCurrentIndex(index);
+
+    if((m_pdt_cboxes[PDT_MODEL].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_MODEL].cbox->count()))
+        m_pdt_cboxes[PDT_MODEL].cbox->setCurrentIndex(index);
+}
+
+
+void hvConnSettings::on_pdtNameCBox_currentIndexChanged(int index)
+{
+    if((m_pdt_cboxes[PDT_CODE].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_CODE].cbox->count()))
+        m_pdt_cboxes[PDT_CODE].cbox->setCurrentIndex(index);
+
+    if((m_pdt_cboxes[PDT_MODEL].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_MODEL].cbox->count()))
+        m_pdt_cboxes[PDT_MODEL].cbox->setCurrentIndex(index);
+}
+
+
+void hvConnSettings::on_pdtMdlCBox_currentIndexChanged(int index)
+{
+    if((m_pdt_cboxes[PDT_CODE].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_CODE].cbox->count()))
+        m_pdt_cboxes[PDT_CODE].cbox->setCurrentIndex(index);
+
+    if((m_pdt_cboxes[PDT_NAME].cbox->currentIndex() != index)
+            && (0 <= index) && (index < m_pdt_cboxes[PDT_NAME].cbox->count()))
+        m_pdt_cboxes[PDT_NAME].cbox->setCurrentIndex(index);
+}

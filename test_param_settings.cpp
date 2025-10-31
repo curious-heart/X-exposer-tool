@@ -108,9 +108,6 @@ static const char* gs_str_cust2_notes =
 static const char* gs_str_cust2_err_msg_format = "第一项为表头，第二项开始为数据";
 static const char* gs_str_plz_check_first = "请先勾选";
 
-static const char* gs_str_tube_no = "射线管编号";
-static const char* gs_str_oilbox_no = "油盒编号";
-
 static int gs_CURRENT_JUDGE_IDX = 1;
 
 const testParamSettingsDialog::test_mode_espair_struct_t
@@ -228,18 +225,6 @@ void testParamSettingsDialog::arrange_ui_according_to_syscfgs(QRadioButton * &hi
     ui->distmmIsFixedRefChkbox->setVisible(g_sys_configs_block.distance_group_disp);
     ui->distmmFixedRefValLEdit->setVisible(g_sys_configs_block.distance_group_disp);
 
-    ui->swVerStrLbl->setVisible(g_sys_configs_block.sw_ver_disp);
-    ui->swVerStrEdit->setVisible(g_sys_configs_block.sw_ver_disp);
-
-    ui->hwVerStrLbl->setVisible(g_sys_configs_block.hw_ver_disp);
-    ui->hwVerStrEdit->setVisible(g_sys_configs_block.hw_ver_disp);
-
-    ui->hvCtrlBoardNoLbl->setVisible(g_sys_configs_block.hv_ctrl_board_no_disp);
-    ui->hvCtrlBoardNoEdit->setVisible(g_sys_configs_block.hv_ctrl_board_no_disp);
-
-    ui->oilBoxNoLbl->setText(UI_DISP_TUBE_NO == g_sys_configs_block.tube_or_oilbox_no_disp ?
-                gs_str_tube_no : gs_str_oilbox_no);
-
     ui->testContentNormalRButton->setVisible(!g_sys_configs_block.test_content_only_normal);
     ui->testContentCoolHVRButton->setVisible(!g_sys_configs_block.test_content_only_normal);
     ui->testContentOnlyCoilRButton->setVisible(!g_sys_configs_block.test_content_only_normal);
@@ -342,10 +327,6 @@ testParamSettingsDialog::testParamSettingsDialog(QWidget *parent,
     {
         mb_intf_dura_rb->setChecked(true);
     }
-
-    /*------------------------------------------*/
-    setup_pdt_cboxes();
-    /*------------------------------------------*/
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.insert(ui->custExpoParamFileNoteEdit);
@@ -1577,11 +1558,6 @@ QString testParamSettingsDialog::collect_test_params()
 
     m_test_params->test_content = get_test_content(nullptr);
 
-    m_test_params->other_param_block.oil_box_number_str = ui->oilBoxNoEdit->text();
-    m_test_params->other_param_block.hv_ctrl_board_number_str = ui->hvCtrlBoardNoEdit->text();
-    m_test_params->other_param_block.sw_ver_str = ui->swVerStrEdit->text();
-    m_test_params->other_param_block.hw_ver_str = ui->hwVerStrEdit->text();
-
     m_test_params->other_param_block.read_dist = m_expo_params_from_ui.read_dist;
 
     format_test_params_info_str(file_content);
@@ -1602,10 +1578,6 @@ QString testParamSettingsDialog::collect_test_params()
 
     m_test_params->test_mode
             = (test_mode_enum_t)(ui->testModeComboBox->currentData().toInt());
-
-    m_test_params->other_param_block.pdt_code = ui->pdtCodeCBox->currentText();
-    m_test_params->other_param_block.pdt_name = ui->pdtNameCBox->currentText();
-    m_test_params->other_param_block.pdt_model = ui->pdtMdlCBox->currentText();
 
     return ret_str;
 }
@@ -1908,17 +1880,6 @@ void testParamSettingsDialog::format_test_params_info_str(QString &file_content)
     QString tmp_txt = ui->readDistChBox->text();
     tmp_txt.remove("\n");
     info_str += tmp_txt + "\n";
-    info_str += QString(gs_info_str_seperator) + "\n";
-
-    info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
-    info_str += ui->hvCtrlBoardNoLbl->text() + ":" + ui->hvCtrlBoardNoEdit->text() + "\n";
-    info_str += ui->swVerStrLbl->text() + ":" + ui->swVerStrEdit->text() + "\n";
-    info_str += ui->hwVerStrLbl->text() + ":" + ui->hwVerStrEdit->text() + "\n";
-    info_str += QString(gs_info_str_seperator) + "\n";
-
-    info_str += ui->pdtCodeLbl->text() + ":" + ui->pdtCodeCBox->currentText() + "\n";
-    info_str += ui->pdtNameLbl->text() + ":" + ui->pdtNameCBox->currentText() + "\n";
-    info_str += ui->pdtMdlLbl->text() + ":" + ui->pdtMdlCBox->currentText() + "\n";
     info_str += QString(gs_info_str_seperator) + "\n";
 
     info_str += QCoreApplication::applicationName() + ":" + APP_VER_STR;
@@ -2431,124 +2392,4 @@ void testParamSettingsDialog::get_current_info_for_chart(QString &name_str, QStr
             * gs_valid_cube_current_ma_range.range_min();
     up = m_test_params->expo_param_block.sw_to_mb_current_factor
             * gs_valid_cube_current_ma_range.range_max();
-}
-
-#define EXCEL_OP_CHECK(obj, obj_name, fn, next_op) \
-if(!(obj) || (obj)->isNull())\
-{\
-    DIY_LOG(LOG_WARN, QString("read %1 fail. obj_name: %2").arg(fn, (obj_name)));\
-    next_op;\
-}
-
-bool testParamSettingsDialog::load_pdt_info()
-{
-    QString fn = g_sys_configs_block.dev_code_infos.pdt_file_name;
-    QString f_path = QDir::current().absoluteFilePath(fn);
-    QVariantList params;
-    params << f_path              // Filename
-       << QVariant(0)       // UpdateLinks
-       << QVariant(true);   // ReadOnly = true
-
-    QAxObject excel("Excel.Application");
-    excel.setProperty("Visible", false);
-    QAxObject *workbooks = excel.querySubObject("Workbooks");
-    EXCEL_OP_CHECK(workbooks, "workbooks", fn, {return false;});
-
-    QAxObject *workbook = workbooks->querySubObject(
-                                    "Open(const QString&, QVariant, QVariant)",
-                                    params.at(0), params.at(1), params.at(2)
-                                );
-    EXCEL_OP_CHECK(workbook, "workbook", fn, {return false;});
-
-    bool ret = true;
-    do
-    {
-        QAxObject *worksheet = workbook->querySubObject("Worksheets(int)", 1);
-        EXCEL_OP_CHECK(worksheet, "worksheet", fn, {ret = false; break;});
-
-        QAxObject *usedRange = worksheet->querySubObject("UsedRange");
-        EXCEL_OP_CHECK(usedRange, "usedRange", fn, {ret = false; break;});
-
-        QAxObject *rows = usedRange->querySubObject("Rows");
-        EXCEL_OP_CHECK(rows, "rows", fn, {ret = false; break;});
-
-        int rowCount = rows->property("Count").toInt();
-
-        int data_start_row = g_sys_configs_block.dev_code_infos.pdt_title_start_row + 1;
-        for (int i = data_start_row; i < data_start_row + rowCount - 1; i++)
-        {
-            for(int c = 1; c <= m_pdt_cboxes.count(); c++)
-            {
-                int col = m_pdt_cboxes[c-1].col;
-                QAxObject *cell = worksheet->querySubObject("Cells(int,int)", i, col);
-                EXCEL_OP_CHECK(cell, QString("cells: %1,%2").arg(i).arg(col),
-                               fn, {ret = false; break;});
-
-                QString value = cell->property("Value").toString();
-
-                m_pdt_cboxes[c-1].cbox->addItem(value);
-            }
-            if(!ret) break;
-        }
-        break;
-    }while(true);
-
-    workbook->dynamicCall("Close()");
-    excel.dynamicCall("Quit()");
-    return ret;
-}
-
-void testParamSettingsDialog::setup_pdt_cboxes()
-{
-    m_pdt_cboxes.append({ui->pdtCodeCBox, g_sys_configs_block.dev_code_infos.pdt_code_col});
-    m_pdt_cboxes.append({ui->pdtNameCBox, g_sys_configs_block.dev_code_infos.pdt_name_col});
-    m_pdt_cboxes.append({ui->pdtMdlCBox, g_sys_configs_block.dev_code_infos.pdt_model_col});
-    if(!load_pdt_info())
-    {
-        QString fn = g_sys_configs_block.dev_code_infos.pdt_file_name;
-        QMessageBox::warning(this, "", QString("读取 %1 失败。需要手动输入产品编码信息").arg(fn));
-
-        QString cbox_editor_name_str = "_editor";
-        ui->pdtCodeCBox->setEditable(true);
-        ui->pdtCodeCBox->lineEdit()->setObjectName(ui->pdtCodeCBox->objectName() + cbox_editor_name_str);
-        ui->pdtNameCBox->setEditable(true);
-        ui->pdtNameCBox->lineEdit()->setObjectName(ui->pdtNameCBox->objectName() + cbox_editor_name_str);
-        ui->pdtMdlCBox->setEditable(true);
-        ui->pdtMdlCBox->lineEdit()->setObjectName(ui->pdtMdlCBox->objectName() + cbox_editor_name_str);
-    }
-}
-
-void testParamSettingsDialog::on_pdtCodeCBox_currentIndexChanged(int index)
-{
-    if((m_pdt_cboxes[PDT_NAME].cbox->currentIndex() != index)
-            && (0 <= index) && (index < m_pdt_cboxes[PDT_NAME].cbox->count()))
-        m_pdt_cboxes[PDT_NAME].cbox->setCurrentIndex(index);
-
-    if((m_pdt_cboxes[PDT_MODEL].cbox->currentIndex() != index)
-            && (0 <= index) && (index < m_pdt_cboxes[PDT_MODEL].cbox->count()))
-        m_pdt_cboxes[PDT_MODEL].cbox->setCurrentIndex(index);
-}
-
-
-void testParamSettingsDialog::on_pdtNameCBox_currentIndexChanged(int index)
-{
-    if((m_pdt_cboxes[PDT_CODE].cbox->currentIndex() != index)
-            && (0 <= index) && (index < m_pdt_cboxes[PDT_CODE].cbox->count()))
-        m_pdt_cboxes[PDT_CODE].cbox->setCurrentIndex(index);
-
-    if((m_pdt_cboxes[PDT_MODEL].cbox->currentIndex() != index)
-            && (0 <= index) && (index < m_pdt_cboxes[PDT_MODEL].cbox->count()))
-        m_pdt_cboxes[PDT_MODEL].cbox->setCurrentIndex(index);
-}
-
-
-void testParamSettingsDialog::on_pdtMdlCBox_currentIndexChanged(int index)
-{
-    if((m_pdt_cboxes[PDT_CODE].cbox->currentIndex() != index)
-            && (0 <= index) && (index < m_pdt_cboxes[PDT_CODE].cbox->count()))
-        m_pdt_cboxes[PDT_CODE].cbox->setCurrentIndex(index);
-
-    if((m_pdt_cboxes[PDT_NAME].cbox->currentIndex() != index)
-            && (0 <= index) && (index < m_pdt_cboxes[PDT_NAME].cbox->count()))
-        m_pdt_cboxes[PDT_NAME].cbox->setCurrentIndex(index);
 }
