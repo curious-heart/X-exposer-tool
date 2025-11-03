@@ -18,7 +18,8 @@ extern const char* gs_str_data_item_invalid;
 static const char* gs_str_tube_no = "射线管编号";
 static const char* gs_str_oilbox_no = "油盒编号";
 
-const char* g_str_dev_already_added = "设备信息已在列表中";
+const char* g_str_dev_already_added = "设备已在列表中";
+const char* g_str_update_dev_info = "更新设备信息";
 
 static const char* gs_str_minus_sep_line = "--------";
 static const char* gs_str_equ_sep_line = "==========";
@@ -68,6 +69,7 @@ hvConnSettings::hvConnSettings(QWidget *parent, dev_and_conn_info_vec_t * dev_an
                                UiConfigRecorder * cfg_recorder) :
     QDialog(parent),
     ui(new Ui::hvConnSettings),
+    dev_and_conn_info_vec(dev_and_conn_vec),
     m_cfg_recorder(cfg_recorder)
 {
     ui->setupUi(this);
@@ -101,7 +103,7 @@ hvConnSettings::hvConnSettings(QWidget *parent, dev_and_conn_info_vec_t * dev_an
 
     foreach (QSerialPortInfo info, QSerialPortInfo::availablePorts())
     {
-        ui->COMNumComBox->addItem(info.portName());
+        ui->COMNumComBox->addItem(info.portName(), info.portName());
     }
     ui->COMNumComBox->setCurrentIndex(0);
 
@@ -182,16 +184,21 @@ QString hvConnSettings::get_dev_id_str(const dev_and_conn_info_s_t &dev)
     return id_str;
 }
 
-bool hvConnSettings::curr_conn_id_in_vec(const modbus_conn_parameters_struct_t conn_params,
+int hvConnSettings::curr_conn_id_in_vec(const modbus_conn_parameters_struct_t conn_params,
                                          const dev_and_conn_info_vec_t &vect)
 {
+    int ret = -1;
     const QString &curr_conn_id = get_conn_id_str(conn_params);
-    for(const dev_and_conn_info_s_t &info : vect)
+    for(int idx = 0; idx < vect.count(); ++idx)
     {
-        const QString &conn_id = get_conn_id_str(info.mb_conn_parameters);
-        if(conn_id == curr_conn_id) return true;
+        const QString &conn_id = get_conn_id_str(vect[idx].mb_conn_parameters);
+        if(conn_id == curr_conn_id)
+        {
+            ret = idx;
+            break;
+        }
     }
-    return false;
+    return ret;
 }
 
 conn_collect_ret_e_t hvConnSettings::collect_conn_params(QString &ret_str)
@@ -296,6 +303,7 @@ void hvConnSettings::format_hv_conn_info_str(QString &info_str)
         info_str += ui->connSrvrTimeoutLbl->text() + ":" + ui->connSrvrTimeoutEdit->text() + "\n";
     }
     info_str += ui->modBusRespTimeoutLbl->text() + ":" + ui->modBusRespTimeoutEdit->text() + "\n";
+    info_str += ui->modBusSrvrAddrLbl->text() + ":" + ui->modBusSrvrAddrEdit->text() + "\n";
 
     info_str += QString(gs_str_minus_sep_line) + "\n";
     info_str += ui->oilBoxNoLbl->text() + ":" + ui->oilBoxNoEdit->text() + "\n";
@@ -385,7 +393,7 @@ bool hvConnSettings::load_pdt_info()
 
                 QString value = cell->property("Value").toString();
 
-                m_pdt_cboxes[c-1].cbox->addItem(value);
+                m_pdt_cboxes[c-1].cbox->addItem(value, value);
             }
             if(!ret) break;
         }
@@ -469,7 +477,6 @@ void hvConnSettings::update_dev_conn_info_disp()
     QString strs = get_all_dev_info_strs();
 
     ui->devAndConnInfoTEdit->setText(strs);
-    ui->hvDevHintLbl->clear();
 }
 
 bool hvConnSettings::add_one_dev(QString *ret_str_ptr)
@@ -494,27 +501,39 @@ bool hvConnSettings::add_one_dev(QString *ret_str_ptr)
         return false;
     }
 
-    if(curr_conn_id_in_vec(curr_modbus_conn_params, *dev_and_conn_info_vec))
-    {
-        ui->hvDevHintLbl->setText(g_str_dev_already_added);
-        if(!ret_str.isEmpty()) ret_str += "\n";
-        ret_str += g_str_dev_already_added;
-        if(ret_str_ptr) *ret_str_ptr = ret_str;
-        return false;
-    }
-
     QString info_str;
     format_hv_conn_info_str(info_str);
-    dev_and_conn_info_vec->append({curr_modbus_conn_params, curr_dev_info_block,
-                                   info_str});
 
-    QString conn_id_str = get_conn_id_str(curr_modbus_conn_params);
-    ui->devListWidget->addItem(conn_id_str);
-    ui->devListWidget->setCurrentRow(ui->devListWidget->count() - 1);
+    int dev_idx = curr_conn_id_in_vec(curr_modbus_conn_params, *dev_and_conn_info_vec);
+    if(dev_idx >= 0)
+    {
+        (*dev_and_conn_info_vec)[dev_idx].mb_conn_parameters = curr_modbus_conn_params;
+        (*dev_and_conn_info_vec)[dev_idx].dev_infos = curr_dev_info_block;
+        (*dev_and_conn_info_vec)[dev_idx].info_str = info_str;
+
+        QString conn_id_str = get_conn_id_str(curr_modbus_conn_params);
+        ui->devListWidget->item(dev_idx)->setText(conn_id_str);
+
+        QString hint_s = QString("%1\n%2").arg(g_str_dev_already_added, g_str_update_dev_info);
+        ui->hvDevHintLbl->setText(hint_s);
+    }
+    else
+    {
+        dev_and_conn_info_vec->append({curr_modbus_conn_params, curr_dev_info_block,
+                                       info_str});
+
+        QString conn_id_str = get_conn_id_str(curr_modbus_conn_params);
+        ui->devListWidget->addItem(conn_id_str);
+        ui->devListWidget->setCurrentRow(ui->devListWidget->count() - 1);
+
+        ui->hvDevHintLbl->clear();
+    }
 
     update_dev_conn_info_disp();
 
     if(ret_str_ptr) *ret_str_ptr = ret_str;
+
+    return true;
 }
 
 void hvConnSettings::on_addDevPBtn_clicked()
@@ -525,6 +544,8 @@ void hvConnSettings::on_addDevPBtn_clicked()
 void hvConnSettings::on_delDevPBtn_clicked()
 {
     if(!dev_and_conn_info_vec) return;
+
+    ui->hvDevHintLbl->clear();
 
     if(ui->devListWidget->count() <= 0) return;
 
@@ -540,7 +561,7 @@ void hvConnSettings::on_delDevPBtn_clicked()
         return;
     }
     int curr_row = ui->devListWidget->currentRow();
-    ui->devListWidget->removeItemWidget(ui->devListWidget->currentItem());
+    delete ui->devListWidget->takeItem(curr_row);
     dev_and_conn_info_vec->removeAt(curr_row);
 
     if(curr_row > 0) curr_row -= 1;
@@ -561,19 +582,72 @@ bool hvConnSettings::load_params_to_ui(const dev_and_conn_info_s_t &dev)
         return false;
     }
 
-    for(int idx = 0; idx < ARRAY_COUNT(hvConnSettings::hv_conn_type_list); ++idx)
+    //conn type
+    int combox_idx = ui->modBusConnTypeComboBox->findData(dev.mb_conn_parameters.type);
+    if(combox_idx >= 0) ui->modBusConnTypeComboBox->setCurrentIndex(combox_idx);
+
+    //conn parameters;
+    typedef struct
     {
-        if(dev.mb_conn_parameters.type
-                == (hv_conn_type_enum_t)hvConnSettings::hv_conn_type_list[idx].val)
+        QComboBox * ctrl;
+        QVariant val;
+    }combox_select_helper_s_t;
+    combox_select_helper_s_t ls_comboxes_selector[] =
+    {
+        {ui->COMNumComBox, dev.mb_conn_parameters.serial_params.com_port_s},
+        {ui->COMBaudrateComBox, dev.mb_conn_parameters.serial_params.boudrate},
+        {ui->COMDataBitsComBox, dev.mb_conn_parameters.serial_params.data_bits},
+        {ui->COMCheckBitComBox, dev.mb_conn_parameters.serial_params.check_parity},
+        {ui->COMStopBitComBox, dev.mb_conn_parameters.serial_params.stop_bit},
+    };
+    switch(dev.mb_conn_parameters.type)
+    {
+        case CONN_TYPE_SERIAL:
+        for(int idx = 0; idx < ARRAY_COUNT(ls_comboxes_selector); ++idx)
         {
-            ui->modBusConnTypeComboBox->setCurrentIndex(idx);
-            break;
+            combox_idx = ls_comboxes_selector[idx].ctrl->
+                            findData(ls_comboxes_selector[idx].val);
+            if(combox_idx >= 0) ls_comboxes_selector[idx].ctrl->setCurrentIndex(combox_idx);
         }
+        break;
+
+        default:
+            ui->srvrIPEdit->setText(dev.mb_conn_parameters.tcpip_params.ip_addr);
+            ui->srvrPortEdit->setText(QString::number(dev.mb_conn_parameters.tcpip_params.port_no));
+            ui->connSrvrTimeoutEdit->setText(
+                        QString::number(dev.mb_conn_parameters.tcpip_params.expire_time_ms));
+        break;
     }
+    ui->modBusRespTimeoutEdit->setText(QString::number(dev.mb_conn_parameters.resp_wait_time_ms));
+    ui->modBusSrvrAddrEdit->setText(QString::number(dev.mb_conn_parameters.srvr_address));
+
+    //dev infos strs
+    ui->oilBoxNoEdit->setText(dev.dev_infos.oil_box_number_str);
+    ui->hvCtrlBoardNoEdit->setText(dev.dev_infos.hv_ctrl_board_number_str);
+    ui->swVerStrEdit->setText(dev.dev_infos.sw_ver_str);
+    ui->hwVerStrEdit->setText(dev.dev_infos.hw_ver_str);
+
+    //pdt infos
+    combox_select_helper_s_t ls_pdt_selector[] =
+    {
+        {ui->pdtCodeCBox, dev.dev_infos.pdt_code},
+        {ui->pdtNameCBox, dev.dev_infos.pdt_name},
+        {ui->pdtMdlCBox, dev.dev_infos.pdt_model},
+    };
+    for(int idx = 0; idx < ARRAY_COUNT(ls_pdt_selector); ++idx)
+    {
+        combox_idx = ls_pdt_selector[idx].ctrl->findData(ls_pdt_selector[idx].val);
+        if(combox_idx >= 0) ls_pdt_selector[idx].ctrl->setCurrentIndex(combox_idx);
+        else ls_pdt_selector[idx].ctrl->setCurrentText(ls_pdt_selector[idx].val.toString());
+    }
+
+    return true;
 }
 
 void hvConnSettings::on_devListWidget_currentRowChanged(int currentRow)
 {
+    ui->hvDevHintLbl->clear();
+
     if(!dev_and_conn_info_vec) return;
 
     load_params_to_ui(dev_and_conn_info_vec->at(currentRow));

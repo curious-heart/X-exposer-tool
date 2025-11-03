@@ -518,7 +518,7 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="5,2,1">
+    <layout class="QHBoxLayout" name="horizontalLayout_16" stretch="4,2,1">
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_5">
        <item>
@@ -590,7 +590,7 @@
        <item>
         <widget class="QPushButton" name="addDevPBtn">
          <property name="text">
-          <string>添加设备</string>
+          <string>添加/更新设备</string>
          </property>
         </widget>
        </item>

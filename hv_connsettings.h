@@ -113,7 +113,7 @@ private:
     conn_collect_ret_e_t collect_conn_params(QString &ret_str);
     void select_conn_type_param_block();
     void format_hv_conn_info_str(QString &info_str);
-    bool curr_conn_id_in_vec(const modbus_conn_parameters_struct_t conn_params,
+    int curr_conn_id_in_vec(const modbus_conn_parameters_struct_t conn_params,
                              const dev_and_conn_info_vec_t &vect);
     QString get_conn_id_str(const modbus_conn_parameters_struct_t &conn_params);
     QString get_dev_id_str(const dev_and_conn_info_s_t &dev);
