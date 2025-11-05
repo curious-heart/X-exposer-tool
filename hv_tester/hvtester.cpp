@@ -532,8 +532,10 @@ void HVTester::go_test_sig_handler()
     {
         hv_curr_triple_mb_unit_str = QString("%1,%2,%3").arg(
                        QString::number((quint16)(hv_curr_expo_param_triple.cube_volt_kv)),
-                       QString::number((quint16)(1000 * hv_curr_expo_param_triple.cube_current_ma)),
-                       QString::number((quint16)(hv_curr_expo_param_triple.dura_ms)));
+                       QString::number((quint16)(hv_test_params->expo_param_block.sw_to_mb_current_factor
+                                                 * hv_curr_expo_param_triple.cube_current_ma)),
+                       QString::number((quint16)(hv_test_params->expo_param_block.sw_to_mb_dura_factor
+                                                 * hv_curr_expo_param_triple.dura_ms)));
     }
     switch(hv_tester_proc)
     {
