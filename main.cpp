@@ -4,6 +4,7 @@
 
 #include <QMessageBox>
 #include <QString>
+#include <QNetworkProxy>
 #include "qtsingleapplication/qtsingleapplication.h"
 
 int main(int argc, char *argv[])
@@ -19,6 +20,8 @@ int main(int argc, char *argv[])
     {
         return !a.sendMessage(QString(ls_hint_str));
     }
+
+    QNetworkProxy::setApplicationProxy(QNetworkProxy::NoProxy);
 
     /*initialization: start log thread. Now use the default log-level defined in logger mode.*/
     QThread th;
