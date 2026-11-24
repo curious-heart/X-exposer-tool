@@ -4,7 +4,7 @@
 #include <QDialog>
 #include <QComboBox>
 #include <QDialogButtonBox>
-#include <QPushButton>
+#include <functional>
 
 #include "config_recorder/uiconfigrecorder.h"
 
@@ -54,11 +54,13 @@ public:
                             modbus_conn_parameters_struct_t* param_ptr = nullptr,
                             UiConfigRecorder * cfg_recorder = nullptr);
     ~hvConnSettings();
+    void setConnectionValidator(std::function<QString()> validator);
+
+public slots:
+    void accept() override;
 
 private slots:
     void on_modBusConnTypeComboBox_currentIndexChanged(int index);
-
-    void on_buttonBox_clicked(QAbstractButton *button);
 
 private:
     Ui::hvConnSettings *ui;
@@ -74,6 +76,7 @@ private:
                                         stop_bit_list[];
 
     modbus_conn_parameters_struct_t * modbus_conn_params;
+    std::function<QString()> m_connection_validator;
 
     void select_conn_type_param_block();
     void format_hv_conn_info_str();
@@ -83,6 +86,7 @@ private:
 
 public:
     QString collect_conn_params();
+    void refresh_serial_ports();
 };
 
 #endif // HV_CONNSETTINGS_H

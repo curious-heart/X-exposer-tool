@@ -188,6 +188,12 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     qobj_ptr_set_t m_rec_ui_cfg_fin, m_rec_ui_cfg_fout;
 
     TestResultJudge * m_test_judge;
+    RangeChecker<int> m_valid_cube_volt_kv_range{0, 1};
+    RangeChecker<float> m_valid_cube_current_ma_range{0, 1};
+    RangeChecker<float> m_valid_expo_dura_ms_range{0, 1};
+    RangeChecker<int> m_valid_expo_cnt_range{1, 0, "", EDGE_INCLUDED, EDGE_INFINITE};
+    RangeChecker<float> m_valid_cool_dura_range{0, 1};
+    RangeChecker<float> m_valid_cool_dura_factor{0, 1};
     QList<judge_ctrls_s_t> m_judge_ctrls;
     judge_ctrl_desc_map_t m_judge_ctrl_desc_map;
     void setup_judge_ctrls();
@@ -237,7 +243,7 @@ UI_PARAM_ITEM(v, expo_cnt), UI_PARAM_ITEM(v, cool_dura), UI_PARAM_ITEM(v, cool_d
     }cbox_col_pair_s_t;
     QList<cbox_col_pair_s_t> m_pdt_cboxes;
     void setup_pdt_cboxes();
-    bool load_pdt_info();
+    bool load_pdt_info(QList<QStringList> &products);
 
 public:
     QString collect_test_params();

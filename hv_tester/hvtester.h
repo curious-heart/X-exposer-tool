@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QColor>
 #include <QDateTime>
+#include <QPointer>
 
 #include "logger/logger.h"
 #include "test_params_struct.h"
@@ -34,15 +35,6 @@ typedef enum
     TEST_END_EXCEPTION,
 }tester_end_code_enum_t;
 Q_DECLARE_METATYPE(tester_end_code_enum_t)
-
-typedef enum
-{
-    NORMAL_OP,
-    RESUME_FROM_PAUSE,
-    RESUME_FROM_DISCONN,
-    RESUME_FROM_ERROR,
-}tester_op_resume_type_e_t;
-Q_DECLARE_METATYPE(tester_op_resume_type_e_t)
 
 class HVTester : public QObject
 {
@@ -74,6 +66,8 @@ private:
     QString hv_curr_triple_mb_unit_str;
     QTimer hv_test_op_timer, hv_test_err_retry_timer;
     mb_reg_val_map_t m_regs_read_result;
+    QPointer<QModbusReply> m_pending_reply;
+    QDateTime m_cool_start_point;
 
     QTimer * m_curr_timer = nullptr;
     int m_curr_timer_remaining_time_ms;
@@ -91,28 +85,26 @@ private:
                                                 expo_param_triple_struct_t &curr_triple,
                                                 int &idx_in_loop, int &idx_in_round);
     void end_test(tester_end_code_enum_t code);
-    typedef void (HVTester::*mb_operation_handler_t)(tester_op_enum_t op);
 
 public:
     bool init(test_params_struct_t *test_params, QModbusClient * modbus_device, int srvr_addr);
     void init_for_time_stat(test_params_struct_t *test_params);
-    float expect_remaining_test_dura_ms(bool total = false);
+    float expect_remaining_test_dura_ms(bool total = false, qint64 *planned_count = nullptr);
     void set_last_judge_result(bool jdg_ret);
     void increase_test_retry_cnt();
     void reset_test_retry_cnt();
     bool is_last_test_retry();
     bool is_retrying();
+    bool hasPendingRequest() const { return !m_pending_reply.isNull(); }
 
 private:
     void reset_internal_state();
     void reset_timer_rec();
     void check_pause_to_start_timer(QTimer * c_timer, tester_simple_handler_t timeout_handler,
                                     int dura_ms);
-    void mb_rw_reply_received(tester_op_enum_t op, QModbusReply* mb_reply,
-                              void (HVTester::*finished_sig_handler)(),
-                              bool sync, bool error_notify);
+    void mb_rw_reply_received(tester_op_enum_t op, QModbusReply *mb_reply);
     void construct_mb_du(tester_op_enum_t op, QModbusDataUnit &mb_du);
-    void tester_send_mb_cmd(tester_op_enum_t op, tester_op_resume_type_e_t r_t = NORMAL_OP);
+    void tester_send_mb_cmd(tester_op_enum_t op);
     int calc_cool_dura_ms(qint64 time_elapsed_since_cool_start);
     void end_test_due_to_exception(QString err_str);
     void post_test_info_message(LOG_LEVEL lvl, QString msg,
@@ -124,7 +116,6 @@ public slots:
     /*user signal handler.*/
     void go_test_sig_handler(); //this handler is also used as internal signal slot.
     void stop_test_sig_handler(tester_end_code_enum_t code);
-    void mb_reconnected_sig_handler();
     void pause_resume_test_sig_handler(bool pause);
 
 signals:
@@ -136,20 +127,8 @@ signals:
                          int loop_idx, int round_idx, bool proc_monitor = false);
     void test_complete_sig(tester_end_code_enum_t code);
     void begin_exposure_sig(bool start = true);
-
-    /* now we do not use this signal. tester just retry and retry, and main_dialog matain the
-       connection.
-    */
-    void mb_op_err_req_reconnect_sig();
-
-    /*signals used internally.*/
-    void tester_next_operation_sig(tester_op_enum_t op, tester_op_resume_type_e_t r_t = NORMAL_OP);
-    void internal_go_test_sig();
+    void exposure_group_complete_sig();
 public slots:
-    /*internal signal handler*/
-    /*modbus signal handler*/
-    void mb_op_finished_sig_handler();
-    void mb_rw_error_sig_handler(QModbusDevice::Error error);
     /*timer handler*/
     void hv_test_op_timer_handler();
     void hv_test_err_retry_timer_handler();

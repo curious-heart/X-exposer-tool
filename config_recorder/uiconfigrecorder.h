@@ -13,10 +13,13 @@ class UiConfigRecorder : public QObject
 private:
     static constexpr const char * const m_def_cfg_file_fpn = ".user_settings.ini";
     QString m_cfg_file_fpn;
+    QString m_group_prefix;
 
 public:
     explicit UiConfigRecorder(QObject *parent = nullptr,
-                              QString cfg_file_fpn = m_def_cfg_file_fpn);
+                              QString cfg_file_fpn = m_def_cfg_file_fpn,
+                              QString group_prefix = {});
+    bool has_ui_configs(const QWidget *ui_widget) const;
 
     void record_ui_configs(QWidget * ui_widget,
                            const qobj_ptr_set_t &filter_in = qobj_ptr_set_t(),

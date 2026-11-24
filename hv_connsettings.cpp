@@ -1,6 +1,7 @@
 ﻿#include <QSerialPort>
 #include <QSerialPortInfo>
 #include <QMessageBox>
+#include <utility>
 
 #include "common_tools/common_tool_func.h"
 #include "logger/logger.h"
@@ -86,11 +87,10 @@ hvConnSettings::hvConnSettings(QWidget *parent, modbus_conn_parameters_struct_t*
         ctrl->setCurrentIndex(def_idx);
     }
 
-    foreach (QSerialPortInfo info, QSerialPortInfo::availablePorts())
-    {
-        ui->COMNumComBox->addItem(info.portName());
-    }
-    ui->COMNumComBox->setCurrentIndex(0);
+    ui->COMNumComBox->setEditable(true);
+    ui->COMNumComBox->setInsertPolicy(QComboBox::NoInsert);
+    ui->COMNumComBox->lineEdit()->setObjectName("serialPortName");
+    refresh_serial_ports();
 
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.clear();
@@ -104,6 +104,17 @@ hvConnSettings::~hvConnSettings()
     m_rec_ui_cfg_fin.clear();
     m_rec_ui_cfg_fout.clear();
     delete ui;
+}
+
+void hvConnSettings::refresh_serial_ports()
+{
+    const QString selected_port = ui->COMNumComBox->currentText();
+    ui->COMNumComBox->clear();
+    for(const auto &port : QSerialPortInfo::availablePorts())
+    {
+        ui->COMNumComBox->addItem(port.portName());
+    }
+    if(!selected_port.isEmpty()) ui->COMNumComBox->setEditText(selected_port);
 }
 
 void hvConnSettings::select_conn_type_param_block()
@@ -158,7 +169,7 @@ QString hvConnSettings::collect_conn_params()
     modbus_conn_params->type = conn_type;
     if(CONN_TYPE_SERIAL == conn_type)
     {
-        modbus_conn_params->serial_params.com_port_s = ui->COMNumComBox->currentText();
+        modbus_conn_params->serial_params.com_port_s = ui->COMNumComBox->currentText().trimmed();
         if(modbus_conn_params->serial_params.com_port_s.isEmpty())
         {
             ret_str += gs_str_no_available_com;
@@ -178,7 +189,7 @@ QString hvConnSettings::collect_conn_params()
     else
     {
         modbus_conn_params->tcpip_params.port_no = ui->srvrPortEdit->text().toUInt(&tr_ok);
-        if(!tr_ok || modbus_conn_params->tcpip_params.port_no < 0 ||
+        if(!tr_ok || modbus_conn_params->tcpip_params.port_no <= 0 ||
                      modbus_conn_params->tcpip_params.port_no > 65535)
         {
             ret_str += ui->srvrPortLbl->text() + gs_str_data_item_invalid;
@@ -193,7 +204,11 @@ QString hvConnSettings::collect_conn_params()
             return ret_str;
         }
 
-        modbus_conn_params->tcpip_params.ip_addr = ui->srvrIPEdit->text();
+        modbus_conn_params->tcpip_params.ip_addr = ui->srvrIPEdit->text().trimmed();
+        if(modbus_conn_params->tcpip_params.ip_addr.isEmpty())
+        {
+            return ui->srvrIPLbl->text() + gs_str_data_item_invalid;
+        }
 
         modbus_conn_params->valid = true;
     }
@@ -240,27 +255,31 @@ void hvConnSettings::format_hv_conn_info_str()
     info_str += ui->modBusRespTimeoutLbl->text() + ":" + ui->modBusRespTimeoutEdit->text() + "\n";
 }
 
-void hvConnSettings::on_buttonBox_clicked(QAbstractButton *button)
+void hvConnSettings::setConnectionValidator(std::function<QString()> validator)
+{
+    m_connection_validator = std::move(validator);
+}
+
+void hvConnSettings::accept()
 {
     if(!modbus_conn_params)
     {
         DIY_LOG(LOG_ERROR, "conn params ptr is NULL.");
         return;
     }
-    if(button == ui->buttonBox->button(QDialogButtonBox::Ok))
+    const auto previous_params = *modbus_conn_params;
+    QString error = collect_conn_params();
+    if(modbus_conn_params->valid && m_connection_validator)
     {
-        QString ret_str;
-        ret_str = collect_conn_params();
-        if(modbus_conn_params->valid)
-        {
-            if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this,
-                                                                 m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
-            accept();
-        }
-        else
-        {
-            QMessageBox::critical(this, "Error", ret_str);
-        }
+        error = m_connection_validator();
     }
+    if(!modbus_conn_params->valid || !error.isEmpty())
+    {
+        *modbus_conn_params = previous_params;
+        QMessageBox::warning(this, "高压连接设置", error);
+        return;
+    }
+    if(m_cfg_recorder) m_cfg_recorder->record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+    QDialog::accept();
 }
 

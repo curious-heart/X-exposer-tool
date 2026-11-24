@@ -1,7 +1,11 @@
 ﻿#include <QMessageBox>
 #include <QColor>
+#include <QFileInfo>
+#include <QHostAddress>
+#include <QScopedValueRollback>
+#include <QUuid>
 #include <QtMath>
-#include "qtsingleapplication/qtsingleapplication.h"
+#include <utility>
 
 #include "logger/logger.h"
 #include "main_dialog.h"
@@ -12,7 +16,6 @@
 static const char* gs_str_plz_set_valid_conn_params = "请首先设置有效的连接参数";
 static const char* gs_str_plz_set_valid_test_params = "请首先设置有效的测试参数";
 static const char* gs_str_mb_not_connect_param_not_written = "modbus未连接，参数未写入下位机";
-static const char* gs_str_init_fail = "初始化失败";
 static const char* gs_str_modbus_not_in_disconnected_state = "modbus未处于断开状态";
 static const char* gs_str_modbus_not_in_connected_state = "modbus未处于连接状态";
 static const char* gs_str_modbus_not_connected = "modbus未连接";
@@ -125,12 +128,9 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool pa
 {
     QDateTime curr_dt;
     int curr_pause_dura_ms = 0, pause_dura_till_now_ms = 0, dura_from_resume_ms = 0;
-    static int last_calced_dura_ms = 0;
-    static QDateTime resume_point;
-
     if(start_test)
     {
-        resume_point = m_test_start_time = QDateTime::currentDateTime();
+        m_resume_point = m_test_start_time = QDateTime::currentDateTime();
         QString dtstr = m_test_start_time.toString("yyyy-MM-dd hh:mm:ss");
         ui->startTestTimeDisplayLbl->setText(dtstr);
     }
@@ -138,17 +138,17 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool pa
     if(start_test || total_dura)
     {
         m_expt_test_dura_ms = m_expt_test_remain_dura_ms
-                = m_hv_tester.expect_remaining_test_dura_ms(true);
+                = m_hv_tester.expect_remaining_test_dura_ms(true, &m_planned_groups);
         SECS_TO_HHMMSS_STR_DISP(qCeil(m_expt_test_dura_ms) / 1000,
                                 ui->exptTotalTestDuraDisplayLbl->setText);
 
-        last_calced_dura_ms = m_expt_test_dura_ms;
+        m_last_calced_dura_ms = m_expt_test_dura_ms;
     }
 
     if(pause_resumed)
     {
-        resume_point = QDateTime::currentDateTime();
-        last_calced_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(false);
+        m_resume_point = QDateTime::currentDateTime();
+        m_last_calced_dura_ms = m_hv_tester.expect_remaining_test_dura_ms(false);
     }
 
     if(m_testing)
@@ -160,8 +160,8 @@ void Dialog::refresh_time_stat_display(bool total_dura, bool start_test, bool pa
         if(!m_test_paused)
         {
             curr_dt = QDateTime::currentDateTime();
-            dura_from_resume_ms = resume_point.msecsTo(curr_dt);
-            m_expt_test_remain_dura_ms = last_calced_dura_ms - dura_from_resume_ms;
+            dura_from_resume_ms = m_resume_point.msecsTo(curr_dt);
+            m_expt_test_remain_dura_ms = m_last_calced_dura_ms - dura_from_resume_ms;
             if(m_expt_test_remain_dura_ms < 0) m_expt_test_remain_dura_ms = 0;
         }
 
@@ -228,19 +228,24 @@ void Dialog::update_regs_to_rec_list()
         mb_mbregs_result_disp_list.append(gs_judge_result_disp_reg[idx]);
     }
     if(!m_test_params.other_param_block.read_dist) mb_mbregs_result_disp_list.removeOne(EXT_MB_REG_DISTANCE);
+    m_test_judge.clear_judge_result_disp_items();
+    m_test_judge.add_result_disp_items(mb_mbregs_result_disp_list);
 }
 
-Dialog::Dialog(QWidget *parent)
+Dialog::Dialog(const QString &device_id, const QString &settings_file,
+               const QString &settings_group, QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::Dialog)
+    , m_device_id(device_id)
     , m_hv_tester(this)
-    , m_cfg_recorder(this), m_key_filter(this, this)
+    , m_cfg_recorder(this, settings_file, settings_group), m_key_filter(this, this)
 {
     ui->setupUi(this);
     ui->app_logo->setPixmap(QPixmap("./app_images/logo.png"));
 
     QIcon icon(":/icons/app_images/app.ico");
     setWindowIcon(icon);
+    setWindowTitle(QString("%1 - 设备详情").arg(m_device_id));
 
     m_ui_sync_ctrls =
     {
@@ -276,7 +281,9 @@ Dialog::Dialog(QWidget *parent)
 
     m_txt_def_color = ui->hvConnParamDisplayTxt->textColor();
     ui->hvConnParamDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
-    param_collet_ret_str = m_hvConnSettingsDialog->collect_conn_params();
+    param_collet_ret_str = m_cfg_recorder.has_ui_configs(m_hvConnSettingsDialog)
+            ? m_hvConnSettingsDialog->collect_conn_params()
+            : QString(gs_str_plz_set_valid_conn_params);
     if(m_hv_conn_params.valid)
     {
         ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
@@ -288,49 +295,35 @@ Dialog::Dialog(QWidget *parent)
     }
     select_modbus_device();
 
-    m_rec_ui_cfg_fin.insert(nullptr); //no items needs to record.
+    m_rec_ui_cfg_fin = {ui->testPsnLEdit, ui->testProcMonitorChkBox};
     m_rec_ui_cfg_fout.clear();
     m_cfg_recorder.load_configs_to_ui(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
 
-    refresh_butoons();
-
-    connect(this, &Dialog::go_test_sig,
-            &m_hv_tester, &HVTester::go_test_sig_handler, Qt::QueuedConnection);
-    connect(this, &Dialog::stop_test_sig,
-            &m_hv_tester, &HVTester::stop_test_sig_handler, Qt::QueuedConnection);
-    connect(this, &Dialog::mb_reconnected_sig,
-            &m_hv_tester, &HVTester::mb_reconnected_sig_handler, Qt::QueuedConnection);
-    connect(this, &Dialog::pause_resume_test_sig,
-            &m_hv_tester, &HVTester::pause_resume_test_sig_handler, Qt::QueuedConnection);
+    refresh_buttons();
 
     connect(&m_hv_tester, &HVTester::test_info_message_sig,
-            this, &Dialog::test_info_message_sig_handler, Qt::QueuedConnection);
+            this, &Dialog::test_info_message_sig_handler);
     connect(&m_hv_tester, &HVTester::rec_mb_regs_sig,
-            this, &Dialog::rec_mb_regs_sig_handler, Qt::QueuedConnection);
+            this, &Dialog::rec_mb_regs_sig_handler);
     connect(&m_hv_tester, &HVTester::test_complete_sig,
-            this, &Dialog::test_complete_sig_hanler, Qt::QueuedConnection);
-    connect(&m_hv_tester, &HVTester::mb_op_err_req_reconnect_sig,
-            this, &Dialog::mb_op_err_req_reconnect_sig_handler, Qt::QueuedConnection);
+            this, &Dialog::test_complete_sig_hanler);
+    connect(&m_hv_tester, &HVTester::exposure_group_complete_sig, this, [this]() {
+        ++m_completed_groups;
+        emit deviceChanged();
+    });
 
     connect(&m_hv_tester, &HVTester::begin_exposure_sig,
             this, &Dialog::begin_exposure_sig_handler);
 
-    connect(this, &Dialog::auto_reconnect_sig,
-            this, &Dialog::auto_reconnect_sig_handler, Qt::QueuedConnection);
-
     m_reconn_wait_timer.setSingleShot(true);
     connect(&m_reconn_wait_timer, &QTimer::timeout,
-            this, &Dialog::reconn_wait_timer_sig_handler, Qt::QueuedConnection);
+            this, &Dialog::reconn_wait_timer_sig_handler);
 
     connect(&m_time_stat_timer, &QTimer::timeout,
-            this, &Dialog::time_stat_timer_sig_handler, Qt::QueuedConnection);
-    connect(this, &Dialog::refresh_time_stat_display_sig,
-            this, &Dialog::refresh_time_stat_display, Qt::QueuedConnection);
+            this, &Dialog::time_stat_timer_sig_handler);
 
     connect(&m_test_proc_monitor_timer, &QTimer::timeout,
-            this, &Dialog::test_proc_report_timer_sig_handler, Qt::QueuedConnection);
-    connect(this, &Dialog::get_test_proc_st_sig,
-            this, &Dialog::get_test_proc_st_sig_handler, Qt::QueuedConnection);
+            this, &Dialog::test_proc_report_timer_sig_handler);
 
     m_txt_def_color = ui->testInfoDisplayTxt->textColor();
     ui->testInfoDisplayTxt->setProperty(g_prop_name_def_color, m_txt_def_color);
@@ -345,12 +338,8 @@ Dialog::Dialog(QWidget *parent)
     }
 
     update_regs_to_rec_list();
-    m_test_judge.add_result_disp_items(mb_mbregs_result_disp_list);
 
     reset_judge_reg_ret_map();
-
-    connect((QtSingleApplication*)QCoreApplication::instance(), &QtSingleApplication::messageReceived,
-            this, [this](const QString & str){QMessageBox::information(this, "", str);});
 
     m_key_filter.add_keys_to_filter(Qt::Key_Escape);
     installEventFilter(&m_key_filter);
@@ -360,21 +349,23 @@ Dialog::Dialog(QWidget *parent)
     USE_CUBE_OR_COIL_CURRENT_STR;
 
     m_mbRegsChartWnd = new MbRegsChartDisp(this);
+    m_mbRegsChartWnd->setWindowTitle(QString("%1 - 测试过程监控").arg(m_device_id));
     m_mbRegsChartWnd->setAttribute(Qt::WA_DeleteOnClose, false);
 
     endisable_test_proc_monitor_btns();
 
-    m_init_ok = true;
 }
 
 Dialog::~Dialog()
 {
+    if(m_testing) on_stopTestBtn_clicked();
     m_reconn_wait_timer.stop();
     m_time_stat_timer.stop();
     m_test_proc_monitor_timer.stop();
 
-    if(QModbusDevice::ConnectedState == m_modbus_state)
+    if(m_modbus_device)
     {
+        m_modbus_device->disconnect(this);
         modbus_disconnect();
     }
 
@@ -404,7 +395,14 @@ void Dialog::reset_judge_reg_ret_map()
 
 void Dialog::on_testParamSetBtn_clicked()
 {
-    int dialog_ret = m_testParamSettingsDialog->exec();
+    if(m_testing || m_editing_settings) return;
+    const auto previous_params = m_test_params;
+    auto previous_judge_rules = m_test_judge.get_judge_param_list();
+    int dialog_ret;
+    {
+        QScopedValueRollback<bool> editing(m_editing_settings, true);
+        dialog_ret = m_testParamSettingsDialog->exec();
+    }
 
     if((QDialog::Accepted == dialog_ret) && m_test_params.valid)
     {
@@ -429,28 +427,144 @@ void Dialog::on_testParamSetBtn_clicked()
             }
         }
     }
+    else
+    {
+        m_test_params = previous_params;
+        m_test_judge.clear_judge_params();
+        for(auto &rule : previous_judge_rules)
+        {
+            m_test_judge.add_judge_params(rule.ref_reg_no, rule.val_reg_no, rule.judge_params);
+        }
+    }
+    refresh_buttons();
 }
 
 void Dialog::on_hvConnSetBtn_clicked()
 {
-    int dialog_ret = m_hvConnSettingsDialog->exec();
+    if(endpointInUse() || m_editing_settings) return;
+    const auto previous_params = m_hv_conn_params;
+    int dialog_ret;
+    {
+        QScopedValueRollback<bool> editing(m_editing_settings, true);
+        m_hvConnSettingsDialog->refresh_serial_ports();
+        dialog_ret = m_hvConnSettingsDialog->exec();
+    }
 
     if((QDialog::Accepted == dialog_ret) && m_hv_conn_params.valid)
     {
         ui->hvConnParamDisplayTxt->setText(m_hv_conn_params.info_str);
         select_modbus_device();
     }
+    else
+    {
+        m_hv_conn_params = previous_params;
+    }
+    refresh_buttons();
 }
 
-void Dialog::refresh_butoons()
+QString Dialog::endpoint() const
+{
+    if(!m_hv_conn_params.valid) return {};
+    if(m_hv_conn_params.type == CONN_TYPE_SERIAL) return m_hv_conn_params.serial_params.com_port_s;
+
+    const auto &network = m_hv_conn_params.tcpip_params;
+    const QString host = network.ip_addr.contains(':') ? QString("[%1]").arg(network.ip_addr) : network.ip_addr;
+    return QString("%1:%2").arg(host).arg(network.port_no);
+}
+
+QString Dialog::endpointKey() const
+{
+    if(!m_hv_conn_params.valid) return {};
+    if(m_hv_conn_params.type == CONN_TYPE_SERIAL)
+    {
+        auto port = m_hv_conn_params.serial_params.com_port_s.toUpper();
+        if(port.startsWith(QStringLiteral("\\\\.\\"))) port.remove(0, 4);
+        return QString("serial:%1").arg(port);
+    }
+
+    const auto &network = m_hv_conn_params.tcpip_params;
+    QHostAddress address(network.ip_addr);
+    bool ipv4 = false;
+    const auto ipv4_address = address.toIPv4Address(&ipv4);
+    const QString host = ipv4 ? QHostAddress(ipv4_address).toString()
+                               : address.isNull() ? network.ip_addr.toLower() : address.toString();
+    return QString("tcp:[%1]:%2").arg(host).arg(network.port_no);
+}
+
+bool Dialog::endpointInUse() const
+{
+    return m_testing || (m_modbus_device && m_modbus_device->state() != QModbusDevice::UnconnectedState);
+}
+
+bool Dialog::canStart() const
+{
+    return !m_testing && !m_editing_settings && m_test_params.valid && canDisconnect();
+}
+
+bool Dialog::canConnect() const
+{
+    return !m_editing_settings && m_hv_conn_params.valid && !endpointInUse();
+}
+
+bool Dialog::canDisconnect() const
+{
+    return !m_testing && m_modbus_device && m_modbus_device->state() == QModbusDevice::ConnectedState;
+}
+
+QString Dialog::connectionStatus() const
+{
+    switch(m_modbus_state)
+    {
+    case QModbusDevice::ConnectedState: return "已连接";
+    case QModbusDevice::ConnectingState: return m_testing ? "重连中" : "连接中";
+    case QModbusDevice::ClosingState: return "断开中";
+    case QModbusDevice::UnconnectedState:
+        return m_self_reconnecting ? "重连中" : m_hv_conn_params.valid ? "未连接" : "待配置";
+    }
+    return {};
+}
+
+QString Dialog::testStatus() const
+{
+    if(m_testing) return m_test_paused ? "已暂停" : "测试中";
+    return m_test_params.valid ? "待测试" : "参数待设置";
+}
+
+QString Dialog::progressText() const
+{
+    if(m_planned_groups <= 0) return "—";
+    return QString("%1 / %2").arg(m_completed_groups).arg(m_planned_groups);
+}
+
+int Dialog::progressPercent() const
+{
+    if(m_planned_groups <= 0) return 0;
+    return qBound(0, qRound(100.0 * m_completed_groups / m_planned_groups), 100);
+}
+
+QString Dialog::remainingTime() const
+{
+    if(!m_testing) return "—";
+    return ui->exptRemainTestDuraDisplayLbl->text();
+}
+
+void Dialog::setConnectionCheck(std::function<QString(const Dialog &)> check)
+{
+    m_connection_check = std::move(check);
+    m_hvConnSettingsDialog->setConnectionValidator([this]() {
+        return m_connection_check ? m_connection_check(*this) : QString();
+    });
+}
+
+void Dialog::refresh_buttons()
 {
     ui->hvConnSetBtn->setEnabled((QModbusDevice::UnconnectedState == m_modbus_state)
                                  && !m_testing);
     ui->testParamSetBtn->setEnabled(!m_testing);
-    ui->hvConnBtn->setEnabled((QModbusDevice::UnconnectedState == m_modbus_state) && !m_testing);
-    ui->hvDisconnBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
+    ui->hvConnBtn->setEnabled(canConnect());
+    ui->hvDisconnBtn->setEnabled(canDisconnect());
 
-    ui->startTestBtn->setEnabled((QModbusDevice::ConnectedState == m_modbus_state) && !m_testing);
+    ui->startTestBtn->setEnabled(canStart());
     QString stBtnstr = m_testing ? gs_str_testing : gs_str_start_test;
     if(m_testing && m_test_paused) stBtnstr += QString("-%1").arg(gs_str_pause);
     ui->startTestBtn->setText(stBtnstr);
@@ -458,8 +572,10 @@ void Dialog::refresh_butoons()
     ui->stopTestBtn->setEnabled(m_testing);
 
     ui->pauseTestBtn->setEnabled(m_testing);
+    ui->manTestSettingBtn->setEnabled(!m_testing);
     if(m_test_paused) ui->pauseTestBtn->setText(gs_str_resume);
     else ui->pauseTestBtn->setText(gs_str_pause);
+    emit deviceChanged();
 }
 
 bool Dialog::modbus_connect()
@@ -575,6 +691,7 @@ void Dialog::modbus_error_sig_handler(QModbusDevice::Error error)
 
 void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
 {
+    if(sender() != m_modbus_device) return;
     /*The following strings are in the same order with enum QModbusDevice::State*/
     static const char* state_str[] =
     {
@@ -597,15 +714,10 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
     DIY_LOG(LOG_INFO, curr_str);
     if(QModbusDevice::ConnectedState == state)
     {
+        m_reconn_wait_timer.stop();
         test_info_message_sig_handler(LOG_INFO, curr_str, true, Qt::darkGreen);
 
         m_self_reconnecting = false;
-        if(m_asked_for_reconnecting)
-        {
-            m_asked_for_reconnecting = false;
-            DIY_LOG(LOG_INFO, "user asks for reconnect, connected.");
-            emit mb_reconnected_sig();
-        }
 
         if(m_testing)
         {
@@ -618,17 +730,6 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
 
         if(m_testing && !m_test_paused)
         {
-            if(m_asked_for_reconnecting)
-            {
-                DIY_LOG(LOG_INFO, "user asks for reconnect."
-                                   " wait some time then emit reconnect sig.");
-            }
-            else
-            {
-                DIY_LOG(LOG_INFO, "modbus disconnected during testing."
-                                   " wait some time then emit reconnect signal.");
-            }
-
             m_self_reconnecting = true;
             m_reconn_wait_timer.start(g_sys_configs_block.mb_reconnect_wait_ms);
         }
@@ -643,7 +744,7 @@ void Dialog::modbus_state_changed_sig_handler(QModbusDevice::State state)
         test_info_message_sig_handler(LOG_INFO, curr_str);
     }
 
-    refresh_butoons();
+    refresh_buttons();
 }
 
 void Dialog::on_hvConnBtn_clicked()
@@ -653,15 +754,26 @@ void Dialog::on_hvConnBtn_clicked()
         QMessageBox::critical(this, "Error", gs_str_plz_set_valid_conn_params);
         return;
     }
-    if(QModbusDevice::UnconnectedState != m_modbus_state)
+    if(!canConnect())
     {
         QMessageBox::information(this, "", gs_str_modbus_not_in_disconnected_state);
         return;
+    }
+    if(m_connection_check)
+    {
+        const QString error = m_connection_check(*this);
+        if(!error.isEmpty())
+        {
+            QMessageBox::warning(this, "连接冲突", error);
+            return;
+        }
     }
     ui->hvConnBtn->setDisabled(true);
     this->setCursor(Qt::WaitCursor);
     if(!modbus_connect())
     {
+        unsetCursor();
+        refresh_buttons();
         QMessageBox::critical(this, "Error", gs_str_modbus_connect_err);
     }
 }
@@ -669,7 +781,7 @@ void Dialog::on_hvConnBtn_clicked()
 
 void Dialog::on_hvDisconnBtn_clicked()
 {
-    if(QModbusDevice::ConnectedState != m_modbus_state)
+    if(!canDisconnect())
     {
         QMessageBox::information(this, "", gs_str_modbus_not_in_connected_state);
         return;
@@ -685,6 +797,7 @@ void Dialog::record_header()
 {
     /*test info*/
     REC_INFO_IN_FILE(m_curr_rec_file.fileName() << "\n\n");
+    REC_INFO_IN_FILE("设备编号：" << m_device_id << "\n");
     REC_INFO_IN_FILE(m_hv_conn_params.info_str << "\n");
     REC_INFO_IN_FILE(m_test_params.info_str << "\n");
     REC_INFO_IN_FILE(ui->testPsnLbl->text() << ui->testPsnLEdit->text() << "\n\n");
@@ -746,7 +859,10 @@ bool Dialog::set_mb_expo_triple()
     mb_du.setStartAddress(VoltSet);
     mb_du.setValues(mb_reg_vals);
 
-    m_modbus_device->sendWriteRequest(mb_du, m_hv_conn_params.srvr_address);
+    auto reply = m_modbus_device->sendWriteRequest(mb_du, m_hv_conn_params.srvr_address);
+    if(!reply) return false;
+    if(reply->isFinished()) reply->deleteLater();
+    else connect(reply, &QModbusReply::finished, reply, &QObject::deleteLater);
     return true;
 }
 
@@ -781,65 +897,54 @@ void Dialog::display_mb_regs_chart()
 
 void Dialog::on_startTestBtn_clicked()
 {
-    m_cfg_recorder.record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+    const QString error = startTest();
+    if(!error.isEmpty()) QMessageBox::critical(this, "开始测试", error);
+}
 
-    if(!m_test_params.valid)
-    {
-        QMessageBox::critical(this, "Error", gs_str_plz_set_valid_test_params);
-        return;
-    }
-
-    if(QModbusDevice::ConnectedState != m_modbus_state)
-    {
-        QMessageBox::critical(this, "Error", gs_str_modbus_not_connected);
-        return;
-    }
+QString Dialog::startTest()
+{
+    if(m_testing || m_editing_settings) return "该设备正在测试或设置中。";
+    if(!m_test_params.valid) return gs_str_plz_set_valid_test_params;
+    if(!canStart()) return gs_str_modbus_not_connected;
 
     if(!m_hv_tester.init(&m_test_params, m_modbus_device, m_hv_conn_params.srvr_address))
     {
-        QMessageBox::critical(this, "Error", gs_str_init_hvtester_err);
-        return;
+        return gs_str_init_hvtester_err;
     }
 
-    QString err_str;
-    QString curr_dt_str = common_tool_get_curr_dt_str();
-    m_curr_rec_folder_name = curr_dt_str  + "-" + gs_str_test_rec_name_sufx;
-    m_curr_rec_file_name = m_curr_rec_folder_name
+    const QString folder = common_tool_get_curr_dt_str() + "-" + gs_str_test_rec_name_sufx;
+    QString file_name = folder + "-" + m_device_id
+            + "-" + QUuid::createUuid().toString(QUuid::Id128)
             + "-" + m_test_params.other_param_block.pdt_code
             + "-" + m_test_params.other_param_block.pdt_name
             + "-" + m_test_params.other_param_block.pdt_model;
-    trans_to_valid_fpn_str(m_curr_rec_file_name);
-    m_curr_rec_file_name += gs_str_test_rec_file_type;
-    QString curr_path = QString("./") + m_curr_rec_folder_name;
-    QString curr_file_path(curr_path + "/" + m_curr_rec_file_name);
-    if(!mkpth_if_not_exists(curr_path))
+    trans_to_valid_fpn_str(file_name);
+    file_name += gs_str_test_rec_file_type;
+    if(!mkpth_if_not_exists(folder))
     {
-        err_str = QString("%1%2:%3").arg(gs_str_create_folder, g_str_fail, curr_path);
+        const QString err_str = QString("%1%2：%3").arg(gs_str_create_folder, g_str_fail, folder);
         DIY_LOG(LOG_ERROR, err_str);
-        QMessageBox::critical(this, "Error", err_str);
-        return;
+        return err_str;
     }
-    m_curr_rec_file.setFileName(curr_file_path);
-    if(!m_curr_rec_file.open(QFile::WriteOnly | QFile::Append))
+    m_curr_rec_file.setFileName(QFileInfo(folder + "/" + file_name).absoluteFilePath());
+    if(!m_curr_rec_file.open(QFile::WriteOnly | QFile::NewOnly))
     {
-        err_str = QString("%1%2:%3").arg(gs_str_create_file, g_str_fail, curr_file_path);
+        const QString err_str = QString("%1%2：%3\n%4").arg(gs_str_create_file, g_str_fail,
+                                    m_curr_rec_file.fileName(), m_curr_rec_file.errorString());
         DIY_LOG(LOG_ERROR, err_str);
-        QMessageBox::critical(this, "Error", err_str);
-        return;
+        return err_str;
     }
     m_curr_txt_stream.setDevice(&m_curr_rec_file);
-    record_header();
-
+    m_curr_txt_stream.resetStatus();
+    m_cfg_recorder.record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
     reset_internal_flags();
+    m_completed_groups = 0;
     m_testing = true;
-    refresh_butoons();
-
+    record_header();
     m_test_judge.clear_judge_resut_strs();
 
     m_hv_tester.reset_test_retry_cnt();
     m_hv_tester.set_last_judge_result(true);
-    emit go_test_sig();
-
     refresh_time_stat_display(true, true);
 
     m_time_stat_timer.start(g_sys_configs_block.test_time_stat_grain_sec * 1000);
@@ -849,21 +954,30 @@ void Dialog::on_startTestBtn_clicked()
         m_test_proc_monitor_timer.start(g_sys_configs_block.test_proc_monitor_period_ms);
         if(g_sys_configs_block.disp_mb_regs_chart_at_start) display_mb_regs_chart();
     }
+    refresh_buttons();
+    m_hv_tester.go_test_sig_handler();
+    return {};
 }
 
 void Dialog::on_stopTestBtn_clicked()
 {
+    if(!m_testing) return;
+    const bool request_in_flight = m_hv_tester.hasPendingRequest();
     m_reconn_wait_timer.stop();
     m_time_stat_timer.stop();
     m_test_proc_monitor_timer.stop();
 
     refresh_time_stat_display();
-    emit stop_test_sig(TEST_END_ABORT_BY_USER);
+    m_hv_tester.stop_test_sig_handler(TEST_END_ABORT_BY_USER);
+    // Closing this device's link cancels pending Modbus retries. The DR
+    // finishes any exposure it has already started.
+    if(request_in_flight) modbus_disconnect();
 }
 
 void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
                                        bool always_rec, QColor set_color, int set_font_w )
 {
+    m_last_message = QString("%1  %2").arg(common_tool_get_curr_time_str(), msg.trimmed());
     QColor text_color;
     int text_font_w;
     QString line(common_tool_get_curr_date_str() + ","
@@ -882,10 +996,11 @@ void Dialog::test_info_message_sig_handler(LOG_LEVEL lvl, QString msg,
 
     append_str_with_color_and_weight(ui->testInfoDisplayTxt, line, text_color, text_font_w);
 
-    if(LOG_ERROR == lvl)
+    if(m_testing && LOG_ERROR == lvl)
     {
         refresh_time_stat_display(false, false, true);
     }
+    emit deviceChanged();
 }
 
 void Dialog::map_judge_result_to_style(judge_result_e_t judge_result, str_with_style_s_t &style_str)
@@ -925,8 +1040,12 @@ void Dialog::rec_mb_regs_sig_handler(tester_op_enum_t op, mb_reg_val_map_t reg_v
 {
     if(!m_testing)
     {
-        DIY_LOG(LOG_WARN, QString("not in test, but still receive reported regs with"
-                                  "option %1.").arg(op));
+        return;
+    }
+    if(op == TEST_OP_READ_REGS && !proc_monitor)
+    {
+        m_during_exposuring = false;
+        m_monitor_reply.clear();
     }
 
     int idx = 0, base = 10;
@@ -1110,7 +1229,7 @@ void Dialog::reset_internal_flags()
     m_testing = false; m_during_exposuring = false;
     m_test_paused = false;
     m_self_reconnecting = false;
-    m_asked_for_reconnecting = false;
+    m_monitor_reply.clear();
 
     reset_time_stat_vars();
 }
@@ -1138,17 +1257,20 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     {
     case TEST_END_NORMAL:
         complete_str += gs_str_test_complete;
+        m_last_result = m_test_judge.get_judge_result_strs().isEmpty() ? "通过" : "未通过";
         color = Qt::blue; weight = QFont::Bold;
         break;
 
     case TEST_END_ABORT_BY_USER:
         complete_str += gs_str_test_abort_by_user;
+        m_last_result = "已中止";
         color = Qt::darkYellow;
         break;
 
     case TEST_END_EXCEPTION:
     default:
         complete_str += gs_str_test_end_exception;
+        m_last_result = "异常中止";
         color = Qt::red;
         break;
     }
@@ -1165,29 +1287,23 @@ void Dialog::test_complete_sig_hanler(tester_end_code_enum_t code)
     if(m_curr_rec_file.isOpen())
     {
         m_curr_txt_stream.flush();
+        const bool flushed = m_curr_rec_file.flush();
+        m_last_report = m_curr_rec_file.fileName();
+        if(!flushed || m_curr_txt_stream.status() != QTextStream::Ok)
+        {
+            m_last_result = "报告写入失败";
+            m_last_report.clear();
+            DIY_LOG(LOG_ERROR, QString("%1：CSV 报告写入失败：%2")
+                    .arg(m_device_id, m_curr_rec_file.errorString()));
+        }
         m_curr_rec_file.close();
     }
 
     reset_internal_flags();
-    refresh_butoons();
+    refresh_buttons();
 
     if(ui->testProcMonitorChkBox->isChecked())
         ui->testProcMonitorTxtEdit->append(gs_str_sep_short_line);
-}
-
-void Dialog::mb_op_err_req_reconnect_sig_handler()
-{
-    DIY_LOG(LOG_INFO, "received modbus reconnect req from tester.");
-    m_asked_for_reconnecting = true;
-    if(!m_self_reconnecting)
-    {
-        DIY_LOG(LOG_INFO, "now emit reconnect sig on tester req.");
-        auto_reconnect_sig_handler();
-    }
-    else
-    {
-        DIY_LOG(LOG_INFO, "self reconnecting is already working.");
-    }
 }
 
 void Dialog::on_clearTestInfoBtn_clicked()
@@ -1195,56 +1311,37 @@ void Dialog::on_clearTestInfoBtn_clicked()
     ui->testInfoDisplayTxt->clear();
 }
 
-void Dialog::auto_reconnect_sig_handler()
-{
-    if(m_modbus_device)
-    {
-        m_modbus_state = m_modbus_device->state();
-        switch(m_modbus_state)
-        {
-            case QModbusDevice::ClosingState:
-                break;
-
-            case QModbusDevice::UnconnectedState:
-                m_modbus_device->connectDevice();
-                break;
-
-            case QModbusDevice::ConnectingState:
-                break;
-
-            case QModbusDevice::ConnectedState:
-            default:
-                m_modbus_device->disconnectDevice();
-                break;
-        }
-    }
-}
-
 void Dialog::reconn_wait_timer_sig_handler()
 {
+    if(!m_testing || m_test_paused || !m_modbus_device ||
+            m_modbus_device->state() != QModbusDevice::UnconnectedState) return;
     m_self_reconnecting = true;
-    if(m_modbus_device)
+    if(!m_modbus_device->connectDevice())
     {
-        m_modbus_device->connectDevice();
+        m_reconn_wait_timer.start(g_sys_configs_block.mb_reconnect_wait_ms);
     }
+    emit deviceChanged();
 }
 
 void Dialog::time_stat_timer_sig_handler()
 {
     if(!m_testing) return;
 
-    emit refresh_time_stat_display_sig();
+    refresh_time_stat_display();
+    emit deviceChanged();
 }
 
 
-void Dialog::on_Dialog_finished(int /*result*/)
+void Dialog::reject()
 {
-    modbus_disconnect();
     m_cfg_recorder.record_ui_configs(this, m_rec_ui_cfg_fin, m_rec_ui_cfg_fout);
+    if(m_mbRegsChartWnd) m_mbRegsChartWnd->close();
+    hide();
 }
 
 void Dialog::on_pauseTestBtn_clicked()
 {
+    if(!m_testing) return;
     bool pause_st = !m_test_paused;
 
     if(m_curr_rec_file.isOpen())
@@ -1252,9 +1349,8 @@ void Dialog::on_pauseTestBtn_clicked()
         m_curr_txt_stream.flush();
     }
 
-    emit pause_resume_test_sig(pause_st);
-
     QDateTime curr_dt = QDateTime::currentDateTime();
+    m_test_paused = pause_st;
     if(pause_st)
     {
         m_pause_dura_check_point = curr_dt;
@@ -1269,20 +1365,17 @@ void Dialog::on_pauseTestBtn_clicked()
         int curr_pause_dura_ms = m_pause_dura_check_point.msecsTo(curr_dt);
         m_pause_dura_ms += curr_pause_dura_ms;
 
-        if(m_modbus_device && (QModbusDevice::ConnectedState != m_modbus_device->state()))
-        {
-            m_modbus_device->connectDevice();
-        }
-
+        reconn_wait_timer_sig_handler();
         refresh_time_stat_display(false, false, true);
     }
 
-    m_test_paused = pause_st;
-    refresh_butoons();
+    m_hv_tester.pause_resume_test_sig_handler(pause_st);
+    refresh_buttons();
 }
 
 void Dialog::on_manTestSettingBtn_clicked()
 {
+    if(m_testing || m_editing_settings) return;
     bool check_ret;
     QString check_info_str;
 
@@ -1303,6 +1396,7 @@ void Dialog::on_manTestSettingBtn_clicked()
             }
         }
     }
+    refresh_buttons();
 }
 
 void Dialog::begin_exposure_sig_handler(bool start)
@@ -1312,78 +1406,52 @@ void Dialog::begin_exposure_sig_handler(bool start)
 
 void Dialog::test_proc_report_timer_sig_handler()
 {
-    if(m_testing && !m_test_paused && m_during_exposuring) emit get_test_proc_st_sig();
+    if(m_testing && !m_test_paused && m_during_exposuring) get_test_proc_st_sig_handler();
 }
 
-void Dialog::mb_rw_reply_received(QModbusReply* mb_reply, void (Dialog::*finished_sig_handler)(),
-                              bool sync)
+void Dialog::processMonitorReply(QModbusReply *reply)
 {
-    QString err_msg_hdr = "Read registers during test proc monitor error:";
-    mb_reg_val_map_t regs_read_result;
-
-    if(!mb_reply)
+    if(reply->error() != QModbusDevice::NoError)
     {
-        DIY_LOG(LOG_ERROR, err_msg_hdr + " mb reply is null!");
+        DIY_LOG(LOG_ERROR, QString("%1：过程监控读取失败：%2").arg(m_device_id, reply->errorString()));
         return;
     }
-
-    if(!sync || mb_reply->isFinished())
+    const QModbusDataUnit data = reply->result();
+    if(!data.isValid()) return;
+    mb_reg_val_map_t regs;
+    for(uint i = 0; i < data.valueCount(); ++i)
     {
-        if(QModbusDevice::NoError != mb_reply->error())
-        {
-            DIY_LOG(LOG_ERROR, err_msg_hdr + " " + mb_reply->errorString());
-            return;
-        }
-        QModbusDataUnit rb_du = mb_reply->result();
-        if(!rb_du.isValid())
-        {
-            DIY_LOG(LOG_ERROR, err_msg_hdr + " reply du is not valid.");
-            return;
-        }
-        int st_addr = rb_du.startAddress(), idx = 0, cnt = rb_du.valueCount();
-        for(; idx < cnt; ++idx)
-        {
-            regs_read_result.insert(hv_mb_reg_e_t(st_addr + idx), rb_du.value(idx));
-        }
-        if(regs_read_result[ExposureStatus] >= EXPOSURE_ST_EXPOSURING)
-        {
-            rec_mb_regs_sig_handler(TEST_OP_READ_REGS, regs_read_result, 0, 0, true);
-        }
-        if(EXPOSURE_ST_COOLING == regs_read_result[ExposureStatus])
-        {
-            m_during_exposuring = false;
-        }
+        regs.insert(hv_mb_reg_e_t(data.startAddress() + i), data.value(i));
     }
-    else
-    {//sync op, and not finished.
-        connect(mb_reply, &QModbusReply::finished,
-                this, finished_sig_handler, Qt::QueuedConnection);
-        connect(mb_reply, &QModbusReply::errorOccurred,
-                    this, &Dialog::modbus_error_sig_handler, Qt::QueuedConnection);
+    if(regs.value(ExposureStatus) >= EXPOSURE_ST_EXPOSURING)
+    {
+        rec_mb_regs_sig_handler(TEST_OP_READ_REGS, regs, 0, 0, true);
     }
+    if(regs.value(ExposureStatus) == EXPOSURE_ST_COOLING) m_during_exposuring = false;
 }
 
 void Dialog::get_test_proc_st_sig_handler()
 {
+    if(m_monitor_reply || !m_modbus_device ||
+            m_modbus_device->state() != QModbusDevice::ConnectedState) return;
     QModbusDataUnit mb_du(QModbusDataUnit::HoldingRegisters);
-    QModbusReply *mb_reply;
-
-    if(!m_testing || m_test_paused) return;
-
     mb_du.setStartAddress(HSV);
     mb_du.setValueCount(MAX_HV_NORMAL_MB_REG_NUM);
-    mb_reply = m_modbus_device->sendReadRequest(mb_du, m_hv_conn_params.srvr_address);
-    mb_rw_reply_received(mb_reply, &Dialog::modbus_op_finished_sig_handler, true);
-}
-
-void Dialog::modbus_op_finished_sig_handler()
-{
-    QModbusReply * mb_reply = qobject_cast<QModbusReply *>(sender());
-    mb_rw_reply_received(mb_reply, nullptr, false);
-    if(mb_reply)
+    auto reply = m_modbus_device->sendReadRequest(mb_du, m_hv_conn_params.srvr_address);
+    if(!reply) return;
+    if(reply->isFinished())
     {
-        mb_reply->deleteLater();
+        processMonitorReply(reply);
+        reply->deleteLater();
+        return;
     }
+    m_monitor_reply = reply;
+    connect(reply, &QModbusReply::finished, reply, &QObject::deleteLater);
+    connect(reply, &QModbusReply::finished, this, [this, reply]() {
+        if(m_monitor_reply != reply) return;
+        m_monitor_reply.clear();
+        if(m_testing && !m_test_paused && m_during_exposuring) processMonitorReply(reply);
+    });
 }
 
 void Dialog::on_testPromMonitorClrBtn_clicked()

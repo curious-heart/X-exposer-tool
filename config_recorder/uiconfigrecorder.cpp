@@ -10,14 +10,21 @@
 #include "uiconfigrecorder.h"
 #include "logger/logger.h"
 
-UiConfigRecorder::UiConfigRecorder(QObject *parent, QString cfg_file_fpn)
-    : QObject{parent}, m_cfg_file_fpn(cfg_file_fpn)
+UiConfigRecorder::UiConfigRecorder(QObject *parent, QString cfg_file_fpn, QString group_prefix)
+    : QObject{parent}, m_cfg_file_fpn(cfg_file_fpn), m_group_prefix(group_prefix)
 {
     if(cfg_file_fpn.isEmpty())
     {
         DIY_LOG(LOG_WARN, "the name of config file for recording ui configrations is empty.\n");
         return;
     }
+}
+
+bool UiConfigRecorder::has_ui_configs(const QWidget *ui_widget) const
+{
+    QSettings settings(m_cfg_file_fpn, QSettings::IniFormat);
+    settings.beginGroup(m_group_prefix + ui_widget->objectName());
+    return !settings.childKeys().isEmpty();
 }
 
 #define LIST_VAR_NAME(ctrl) ctrl##_ptr_list
@@ -70,7 +77,7 @@ void UiConfigRecorder::record_ui_configs(QWidget * ui_widget,
         return;
     }
 
-    cfg_setting.beginGroup(sec_pre_str + ui_widget->objectName() + sec_post_str);
+    cfg_setting.beginGroup(m_group_prefix + sec_pre_str + ui_widget->objectName() + sec_post_str);
 
     CTRL_WRITE_TO_CFG(QLineEdit, text())
     CTRL_WRITE_TO_CFG(QTextEdit, toPlainText())
@@ -130,7 +137,7 @@ void UiConfigRecorder::load_configs_to_ui(QWidget * ui_widget,
         return;
     }
 
-    cfg_setting.beginGroup(sec_pre_str + ui_widget->objectName() + sec_post_str);
+    cfg_setting.beginGroup(m_group_prefix + sec_pre_str + ui_widget->objectName() + sec_post_str);
 
     /* Be careful: Load radiobutton and checkbox firstly is more reasonable, because these
      * ones are normally used as config-switch, which may affect the content of editor widget.

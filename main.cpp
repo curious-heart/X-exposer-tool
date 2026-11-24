@@ -1,4 +1,5 @@
-﻿#include "main_dialog.h"
+﻿#include "multi_dr_window.h"
+#include "version_def/version_def.h"
 #include "logger/logger.h"
 #include "sysconfigs/sysconfigs.h"
 
@@ -41,16 +42,16 @@ int main(int argc, char *argv[])
     //use the log level defined in config file.
     update_log_level((LOG_LEVEL)(g_sys_configs_block.log_level));
 
-    Dialog w;
-    if(!w.m_init_ok) return -1;
-
-    QString title_str = QString("%1 %2").arg(a.applicationName(), APP_VER_STR);
-    w.setWindowTitle(title_str);
-
-    w.show();
-    a.setActivationWindow(&w);
-
-    ret = a.exec();
+    {
+        MultiDrWindow window;
+        window.setWindowTitle(QString("X-exposer %1 - 多设备曝光测试").arg(APP_VER_STR));
+        window.show();
+        a.setActivationWindow(&window);
+        QObject::connect(&a, &QtSingleApplication::messageReceived, &window, [&window](const QString &message) {
+            QMessageBox::information(&window, "X-exposer", message);
+        });
+        ret = a.exec();
+    }
 
     end_log_thread(th);
     return ret;

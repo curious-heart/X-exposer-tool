@@ -31,6 +31,7 @@ SOURCES += \
     test_param_settings.cpp \
     main.cpp \
     main_dialog.cpp \
+    multi_dr_window.cpp \
     test_result_judge/test_result_judge.cpp \
     version_def/version_def.cpp
 
@@ -53,6 +54,7 @@ HEADERS += \
     sysconfigs/sysconfigs.h \
     test_param_settings.h \
     main_dialog.h \
+    multi_dr_window.h \
     test_params_struct.h \
     test_result_judge/test_result_judge.h \
     version_def/version_def.h
